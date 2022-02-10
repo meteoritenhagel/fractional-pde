@@ -1,4 +1,4 @@
-#ifndef DEMO_H
+b#ifndef DEMO_H
 #define DEMO_H
 
 #include "blocksys.h"
@@ -11,12 +11,6 @@
 
 #include "auxiliary.h"
 #include "algebraiccontainers/containerfactory.h"
-
-template<class floating>
-void testSolvingProceduresNonEquidistant(const ProcessingUnit<floating> processingUnit,
-                                         const size_t Nvalue, const std::vector<size_t>& Mvec,
-                                         const floating accuracy, const size_t maxNumberOfIterations,
-                                         const size_t stepsPerIteration, const size_t numberOfTimingLoops);
 
 template<class floating>
 floating testEquidistantGeneralSolvingProcedure(const ProcessingUnit<floating> processingUnit,

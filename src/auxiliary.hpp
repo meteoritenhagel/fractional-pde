@@ -1,5 +1,11 @@
 #include "auxiliary.h"
 
+template<class T, enable_if_is_integral<T> = true>
+static constexpr T twoToThe(T const x)
+{
+    return 1<<x;
+}
+
 template<class floating>
 std::vector<floating> linspace(const int N, const floating a, const floating b)
 {
@@ -9,21 +15,6 @@ std::vector<floating> linspace(const int N, const floating a, const floating b)
         x[k] = k * h + a;
     }
     return x;
-}
-
-template<class floating, class S, class T>
-floating max_norm(S const &u, T const &w)
-{
-    assert(u.size() == w.size());
-    floating s = 0.0;
-    for (unsigned int k = 0; k < u.size(); ++k) {
-        floating u1 = u[k];
-        floating w1 = w[k];
-        const floating diff1 = u1 - w1;
-        floating difference = std::fabs(diff1);
-        s = std::max(s, difference);
-    }
-    return s;
 }
 
 template<class floating>
@@ -43,21 +34,18 @@ void applyTriDiagonals(const floating a, const floating b, AlgebraicMatrix<float
 template<class floating>
 floating f(const floating x, const floating t, const floating alpha)
 {
-//    return exp(x) * pow(t, 4.0) * (tgamma(5 + alpha) / 24.0 - pow(t, alpha));
     return sin(M_PI*x) * (pow(t, 4) * tgamma(5+alpha) / 24.0 + M_PI*M_PI*pow(t, 4+alpha));
 }
 
 template<class floating>
 floating u_exact(const floating x, const floating t, const floating alpha)
 {
-//    return exp(x) * pow(t, 4 + alpha);
     return pow(t, 4+alpha) * sin(M_PI*x);
 }
 
 template<class floating>
 floating up_exact(floating const x, floating const t, floating const alpha)
 {
-//    return (4 + alpha) * exp(x) * pow(t, 3 + alpha);
     return (4+alpha) * pow(t, 3 + alpha) * sin(M_PI*x);
 }
 
