@@ -1,5 +1,3 @@
-#include "gpu_data.h"
-
 #include <cublas_v2.h>
 #include <cusolverDn.h>
 
@@ -129,12 +127,12 @@ void GPU_MAGMA<floating>::xgetrf(int * const m, int * const n, floating * const 
 
 template<class floating>
 void GPU_MAGMA<floating>::xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
-						   floating * const work, const int * const lwork, int * const info) const
+                           floating * const work, const int * const lwork, int * const info) const
 {
-	if constexpr(isFloat())
-		magma_sgetri_gpu(*n, a, *lda, const_cast<int*>(ipiv), work, *lwork, info);
-	else if constexpr(isDouble())
-		magma_dgetri_gpu(*n, a, *lda, const_cast<int*>(ipiv), work, *lwork, info);
+    if constexpr(isFloat())
+        magma_sgetri_gpu(*n, a, *lda, const_cast<int*>(ipiv), work, *lwork, info);
+    else if constexpr(isDouble())
+        magma_dgetri_gpu(*n, a, *lda, const_cast<int*>(ipiv), work, *lwork, info);
 }
 
 template<class floating>

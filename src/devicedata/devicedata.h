@@ -14,26 +14,10 @@
 #include <vector>
 
 template<class T>
-void initializeMemory(const MemoryManager memoryManager, T* data, const int size, const T value) {
-    if (typeid(*memoryManager) == typeid(*std::make_shared<CPU_Manager>())) {
-        hostInitializeMemory(data, size, value);
-    } else {
-#ifndef CPU_ONLY
-        deviceInitializeMemory(data, size, value);
-#endif
-    }
-}
+void initializeMemory(const MemoryManager memoryManager, T* data, const int size, const T value);
 
 template<class T>
-void initializeIdentityMatrix(const MemoryManager memoryManager, T* data, const int N, const int M) {
-    if (typeid(*memoryManager) == typeid(*std::make_shared<CPU_Manager>())) {
-        hostInitializeIdentityMatrix(data, N, M);
-    } else {
-#ifndef CPU_ONLY
-        deviceInitializeIdentityMatrix(data, N, M);
-#endif
-    }
-}
+void initializeIdentityMatrix(const MemoryManager memoryManager, T* data, const int N, const int M);
 
 template<class T>
 class DeviceMatrix;
@@ -46,17 +30,13 @@ class DeviceDataDevice {
 public:
     using SizeType = unsigned int;
 
-    DeviceDataDevice(const MemoryManager memoryManager)
-    : _memoryManager(memoryManager) {}
+    DeviceDataDevice(const MemoryManager memoryManager);
 
     virtual ~DeviceDataDevice() = default;
 
     virtual SizeType size() const = 0;
 
-    SizeType byteSize() const
-    {
-        return size() * sizeof(T);
-    }
+    SizeType byteSize() const;
 
     virtual T* data() = 0;
     virtual T const * data() const = 0;
@@ -65,10 +45,7 @@ public:
 
     virtual void display(const std::string name) const = 0;
 
-    MemoryManager getMemoryManager() const
-    {
-        return _memoryManager;
-    }
+    MemoryManager getMemoryManager() const;
 
 protected:
     MemoryManager _memoryManager = std::make_shared<CPU_Manager>();

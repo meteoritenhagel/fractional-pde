@@ -1,15 +1,6 @@
-/*
- * unifieddata_unifiedmatrix.hpp
- *
- *  Created on: Jul 1, 2020
- *      Author: tristan
- */
-
 #ifndef CPU_ONLY
 #include "initializememory.cuh"
 #endif
-
-// public:
 
 template<class T>
 DeviceMatrix<T>::DeviceMatrix(const SizeType N, const SizeType M, const T value, const MemoryManager memoryManager)
@@ -61,7 +52,6 @@ DeviceMatrix<T>& DeviceMatrix<T>::operator= (const DeviceMatrix &other)
 template<class T>
 void DeviceMatrix<T>::moveTo(const MemoryManager targetDevice)
 {
-    //std::cout << "ByteSize before move: " << this->byteSize() << std::endl;
     // only move if targetDevice is different to current device
     if (typeid(*(this->_memoryManager)) != typeid(*targetDevice))
     {
@@ -190,8 +180,6 @@ void DeviceMatrix<T>::display(const std::string name) const
     std::cout << ")" << std::endl;
     return;
 }
-
-// private:
 
 template<class T>
 typename DeviceMatrix<T>::PointerType DeviceMatrix<T>::initializePointer()

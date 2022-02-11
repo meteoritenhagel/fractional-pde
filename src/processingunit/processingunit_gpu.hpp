@@ -1,4 +1,4 @@
-#include "gpu_data.h"
+#include "../devicedata/devicedata.h"
 
 #include <cublas_v2.h>
 #include <cusolverDn.h>
@@ -198,11 +198,13 @@ void GPU<floating>::xgetrf(int * const m, int * const n, floating * const a, int
                 cusolverDnDgetrf_bufferSize(getCusolverHandle(), *m, *n, a, *lda, &workingBufferSize);
     cudaDeviceSynchronize();
 
+    // allocate GPU Memory
+    const auto memoryManager = std::make_shared<GPU_Manager>();
     // buffer for cusolverDnSgetrf
-    GPU_Data<floating> workingBuffer(workingBufferSize);
+    DeviceArray<floating> workingBuffer(workingBufferSize, 0, memoryManager);
 
     // int* devInfo in cusolverDn<t>getrf(..., devInfo) is expected to be on the device
-    GPU_Data<int> deviceInfo(1);
+    DeviceScalar<int> deviceInfo(0, memoryManager);
 
     if constexpr(isFloat())
         cusolverDnSgetrf(getCusolverHandle(), *m, *n, a, *lda, workingBuffer.data(), ipiv, deviceInfo.data());
@@ -237,8 +239,11 @@ void GPU<floating>::xgetrs(const OperationType trans, const int * const n, const
         const floating * const a, const int * const lda, const int * const ipiv,
         floating * const b, const int * const ldb, int * const info) const
 {
+
+    // allocate GPU Memory
+    const auto memoryManager = std::make_shared<GPU_Manager>();
     // int* devInfo in cusolverDn<t>getrf(..., devInfo) is expected to be on the device
-    GPU_Data<int> deviceInfo(1);
+    DeviceScalar<int> deviceInfo(0, memoryManager);
 
     if constexpr(isFloat())
         cusolverDnSgetrs(getCusolverHandle(), toInternalOperation.at(trans), *n, *nrhs, a, *lda, ipiv, b, *ldb, deviceInfo.data());

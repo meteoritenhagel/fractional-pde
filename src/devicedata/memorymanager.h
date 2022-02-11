@@ -34,56 +34,17 @@ public:
     virtual void* copy(void* destination, void const * source, const size_t size) const = 0;
     virtual void display() const = 0;
 
-    void* copyTo(void* pointerToMemory, const size_t byteSize, const MemoryManager manager) const
-    {
-        void* newPtr = pointerToMemory;
-
-        // Only move to other device if the device is not the same
-        if (typeid(*this) != typeid(*manager)) {
-            newPtr = manager->allocate(byteSize);
-            manager->copy(newPtr, pointerToMemory, byteSize);
-        }
-
-        return newPtr;
-    }
+    void* copyTo(void* pointerToMemory, const size_t byteSize, const MemoryManager manager) const;
 };
 
 class CPU_Manager : public MemoryManagerDevice {
-    void* allocate(const size_t byteSize) const override
-    {
-        if (byteSize != 0) {
-            return malloc(byteSize);
-        }
-        else
-            return nullptr;
-    }
+    void* allocate(const size_t byteSize) const override;
 
-    void free(void* pointerToMemory) const override
-    {
-        if (pointerToMemory)
-            ::free(pointerToMemory);
-    }
+    void free(void* pointerToMemory) const override;
 
-    void* copy(void * destination, void const * source, const size_t byteSize) const override
-    {
-#ifdef CPU_ONLY
-        return memcpy(destination, source, byteSize);
-#else
+    void* copy(void * destination, void const * source, const size_t byteSize) const override;
 
-//        static size_t numOfCopies = 0;
-//        ++numOfCopies;
-//
-//        if (numOfCopies % 5000 == 0)
-//            std::cout << "Copies from/to CPU: " << numOfCopies << std::endl;
-        cudaMemcpy(destination, source, byteSize, cudaMemcpyDefault);
-        return destination;
-#endif
-    }
-
-    void display() const override
-    {
-        std::cout << "CPU MANAGER" << std::endl;
-    }
+    void display() const override;
 };
 
 #ifndef CPU_ONLY

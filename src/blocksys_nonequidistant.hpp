@@ -1,14 +1,6 @@
-#include "statusbar/statusbar.h"
-
 #ifndef CPU_ONLY
 #include "gpukernels.cuh"
 #endif
-
-// TODO: REMOVE
-#include <fstream>
-#include <string>
-
-// public:
 
 template<class floating>
 NonEquidistantBlock_1D<floating>::NonEquidistantBlock_1D(const SizeType bdim,
@@ -40,7 +32,6 @@ NonEquidistantBlock_1D<floating>::NonEquidistantBlock_1D(const SizeType bdim,
           _coarseBuffer1(*getMatrixFactory().createMatrix(getNdim(), getCoarseDim())),
           _coarseBuffer2(*getMatrixFactory().createMatrix(getNdim(), getCoarseDim()))
 {
-    //_h = h;
     assert(_B.isSquare() && _M.isSquare());
     assert(_B.getNrows() == _D.getNrows());
     assert(_B.getNrows() == _M.getNrows());
@@ -48,26 +39,11 @@ NonEquidistantBlock_1D<floating>::NonEquidistantBlock_1D(const SizeType bdim,
 
     assert(_h.size() == _bdim-1);
 
-//    std::cout << "CPU_B " << _B.data() << " / " << _B.data() + _B.getNelems() - 1 << std::endl;
-//    std::cout << "CPU_C " << _C.data() << " / " << _C.data() + _C.getNelems() - 1 << std::endl;
-//    std::cout << "CPU_D " << _D.data() << " / " << _D.data() + _D.getNelems() - 1 << std::endl;
-//    std::cout << "CPU_M " << _M.data() << " / " << _M.data() + _M.getNelems() - 1 << std::endl << std::endl;
-//
-//    _B.getProcessingUnit()->display();
-
     // Move everything to device:
     _B.moveTo(processingUnit);
     _C.moveTo(processingUnit);
     _D.moveTo(processingUnit);
     _M.moveTo(processingUnit);
-//
-//    _B.getProcessingUnit()->display();
-//
-//    std::cout << "_B " << _B.data() << " / " << _B.data() + _B.getNelems() - 1 << std::endl;
-//    std::cout << "_C " << _C.data() << " / " << _C.data() + _C.getNelems() - 1 << std::endl;
-//    std::cout << "_D " << _D.data() << " / " << _D.data() + _D.getNelems() - 1 << std::endl;
-//    std::cout << "_M " << _M.data() << " / " << _M.data() + _M.getNelems() - 1 << std::endl;
-//    std::cout << "_h " << _h.data() << " / " << _h.data() + _h.size() - 1 << std::endl;
 
     // _h is used in coefficients only, which must be on the CPU
     _h.moveTo(std::make_shared<CPU<floating>>());
@@ -110,12 +86,13 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
     rhs.moveTo(getProcessingUnit());
 
 #ifndef UNSYMMETRIZED
-    // Since we work with the symmetrised system, also rhs must be rescaled appropiately
+    // Since we work with the symmetrized system, also rhs must be rescaled appropiately
     rescale_rhs(rhs);
 #endif
 
     const floating relativeAccuracy = accuracy * rhs.getEuclidean();
-    std::cout << "relative Accuracy: " << relativeAccuracy << std::endl;
+    std::cout << "target absolute accuracy: " << accuracy << std::endl;
+    std::cout << "target relative accuracy: " << relativeAccuracy << std::endl << std::endl;
 
     BlockVector<floating> solution = *getMatrixFactory().createMatrix(N, M);
 
@@ -130,7 +107,6 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
 
     floating euclideanNorm = 0;
 
-    CHRONO_Timer stopwatch;
     size_t totalCounter = 0;
 
     size_t n = 0;
@@ -155,16 +131,6 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
 
                 ++totalCounter;
                 std::cout << "   " << totalCounter << ": " << euclideanNorm << std::endl;
-#ifdef PRINT
-                {
-                    std::ofstream filestream1;
-                    filestream1.open("stepwise_tests/" + std::to_string(getNdim()-3) + "_" + std::to_string(getBlockDim()-1) + "test_richardson.txt", std::fstream::in | std::fstream::out | std::fstream::app);
-                    filestream1 << totalCounter << " " << euclideanNorm << std::endl;
-                    filestream1.close();
-                }
-#endif
-                break;
-
                 break;
 
             case SolvingProcedure::PCRichardson:
@@ -174,34 +140,16 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
                 euclideanNorm = residual.getEuclidean();
                 ++totalCounter;
                 std::cout << "   " << totalCounter << ": " << euclideanNorm << std::endl;
-#ifdef PRINT
-                {
-                    std::ofstream filestream2;
-                    filestream2.open("stepwise_tests/" + std::to_string(getNdim()-3) + "_" + std::to_string(getBlockDim()-1) + "test_pcrichardson.txt", std::fstream::in | std::fstream::out | std::fstream::app);
-                    filestream2 << totalCounter << " " << euclideanNorm << std::endl;
-                    filestream2.close();
-                }
-#endif
+
                 break;
             }
 
-        // TODO: REMOVE:
-//        if (totalCounter == 9)
-//            break;
-//        euclideanNorm = 100;
-
-
-
-        //std::cout << maxNormResidual << std::endl;
         ++n;
     }
     // check for the two breaking conditions:
     // 1. if maxNumberOfIterations has a feasible value, repeat until maxNumberOfIterations is reached
     // 2. if maxNormResidual has a feasible value, repeat until relative error is smaller than desired accuracy
     while ((maxNumberOfIterations <= 0 || n < maxNumberOfIterations) && (accuracy <= 0 || euclideanNorm >= relativeAccuracy));
-
-    stopwatch.stop();
-    getProcessingUnit()->_multigridTime += stopwatch.elapsedTime();
 
     return solution;
 }
@@ -370,16 +318,10 @@ floating NonEquidistantBlock_1D<floating>::biCGStab(const BlockVector<floating> 
     auto t = s;
     auto solutionBuffer = solution;
 
-    //StatusBar<floating> statusBar(50);
 
     floating euclideanError = residual.getEuclidean();
 
     static int totalCounter = 1;
-
-#ifdef PRINT
-    std::ofstream filestream;
-    filestream.open("stepwise_tests/" + std::to_string(getNdim()-3) + "_" + std::to_string(getBlockDim()-1) + "test_bicgstab.txt", std::fstream::in | std::fstream::out | std::fstream::app);
-#endif
 
     bool iterate = true;
     SizeType counter = 0;
@@ -418,19 +360,12 @@ floating NonEquidistantBlock_1D<floating>::biCGStab(const BlockVector<floating> 
         //statusBar.draw(counter, numberOfIterations, currentError , 0, 10);
         ++counter;
 
-        // TODO: REMOVE
-        std::cout << totalCounter << " " << euclideanError << std::endl;
+        std::cout << "   " << totalCounter << " " << euclideanError << std::endl;
         ++totalCounter;
 
 
     }
     while (iterate && counter < numberOfIterations);
-
-    // TODO: REMOVE
-#ifdef PRINT
-    std::cout << "   " << totalCounter << std::endl;
-    filestream.close();
-#endif
 
     return euclideanError;
 }
@@ -464,13 +399,7 @@ floating NonEquidistantBlock_1D<floating>::PCbiCGStab(const BlockVector<floating
     auto solutionBuffer = y;
     floating euclideanError = residual.getEuclidean();
 
-    //StatusBar<floating> statusBar(50);
-
     static int totalCounter = 1;
-#ifdef PRINT
-    std::ofstream filestream;
-    filestream.open("stepwise_tests/" + std::to_string(getNdim()-3) + "_" + std::to_string(getBlockDim()-1) + "test_pcbicgstab.txt", std::fstream::in | std::fstream::out | std::fstream::app);
-#endif
 
     bool iterate = true;
     SizeType counter = 0;
@@ -522,22 +451,12 @@ floating NonEquidistantBlock_1D<floating>::PCbiCGStab(const BlockVector<floating
         }
 
         ++counter;
-        //statusBar.draw(counter, numberOfIterations, currentError, 0, 10);
-        
-        // TODO: REMOVE
-        std::cout << totalCounter << " " << euclideanError << std::endl;
 
-#ifdef PRINT
-        filestream << totalCounter << " " << euclideanError << std::endl;
-#endif
+        std::cout << "   " << totalCounter << " " << euclideanError << std::endl;
+
         ++totalCounter;
     }
     while (iterate && counter < numberOfIterations);
-
-    // TODO: REMOVE
-#ifdef PRINT
-    filestream.close();
-#endif
 
     return euclideanError;
 }
@@ -546,18 +465,6 @@ floating NonEquidistantBlock_1D<floating>::PCbiCGStab(const BlockVector<floating
 template<class floating>
 void NonEquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothingSteps, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const
 {
-// TODO: REMOVE
-//auto stopwatch = std::make_shared<CHRONO_Timer>();
-//stopwatch->start();
-//auto stopwatch1 = std::make_shared<CHRONO_Timer>();
-//auto stopwatch2 = std::make_shared<CHRONO_Timer>();
-//auto stopwatch3 = std::make_shared<CHRONO_Timer>();
-//auto stopwatch4 = std::make_shared<CHRONO_Timer>();
-//auto stopwatch5 = std::make_shared<CHRONO_Timer>();
-//auto stopwatch6 = std::make_shared<CHRONO_Timer>();
-//auto stopwatch7 = std::make_shared<CHRONO_Timer>();
-
-//stopwatch1->start();
     const SizeType N = getNdim();
     const SizeType M = getBlockDim();
 
@@ -576,12 +483,7 @@ void NonEquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothin
 
     floating euclideanError = 1;
 
-    // TODO: Find right omega
     const floating omega = 2/3.0;
-
-    //TODO: REMOVE
-    //std::cout << "    N = " << N << ", M = " << M << '\n';
-//stopwatch1->stop();
 
     if (M == 3)
     {
@@ -590,77 +492,14 @@ void NonEquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothin
     }
     else
     {
-        // TODO: REMOVE
-//        copyToDense().display("sys");
-//        solution.display("init solution");
-//        f.display("rhs");
 
-//stopwatch2->start();
-        // Step 1: smoothing
         smooth(omega, f, numberOfSmoothingSteps, solution);
-//stopwatch2->stop();
-
-        // TODO: Remove
-//        solution.display("after smoothing: ");
-
-//stopwatch3->start();
-        // Step 2:
         calculateResidual(solution, f, residual);
-//stopwatch3->stop();
-
-        // TODO: Remove
-//        residual.display("defect after smoothing: ");
-
-        //exit(0);
-
-//stopwatch4->start();
-        // Step 3:
         restriction(residual, ffOnCoarseGrid);
-//stopwatch4->stop();
-
-        // TODO: Remove
-//        ffOnCoarseGrid.display("restricted defect");
-
-
-        // Step 4: solve on ffOnCoarseGrid:
-
-//        coarseSolution[0] = _M / ffOnCoarseGrid[0];
-//        coarseSolution[coarseM-1] = _M / ffOnCoarseGrid[coarseM-1];
-
-//stopwatch5->start();
         coarseSystem.multigrid(numberOfSmoothingSteps, ffOnCoarseGrid, maxNumberOfIterations, accuracy, coarseSolution);
-//stopwatch5->stop();
-
-        // TODO: Remove
-        //coarseSolution.display("solution after multigrid");
-
-        // Step 5: correction:
-
-        // TODO: Remove
-        //prolongation(coarseSolution).display("interpolation of solution");
-
-//        stopwatch6->start();
         prolongation(coarseSolution, solution);
-//        stopwatch6->stop();
-        // Step 6: smoothing
-
-//        stopwatch7->start();
-        //euclideanError = jacobiIteration(omega, f, numberOfSmoothingSteps, accuracy, solution);
         smooth(omega, f, numberOfSmoothingSteps, solution);
-//        stopwatch7->stop();
     }
-//stopwatch->stop();
-
-//    std::cout << "Multigrid time: " << stopwatch->elapsedTime() << "s." << std::endl
-//              << "   init       : " << stopwatch1->elapsedTime() << "s. (" << stopwatch1->elapsedTime()/stopwatch->elapsedTime() * 100. << "%)" << std::endl
-//              << "   pre-smooth : " << stopwatch2->elapsedTime() << "s. (" << stopwatch2->elapsedTime()/stopwatch->elapsedTime() * 100. << "%)" << std::endl
-//              << "   residual   : " << stopwatch3->elapsedTime() << "s. (" << stopwatch3->elapsedTime()/stopwatch->elapsedTime() * 100. << "%)" << std::endl
-//              << "   restriction: " << stopwatch4->elapsedTime() << "s. (" << stopwatch4->elapsedTime()/stopwatch->elapsedTime() * 100. << "%)" << std::endl
-//              << "   small MG   : " << stopwatch5->elapsedTime() << "s. (" << stopwatch5->elapsedTime()/stopwatch->elapsedTime() * 100. << "%)" << std::endl
-//              << "   prolongatio: " << stopwatch6->elapsedTime() << "s. (" << stopwatch6->elapsedTime()/stopwatch->elapsedTime() * 100. << "%)" << std::endl
-//              << "   post-smooth: " << stopwatch7->elapsedTime() << "s. (" << stopwatch7->elapsedTime()/stopwatch->elapsedTime() * 100. << "%)" << std::endl << std::endl;
-    //exit(-1);
-    //return euclideanError;
 }
 
 template<class floating>
@@ -701,29 +540,20 @@ void NonEquidistantBlock_1D<floating>::restriction(const BlockVector<floating> &
     const SizeType M = getBlockDim();
     assert(getBlockDim() % 2 == 1 && "ERROR: Need odd number of rows in each step.");
 
-    // injection
-//    for (SizeType i = 0; i < coarseGridSize; ++i)
-//        ffOnCoarseGrid[i] = ff[2*i];
-
 #ifdef UNSYMMETRIZED
-    // TODO: Full weighted restriction
-////    ffOnCoarseGrid[0] = (_h[0]+_h[1])/(_h[0] + 2*_h[1])*ff[0] + _h[1]/(_h[0] + 2*_h[1])*ff[1];
     for (SizeType i = 2; i < M-1; i+=2)
     {
         const floating divisor = (_h[i-1]*_h[i] + 2*_h[i-2]*_h[i] + 2*_h[i-1]*_h[i+1] + 3*_h[i-2]*_h[i+1]);
         ffOnCoarseGrid[i/2] = (_h[i-2]*(_h[i] + _h[i+1])/divisor * ff[i-1] + (_h[i-2] + _h[i])*(_h[i] + _h[i+1])/divisor * ff[i] + _h[i+1]*(_h[i-2] + _h[i-1])/divisor * ff[i+1]);
     }
-////    ffOnCoarseGrid[coarseGridSize-1] = _h[M-3]/(2*_h[M-3] + _h[M-2])*ff[M-2] + (_h[M-3] + _h[M-2])/(2*_h[M-3] + _h[M-2])*ff[M-1]
 #else
-// TODO: Full restriction
     if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
     {
-#pragma omp parallel for  if (M>127)               // GH
+#pragma omp parallel for  if (M>127)
         for (SizeType j = 2; j < M - 1; j += 2)
         {
             const auto coeff1 = _h[j - 2] / (_h[j - 2] + _h[j - 1]);
             const auto coeff2 = _h[j + 1] / (_h[j] + _h[j + 1]);
-            //ffOnCoarseGrid[j/2] = coeff1 * ff[j-1] + ff[j] + coeff2 * ff[j+1];
             ffOnCoarseGrid[j / 2] = ff[j];
             getProcessingUnit()->xaxpy(getNdim(), coeff1, ff[j - 1].data(), 1, ffOnCoarseGrid[j / 2].data(), 1, false);
             getProcessingUnit()->xaxpy(getNdim(), coeff2, ff[j + 1].data(), 1, ffOnCoarseGrid[j / 2].data(), 1, false);
@@ -749,8 +579,8 @@ AlgebraicVector<floating> NonEquidistantBlock_1D<floating>::getReducedGrid() con
 
     if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
     {
-#pragma omp parallel for  //if (Mf>127)
-        for (SizeType i = 0; i < Mf; ++i)      // GH
+#pragma omp parallel for  //if (Mf >127)
+        for (SizeType i = 0; i < Mf; ++i)
             coarseGrid[i] = _h[2*i] + _h[2*i+1];
     }
     else
@@ -798,8 +628,6 @@ floating NonEquidistantBlock_1D<floating>::jacobiIteration(const floating omega,
 
     assert(solution.getNrows() == N && solution.getNcols() == M && "ERROR: Dimension mismatch.");
 
-    //StatusBar<floating> statusBar(50);
-
     floating euclideanNormResidual = 0;
 
     auto &residual = _vectorBuffer[2];
@@ -815,9 +643,6 @@ floating NonEquidistantBlock_1D<floating>::jacobiIteration(const floating omega,
         //solution[0] = _M / f[0];
         //solution[M-1] = _M / f[M-1];
 
-// GH: Hier muss über die Blöcke parallelisiert werden.
-// GH: Hauptaufwand ist die Operation  _C/residual welche damit parallelisiert wird.
-// GH: Noch nicht korrekt, bei 2 Threads kommt ein Segmentation fault; Gelöst durch GH:(*)
 #pragma omp parallel for reduction(+:euclideanNormResidual) if (M>63) //schedule(dynamic)
         for (unsigned int i = 1; i < M-1; ++i)
         {
@@ -847,14 +672,7 @@ floating NonEquidistantBlock_1D<floating>::jacobiIteration(const floating omega,
 
         euclideanNormResidual = sqrt(euclideanNormResidual);
 
-        // TODO: REMOVE
-        //solution.display("solution");
-
-        // TODO: REMOVE
-        //std::cout << "jacobi residual norm: " << euclideanNormResidual << '\n';
         ++n;
-        // TODO: ENABLE/DISABLE
-        //statusBar.draw(n, maxNumberOfIterations, maxNormResidual, accuracy, 10);       
     }
         // check for the two breaking conditions:
         // 1. if maxNumberOfIterations has a feasible value, repeat until maxNumberOfIterations is reached
@@ -983,16 +801,13 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
 
 template<class floating>
 void NonEquidistantBlock_1D<floating>::calculateResidual(const BlockVector<floating> &u, const BlockVector<floating> &f, BlockVector<floating> &residual) const
-{                 // GH: Wird nur selten benutzt.
+{
     const SizeType N = getNdim();
     const SizeType M = f.getNcols();
 
     assert(u.getNrows() == N && u.getNcols() == M && "ERROR: Dimension mismatch.");
 
-//    residual.moveTo(std::make_shared<CPU<floating>>());
-//    residual.display("res");
-
-#pragma omp parallel for  //if (M>127)                // GH faster
+#pragma omp parallel for  //if (M>127)
     for (unsigned int i = 0; i < M; ++i)
     {
         calculateRowResidual(i, u, f, residual[i]);
@@ -1007,23 +822,14 @@ void NonEquidistantBlock_1D<floating>::calculateRowResidual(const SizeType i, co
 
     assert(u.getNrows() == N && u.getNcols() == M && "ERROR: Dimension mismatch.");
 
-    //residual = f[i];
     getProcessingUnit()->xcopy(residual.size(), f[i].data(), 1, residual.data(), 1);
 
     if (i == 0 || i == M-1)
     {
-//        std::cout << "!!!!" << std::endl;
-//        std::cout << "M: " << _M.data() << std::endl;
-//        std::cout << "u: " << u.data() << std::endl;
-//        std::cout << "f: " << f.data() << std::endl;
-//        std::cout << "residual: " << residual.data() << std::endl;
-
-        //residual.add(_M*u[i], -1.0);
         getProcessingUnit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(), -1.0, _M.data(), _M.getNrows(), u[i].data(), 1, 1.0, residual.data(), 1);
     }
     else
     {
-        //std::cout << "    i=1!!!!!" << std::endl;
 #ifdef UNSYMMETRIZED
         // Plain system
         const floating coeff_left =  2/_host_h[i-1]/(_host_h[i-1] + _host_h[i]);
@@ -1041,10 +847,6 @@ void NonEquidistantBlock_1D<floating>::calculateRowResidual(const SizeType i, co
         // Note that _A = (c1 * _M - c2 * _D) except for rows 1, 2, N, where it is _M
 
         // result[i] <- scaled _M * u[i]
-
-//        auto &b1 = _vectorBuffer[7];
-//        auto &b2 = _vectorBuffer[8];
-//        auto &b3 = _vectorBuffer[6];
 
         auto &buf1 = _buffer4;
         auto &buf2 = _buffer5;
@@ -1112,7 +914,6 @@ AlgebraicMatrix<floating> NonEquidistantBlock_1D<floating>::initializeC() const
         {
             C(row, col) = _M(row, col);
         }
-        //C[col] = _M[col];
     }
 
     return C;
@@ -1151,5 +952,4 @@ void NonEquidistantBlock_1D<floating>::rescale_rhs(BlockVector<floating> &rhs) c
         deviceRescaleRhs(N, M, _h.data(), rhs.data());
 #endif
     }
-
 }

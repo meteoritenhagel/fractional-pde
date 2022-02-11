@@ -66,7 +66,8 @@ floating testNonEquidistantWithGeneralGrid(const ProcessingUnit<floating> proces
 
     floating dt = T / static_cast<floating>(N);
 
-    std::cout << "N = " << N << "    M =  " << M << std::endl;
+    std::cout << "N (time steps)  = " << N << std::endl
+              << "M (space steps) = " << M << std::endl;
 
     auto grid = *colMatrixFactory.createColumn(M);
     getGeneralGrid(grid);
@@ -99,7 +100,7 @@ floating testNonEquidistantWithGeneralGrid(const ProcessingUnit<floating> proces
     ue_device.moveTo(processingUnit);
 
     floating error_max = std::abs((ue_device-xx).getMaximum());
-    std::cout << "max norm of error = " << error_max << std::endl;
+    std::cout << std::endl << "max norm of absolute error = " << error_max << std::endl;
     return error_max;
 }
 

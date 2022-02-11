@@ -102,8 +102,8 @@ public:
                const floating beta, floating * const y, const int incy) const override;
     void xgetrf(int * const m, int * const n, floating * const a, int * const lda,
                 int * const ipiv, int * const info) const override;
-	void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
-		floating * const work, const int * const lwork, int * const info) const override;
+    void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
+        floating * const work, const int * const lwork, int * const info) const override;
     void xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
                 const floating * const a, const int * const lda, const int * const ipiv,
                 floating * const b, const int * const ldb, int * const info) const override;
@@ -144,8 +144,8 @@ public:
                const floating beta, floating * const y, const int incy) const override;
     void xgetrf(int * const m, int * const n, floating * const a, int * const lda,
                 int * const ipiv, int * const info) const override;
-	void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
-				floating * const work, const int * const lwork, int * const info) const override;
+    void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
+                floating * const work, const int * const lwork, int * const info) const override;
     void xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
                 const floating * const a, const int * const lda, const int * const ipiv,
                 floating * const b, const int * const ldb, int * const info) const override;
@@ -186,8 +186,8 @@ public:
                const floating beta, floating * const y, const int incy) const override;
     void xgetrf(int * const m, int * const n, floating * const a, int * const lda,
                 int * const ipiv, int * const info) const override;
-	void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
-				floating * const work, const int * const lwork, int * const info) const override;
+    void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
+                floating * const work, const int * const lwork, int * const info) const override;
     void xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
                 const floating * const a, const int * const lda, const int * const ipiv,
                 floating * const b, const int * const ldb, int * const info) const override;
@@ -234,8 +234,8 @@ public:
                const floating beta, floating * const y, const int incy) const override;
     void xgetrf(int * const m, int * const n, floating * const a, int * const lda,
                 int * const ipiv, int * const info) const override;
-	void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
-				floating * const work, const int * const lwork, int * const info) const override;
+    void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
+                floating * const work, const int * const lwork, int * const info) const override;
     void xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
                 const floating * const a, const int * const lda, const int * const ipiv,
                 floating * const b, const int * const ldb, int * const info) const override;
@@ -277,8 +277,8 @@ public:
                const floating beta, floating * const y, const int incy) const override;
     void xgetrf(int * const m, int * const n, floating * const a, int * const lda,
                 int * const ipiv, int * const info) const override;
-	void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
-				floating * const work, const int * const lwork, int * const info) const override;
+    void xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
+                floating * const work, const int * const lwork, int * const info) const override;
     void xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
                 const floating * const a, const int * const lda, const int * const ipiv,
                 floating * const b, const int * const ldb, int * const info) const override;

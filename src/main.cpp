@@ -1,4 +1,4 @@
-#define NDEBUG
+//#define NDEBUG
 
 //#define MAGMA 1
 //#define UNSYMMETRIZED 1
@@ -13,28 +13,25 @@
 #pragma message(" ##########  CPU_ONLY MODE ACTIVATED. GPU features are not available.  ###############")
 #endif
 
-#include <iostream>
-#include <iomanip>
-#include <vector>
-
 int main()
 {
     using floating = float;
-    ProcessingUnit<floating> pu = std::make_shared<CPU<floating>>();
-    //ProcessingUnit<floating> pu = std::make_shared<GPU<floating>>();
+    //ProcessingUnit<floating> pu = std::make_shared<CPU<floating>>();
+    ProcessingUnit<floating> pu = std::make_shared<GPU<floating>>();
 
-    const std::vector<int> Nvec{5};
-    const std::vector<int> Mvec{6};
+    const size_t N = twoToThe(5);
+    const size_t M = twoToThe(7);
 
-    const size_t maxNumberOfIterations = 20;//400;
+    const floating T = 1;
+    const floating alpha = 0.9;
+
+    const size_t maxNumberOfIterations = 20;
     const size_t stepsPerIteration = 20;
     const floating accuracy = 1e-9;
-    const int numberOfTimingLoops = 1;
 
-    const std::vector<size_t> Ms{8};
-    const size_t Mvalue = 5;
-    testSolvingProceduresNonEquidistant(pu, Mvalue, Ms, accuracy, maxNumberOfIterations, stepsPerIteration, 1);
-    //testProceduresN(Ns, Mvalue, accuracy, maxNumberOfIterations, stepsPerIteration, numberOfTimingLoops);
+    testNonEquidistantWithGeneralGrid(pu, N, M, T, alpha,
+                                      maxNumberOfIterations, stepsPerIteration, accuracy,
+                                      SolvingProcedure::PCBiCGStab);
 
     return 0;
 }

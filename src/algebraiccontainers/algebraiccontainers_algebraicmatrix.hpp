@@ -516,7 +516,6 @@ const AlgebraicMatrix<floating>& AlgebraicMatrix<floating>::accessInverse() cons
     return *_Ainv;
 }
 
-
 template<class floating>
 bool AlgebraicMatrix<floating>::isInverseSet() const
 {
@@ -526,9 +525,6 @@ bool AlgebraicMatrix<floating>::isInverseSet() const
 template<class floating>
 void AlgebraicMatrix<floating>::recalculateInverse() const
 {
-    // TODO: REMOVE
-    CHRONO_Timer stopwatch;
-
 #ifndef PLU
     _Ainv = getMatrixFactory().createMatrix(getNrows(), getNcols(), 0.0);
     auto &eye = *_Ainv;
@@ -540,7 +536,6 @@ void AlgebraicMatrix<floating>::recalculateInverse() const
     
     initializeIdentityMatrix(getProcessingUnit()->getMemoryManager(), eye.data(), eye.getNrows(), eye.getNcols());
 
-    std::cout << "# " << N << " #";
     int LDA = N;
 
     _ipiv = DeviceArray<int>(N, 0, getProcessingUnit()->getMemoryManager());
@@ -562,7 +557,6 @@ void AlgebraicMatrix<floating>::recalculateInverse() const
     assert(Ainv.isSquare());
 
     int N = Ainv.getNrows();
-    std::cout << "# " << N << " #";
     int LDA = N;
 
     _ipiv = DeviceArray<int>(N, 0, getProcessingUnit()->getMemoryManager());
@@ -576,9 +570,6 @@ void AlgebraicMatrix<floating>::recalculateInverse() const
         std::cout << "for more information on INFO" << std::endl;
     }
 #endif
-    // TODO: REMOVE
-    stopwatch.stop();
-    getProcessingUnit()->_factorizationTime += stopwatch.elapsedTime();
 }
 
 template<class floating>

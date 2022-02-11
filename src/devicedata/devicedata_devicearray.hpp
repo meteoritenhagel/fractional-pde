@@ -1,12 +1,3 @@
-/*
- * unifieddata_unifiedarray.hpp
- *
- *  Created on: Jul 1, 2020
- *      Author: tristan
- */
-
-// public:
-
 template<class T>
 DeviceArray<T>::DeviceArray(const MemoryManager memoryManager)
 : DeviceDataDevice<T>(memoryManager), _size(0), _pointer(nullptr), _hasOwnMemoryManagement(false) {}
@@ -147,7 +138,6 @@ typename DeviceArray<T>::PointerType DeviceArray<T>::initializePointer()
     if (this->byteSize() != 0)
     {
         T* pointer = static_cast<T*>(this->_memoryManager->allocate(this->byteSize()));
-        //std::cout << "PTR: " << pointer << std::endl;
         _hasOwnMemoryManagement = true;
         const auto currentManager = this->_memoryManager;
         return PointerType(pointer, [currentManager](T* ptrToMemory){ currentManager->free(ptrToMemory); });

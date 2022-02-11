@@ -110,12 +110,12 @@ void CPU<floating>::xgetrf(int * const m, int * const n, floating * const a, int
 
 template<class floating>
 void CPU<floating>::xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
-						   floating * const work, const int * const lwork, int * const info) const
+                           floating * const work, const int * const lwork, int * const info) const
 {
-   	if constexpr(isFloat())
-		sgetri_(n, a, lda, ipiv, work, lwork, info);
-	else if constexpr(isDouble())
-		dgetri_(n, a, lda, ipiv, work, lwork, info);
+    if constexpr(isFloat())
+        sgetri_(n, a, lda, ipiv, work, lwork, info);
+    else if constexpr(isDouble())
+        dgetri_(n, a, lda, ipiv, work, lwork, info);
 }
 
 template<class floating>
