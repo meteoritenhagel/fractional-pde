@@ -6,6 +6,9 @@
 
 #ifndef CPU_ONLY
     #include "gpu_handle.h"
+#else
+    #pragma message("CPU only mode is activated. GPU suppport is disabled. If you wish to activate GPU support, remove compiler flag CPU_ONLY")
+#endif
 
 #ifdef MAGMA
     #include "gpu_magma_queue.h"
@@ -14,10 +17,10 @@
 #endif
 
 #ifdef __INTEL_CLANG_COMPILER
-  #pragma message(" ##########  Use of MKL  ###############")
+  #pragma message("Intel Math Kernel Library is used for acceleration of linear algebra operations.")
   #include <mkl.h>
 #else
-  #pragma message(" ##########  Use of CBLAS  ###############")
+  #pragma message("CBLAS/LAPACK/LAPACKE are used for acceleration of linear algebra operations.")
   #include <cblas.h>
   #include <lapacke.h>
 #endif
@@ -292,13 +295,11 @@ private:
 #include "processingunit_timerprocessingunit.hpp"
 
 #ifndef CPU_ONLY
-#include "processingunit_gpu.hpp"
-
-#ifdef MAGMA
-#include "processingunit_gpu_magma.hpp"
-#include "processingunit_gpu_mixed.hpp"
-#endif
-
+    #include "processingunit_gpu.hpp"
+    #ifdef MAGMA
+        #include "processingunit_gpu_magma.hpp"
+        #include "processingunit_gpu_mixed.hpp"
+    #endif
 #endif
 
 #endif
