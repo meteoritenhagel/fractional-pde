@@ -1,7 +1,7 @@
 #include <sstream>
 
 template<class T>
-DeviceScalar<T>::DeviceScalar(const T &value, const MemoryManager memoryManager)
+DeviceScalar<T>::DeviceScalar(const T &value, const MemoryManager& memoryManager)
 : DeviceDataDevice<T>(memoryManager), _pointer(initializePointer(value))
 {}
 
@@ -13,7 +13,7 @@ DeviceScalar<T>::DeviceScalar(DeviceScalar const &other)
 }
 
 template<class T>
-void DeviceScalar<T>::moveTo(const MemoryManager targetDevice)
+void DeviceScalar<T>::moveTo(const MemoryManager& targetDevice)
 {
     // only move if targetDevice is different to current device
     if (typeid(*(this->_memoryManager)) != typeid(*targetDevice))
@@ -79,7 +79,7 @@ typename DeviceScalar<T>::SizeType DeviceScalar<T>::size() const
 }
 
 template<class T>
-std::string DeviceScalar<T>::display(const std::string name) const
+std::string DeviceScalar<T>::display(const std::string& name) const
 {
     std::stringstream ss;
     ss << name << " = " << value() << std::endl;

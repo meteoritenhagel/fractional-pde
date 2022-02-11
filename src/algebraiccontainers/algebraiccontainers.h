@@ -244,7 +244,7 @@ public:
     floating getMaximum() const;
 
     /**
-    * Displays the contents in a human-readable format as a string.
+    * Returns the contents in a human-readable format as a string.
     *
     * Display is roughly the following: "@param name = (<contents>)"
     * @param name Name to display
@@ -595,7 +595,7 @@ public:
     floating getMaximum() const;
 
     /**
-    * Displays the contents in a human-readable format as a string.
+    * Returns the contents in a human-readable format as a string.
     *
     * Display is roughly the following: "@param name = (<contents>)"
     * @param name Name to display

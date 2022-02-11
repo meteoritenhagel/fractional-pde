@@ -52,8 +52,8 @@ void *CPU_Manager::copy(void *destination, void const *source, const size_t byte
 #endif
 }
 
-void CPU_Manager::display() const {
-    std::cout << "CPU MANAGER" << std::endl;
+std::string CPU_Manager::display() const {
+    return "CPU MANAGER";
 }
 
 void* GPU_Manager::allocate(const size_t byteSize) const {
@@ -82,8 +82,8 @@ void* GPU_Manager::copy(void *destination, void const *source, const size_t byte
     return destination;
 }
 
-void GPU_Manager::display() const {
-    std::cout << "GPU MANAGER" << std::endl;
+std::string GPU_Manager::display() const {
+    return "GPU MANAGER";
 }
 
 void* UnifiedManager::allocate(const size_t byteSize) const {
@@ -104,6 +104,6 @@ void *UnifiedManager::copy(void *destination, void const *source, const size_t b
     return destination;
 }
 
-void UnifiedManager::display() const {
-    std::cout << "UNIFIED MANAGER" << std::endl;
+std::string UnifiedManager::display() const {
+    return "UNIFIED MANAGER";
 }

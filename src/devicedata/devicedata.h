@@ -21,7 +21,7 @@
  * @param value the value with which the memory is overwritten
  */
 template<class T>
-void initializeMemory(const MemoryManager memoryManager, T* data, const int size, const T value);
+void initializeMemory(const MemoryManager& memoryManager, T* data, const int size, const T value);
 
 /**
  * Given a matrix in form of a classical C-style array, this function sets it to be an
@@ -36,7 +36,7 @@ void initializeMemory(const MemoryManager memoryManager, T* data, const int size
  * @warning Note that starting from @param data, at least N*M elements must be accessible
  */
 template<class T>
-void initializeIdentityMatrix(const MemoryManager memoryManager, T* data, const int N, const int M);
+void initializeIdentityMatrix(const MemoryManager& memoryManager, T* data, const int N, const int M);
 
 template<class T>
 class DeviceMatrix;
@@ -60,7 +60,7 @@ public:
      *
      * @param memoryManager determining where the contained data is located to ensure right memory accesses
      */
-    DeviceDataDevice(const MemoryManager memoryManager);
+    DeviceDataDevice(const MemoryManager& memoryManager);
 
     /**
      * Destructor
@@ -95,7 +95,7 @@ public:
      * Move all the elements contained to another device, e.g. from CPU memory to GPU memory.
      * @param targetDevice target device
      */
-    virtual void moveTo(const MemoryManager targetDevice) = 0;
+    virtual void moveTo(const MemoryManager& targetDevice) = 0;
 
     /**
      * Displays the contents in a human-readable format as a string.
@@ -105,7 +105,7 @@ public:
      *
      * @return string representation of current instance
      */
-    virtual std::string display(const std::string name) const = 0;
+    virtual std::string display(const std::string& name) const = 0;
 
     /**
      * Returns the current instance's memory manager
@@ -138,7 +138,7 @@ public:
      * @param value value to initialize matrix elements
      * @param memoryManager memory manager
      */
-    DeviceMatrix(const SizeType N, const SizeType M, const T value = T(), const MemoryManager memoryManager = std::make_shared<CPU_Manager>());
+    DeviceMatrix(const SizeType N, const SizeType M, const T value = T(), const MemoryManager& memoryManager = std::make_shared<CPU_Manager>());
 
     /**
      * Constructor, constructs a DeviceMatrix from a std::vector on the CPU memory.
@@ -168,9 +168,9 @@ public:
     ~DeviceMatrix() override = default;
 
     /**
-     * @copydoc DeviceDataDevice::moveTo()
+     * @copydoc DeviceDataDevice::moveTo(const MemoryManager&)
      */
-    void moveTo(const MemoryManager targetDevice) override;
+    void moveTo(const MemoryManager& targetDevice) override;
 
     /**
      * Copy assignment operator
@@ -247,7 +247,7 @@ public:
     T const & operator()(const SizeType i, const SizeType j) const;
 
     /**
-     * @copydoc DeviceDataDevice::size()
+     * @copydoc DeviceDataDevice::size() const
      */
     SizeType size() const override;
 
@@ -271,9 +271,9 @@ public:
     bool isSquare() const;
 
     /**
-     * @copydoc DeviceDataDevice::display() const
+     * @copydoc DeviceDataDevice::display(const std::string&) const
      */
-    std::string display(const std::string name) const override;
+    std::string display(const std::string& name) const override;
 
 private:
     SizeType _N; //!< number of the matrix's rows
@@ -321,7 +321,7 @@ public:
      * Constructor, constructs empty array with given memoryManager
      * @param memoryManager memory manager
      */
-    DeviceArray(const MemoryManager memoryManager = std::make_shared<CPU_Manager>());
+    DeviceArray(const MemoryManager& memoryManager = std::make_shared<CPU_Manager>());
 
     /**
      * Constructor, constructs an array of given size, where each element is initialized with @param value.
@@ -329,7 +329,7 @@ public:
      * @param value value to initialize the individual elements
      * @param memoryManager memory manager
      */
-    explicit DeviceArray(const SizeType size, const T value = T(), const MemoryManager memoryManager = std::make_shared<CPU_Manager>());
+    explicit DeviceArray(const SizeType size, const T value = T(), const MemoryManager& memoryManager = std::make_shared<CPU_Manager>());
 
     /**
      * Copy constructor
@@ -349,9 +349,9 @@ public:
     ~DeviceArray() override = default;
 
     /**
-     * @copydoc DeviceDataDevice::moveTo()
+     * @copydoc DeviceDataDevice::moveTo(const MemoryManager&)
      */
-    void moveTo(const MemoryManager targetDevice) override;
+    void moveTo(const MemoryManager& targetDevice) override;
 
     /**
      * Copy assignment operator.
@@ -408,9 +408,9 @@ public:
     SizeType size() const override;
 
     /**
-     * @copydoc DeviceDataDevice::display() const
+     * @copydoc DeviceDataDevice::display(const std::string&) const
      */
-    std::string display(const std::string name) const override;
+    std::string display(const std::string& name) const override;
 
 private:
     SizeType _size; //!< length of array
@@ -466,7 +466,7 @@ public:
      * @param value value of the scalar value
      * @param memoryManager memory manager
      */
-    explicit DeviceScalar(const T &value, const MemoryManager memoryManager = std::make_shared<CPU_Manager>());
+    explicit DeviceScalar(const T &value, const MemoryManager& memoryManager = std::make_shared<CPU_Manager>());
 
     /**
      * Copy constructor.
@@ -486,9 +486,9 @@ public:
     ~DeviceScalar() override = default;
 
     /**
-     * @copydoc DeviceDataDevice::moveTo()
+     * @copydoc DeviceDataDevice::moveTo(const MemoryManager&)
      */
-    void moveTo(const MemoryManager targetDevice) override;
+    void moveTo(const MemoryManager& targetDevice) override;
 
     /**
      * Copy assignment operator.
@@ -526,9 +526,9 @@ public:
     SizeType size() const override;
 
     /**
-     * @copydoc DeviceDataDevice::display()
+     * @copydoc DeviceDataDevice::display(const std::string&)
      */
-    std::string display(const std::string name) const override;
+    std::string display(const std::string& name) const override;
 
 private:
     PointerType _pointer; //<! Pointer to contained element

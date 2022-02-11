@@ -5,7 +5,7 @@
 #include <iomanip>
 
 template<class T>
-void initializeMemory(const MemoryManager memoryManager, T* data, const int size, const T value) {
+void initializeMemory(const MemoryManager& memoryManager, T* data, const int size, const T value) {
     if (typeid(*memoryManager) == typeid(*std::make_shared<CPU_Manager>())) {
         hostInitializeMemory(data, size, value);
     } else {
@@ -16,7 +16,7 @@ void initializeMemory(const MemoryManager memoryManager, T* data, const int size
 }
 
 template<class T>
-void initializeIdentityMatrix(const MemoryManager memoryManager, T* data, const int N, const int M) {
+void initializeIdentityMatrix(const MemoryManager& memoryManager, T* data, const int N, const int M) {
     if (typeid(*memoryManager) == typeid(*std::make_shared<CPU_Manager>())) {
         hostInitializeIdentityMatrix(data, N, M);
     } else {
@@ -27,7 +27,7 @@ void initializeIdentityMatrix(const MemoryManager memoryManager, T* data, const 
 }
 
 template<class T>
-DeviceDataDevice<T>::DeviceDataDevice(const MemoryManager memoryManager)
+DeviceDataDevice<T>::DeviceDataDevice(const MemoryManager& memoryManager)
         : _memoryManager(memoryManager) {}
 
 template<class T>

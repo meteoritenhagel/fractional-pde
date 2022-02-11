@@ -1,11 +1,11 @@
 #include <sstream>
 
 template<class T>
-DeviceArray<T>::DeviceArray(const MemoryManager memoryManager)
+DeviceArray<T>::DeviceArray(const MemoryManager& memoryManager)
 : DeviceDataDevice<T>(memoryManager), _size(0), _pointer(nullptr), _hasOwnMemoryManagement(false) {}
 
 template<class T>
-DeviceArray<T>::DeviceArray(const SizeType size, const T value, const MemoryManager memoryManager)
+DeviceArray<T>::DeviceArray(const SizeType size, const T value, const MemoryManager& memoryManager)
 : DeviceDataDevice<T>(memoryManager), _size(size), _pointer(initializePointer()), _hasOwnMemoryManagement(true)
 {
     initializeMemory(memoryManager, data(), this->size(), value);
@@ -19,7 +19,7 @@ DeviceArray<T>::DeviceArray(const DeviceArray &other)
 }
 
 template<class T>
-void DeviceArray<T>::moveTo(const MemoryManager targetDevice)
+void DeviceArray<T>::moveTo(const MemoryManager& targetDevice)
 {
     // only move if targetDevice is different to current device
     if (typeid(*(this->_memoryManager)) != typeid(*targetDevice))
@@ -117,7 +117,7 @@ typename DeviceArray<T>::SizeType DeviceArray<T>::size() const
 }
 
 template<class T>
-std::string DeviceArray<T>::display(const std::string name) const
+std::string DeviceArray<T>::display(const std::string& name) const
 {
     std::stringstream ss;
     ss << name << " = (" << std::endl;

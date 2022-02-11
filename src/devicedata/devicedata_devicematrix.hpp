@@ -5,7 +5,7 @@
 #include <sstream>
 
 template<class T>
-DeviceMatrix<T>::DeviceMatrix(const SizeType N, const SizeType M, const T value, const MemoryManager memoryManager)
+DeviceMatrix<T>::DeviceMatrix(const SizeType N, const SizeType M, const T value, const MemoryManager& memoryManager)
 : DeviceDataDevice<T>(memoryManager), _N(N), _M(M), _pointer(initializePointer()), _arrayOfPointers(initializeArray())
 {
     initializeMemory(memoryManager, data(), this->size(), value);
@@ -52,7 +52,7 @@ DeviceMatrix<T>& DeviceMatrix<T>::operator= (const DeviceMatrix &other)
 }
 
 template<class T>
-void DeviceMatrix<T>::moveTo(const MemoryManager targetDevice)
+void DeviceMatrix<T>::moveTo(const MemoryManager& targetDevice)
 {
     // only move if targetDevice is different to current device
     if (typeid(*(this->_memoryManager)) != typeid(*targetDevice))
@@ -170,7 +170,7 @@ bool DeviceMatrix<T>::isSquare() const
 }
 
 template<class T>
-std::string DeviceMatrix<T>::display(const std::string name) const
+std::string DeviceMatrix<T>::display(const std::string& name) const
 {
     std::stringstream ss;
     ss << name << " = (" << std::endl;

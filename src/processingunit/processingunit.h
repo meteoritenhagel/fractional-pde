@@ -48,7 +48,7 @@ public:
 
     virtual Timer createTimer() const = 0;
     virtual MemoryManager getMemoryManager() const = 0;
-    virtual std::string display() const {};     // GH: needed to compile with ICC_CPU_ONLY_
+    virtual std::string display() const = 0;
 
     virtual int ixamax(const int n, const floating * const x, const int incx) const = 0;
     virtual void xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy, const bool synchronize = true) const = 0;
