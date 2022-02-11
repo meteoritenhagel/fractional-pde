@@ -10,6 +10,9 @@
 #include "gpu_handle.h"
 #include <exception>
 
+// TODO: This initialization might be prone to errors, since
+// when the second member initalization fails, the cublas handle
+// is not destroyed.
 GPU_Handle::GPU_Handle()
 : _cublasHandle(initializeCublasHandle()), _cusolverHandle(initializeCusolverHandle())
 {

@@ -2,6 +2,8 @@
 #include "initializememory.cuh"
 #endif
 
+#include <sstream>
+
 template<class T>
 DeviceMatrix<T>::DeviceMatrix(const SizeType N, const SizeType M, const T value, const MemoryManager memoryManager)
 : DeviceDataDevice<T>(memoryManager), _N(N), _M(M), _pointer(initializePointer()), _arrayOfPointers(initializeArray())
@@ -10,8 +12,8 @@ DeviceMatrix<T>::DeviceMatrix(const SizeType N, const SizeType M, const T value,
 }
 
 template<class T>
-DeviceMatrix<T>::DeviceMatrix(const SizeType N, std::vector<T> const &u, const MemoryManager memoryManager)
-: DeviceDataDevice<T>(memoryManager), _N(N), _M(u.size() / N), _pointer(initializePointer()), _arrayOfPointers(initializeArray())
+DeviceMatrix<T>::DeviceMatrix(const SizeType N, std::vector<T> const &u)
+: DeviceDataDevice<T>(std::make_shared<CPU_Manager>()), _N(N), _M(u.size() / N), _pointer(initializePointer()), _arrayOfPointers(initializeArray())
 {
     assert(u.size() % N == 0);
     this->_memoryManager->copy(data(), u.data(), this->byteSize());
@@ -168,17 +170,18 @@ bool DeviceMatrix<T>::isSquare() const
 }
 
 template<class T>
-void DeviceMatrix<T>::display(const std::string name) const
+std::string DeviceMatrix<T>::display(const std::string name) const
 {
-    std::cout << name << " = (" << std::endl;
+    std::stringstream ss;
+    ss << name << " = (" << std::endl;
     for (SizeType i = 0; i < getN(); ++i)
     {
         for (SizeType j = 0; j < getM(); ++j)
             std::cout << std::setprecision(5) << (*this)(i,j) << "  ";
         std::cout << std::endl;
     }
-    std::cout << ")" << std::endl;
-    return;
+    ss << ")" << std::endl;
+    return ss.str();
 }
 
 template<class T>

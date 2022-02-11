@@ -18,8 +18,7 @@ MemoryManager GPU_MAGMA<floating>::getMemoryManager() const
 template<class floating>
 void GPU_MAGMA<floating>::display() const
 {
-    std::cout << "GPU_MAGMA" << std::endl;
-    return;
+    return "GPU_MAGMA";
 }
 
 template<class floating>

@@ -29,7 +29,8 @@ template<class floating>
 typename ContainerFactory<floating>::ColMatrixPointer ContainerFactory<floating>::createMatrix(
         const SizeType nrow, std::vector<floating> const &u) const
 {
-    DeviceMatrix<floating> A(nrow, u, _processingUnit->getMemoryManager());
+    DeviceMatrix<floating> A(nrow, u);
+    A.moveTo(_processingUnit->getMemoryManager());
     auto ptr = std::make_unique<AlgebraicMatrix<floating>>(_processingUnit, A);
     return ptr;
 }

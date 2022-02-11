@@ -66,6 +66,8 @@ floating testNonEquidistantWithGeneralGrid(const ProcessingUnit<floating> proces
 
     floating dt = T / static_cast<floating>(N);
 
+    std::cout << "Calculation via " << processingUnit->display() << std::endl << std::endl;
+
     std::cout << "N (time steps)  = " << N << std::endl
               << "M (space steps) = " << M << std::endl;
 

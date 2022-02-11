@@ -17,12 +17,9 @@ MemoryManager TimerProcessingUnit<floating>::getMemoryManager() const
 }
 
 template<class floating>
-void TimerProcessingUnit<floating>::display() const
+std::string TimerProcessingUnit<floating>::display() const
 {
-    std::cout << "TimerProcessingUnit with ";
-    _processingUnit->display();
-
-    return;
+    return "TimerProcessingUnit with " + _processingUnit->display();
 }
 
 template<class floating>

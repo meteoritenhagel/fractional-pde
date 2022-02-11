@@ -1,11 +1,4 @@
-/*
- * unifieddata_unifiedscalar.hpp
- *
- *  Created on: Jul 1, 2020
- *      Author: tristan
- */
-
-// public:
+#include <sstream>
 
 template<class T>
 DeviceScalar<T>::DeviceScalar(const T &value, const MemoryManager memoryManager)
@@ -14,9 +7,9 @@ DeviceScalar<T>::DeviceScalar(const T &value, const MemoryManager memoryManager)
 
 template<class T>
 DeviceScalar<T>::DeviceScalar(DeviceScalar const &other)
-: _pointer(initializePointer())
+: DeviceDataDevice<T>(other._memoryManager), _pointer(initializePointer(0))
 {
-    this->memoryManager->copy(data(), other.data(), this->byteSize());
+    this->_memoryManager->copy(data(), other.data(), this->byteSize());
 }
 
 template<class T>
@@ -73,7 +66,10 @@ T const * DeviceScalar<T>::data() const
 template<class T>
 T DeviceScalar<T>::value() const
 {
-    return *_pointer;
+    DeviceScalar<T> temp(*this);
+    temp.moveTo(std::make_unique<CPU_Manager>());
+
+    return *temp._pointer;
 }
 
 template<class T>
@@ -83,13 +79,12 @@ typename DeviceScalar<T>::SizeType DeviceScalar<T>::size() const
 }
 
 template<class T>
-void DeviceScalar<T>::display(const std::string name) const
+std::string DeviceScalar<T>::display(const std::string name) const
 {
-    std::cout << name << " = " << value() << std::endl;
-    return;
+    std::stringstream ss;
+    ss << name << " = " << value() << std::endl;
+    return ss.str();
 }
-
-// private:
 
 template<class T>
 typename DeviceScalar<T>::PointerType DeviceScalar<T>::initializePointer(const T &value)

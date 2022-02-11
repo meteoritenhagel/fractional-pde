@@ -137,10 +137,9 @@ floating AlgebraicVector<floating>::getMaximum() const
 }
 
 template<class floating>
-void AlgebraicVector<floating>::display(std::string name) const
+std::string AlgebraicVector<floating>::display(std::string name) const
 {
-    accessArray().display(name);
-    return;
+    return accessArray().display(name);
 }
 
 template<class floating>

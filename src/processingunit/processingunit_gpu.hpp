@@ -97,10 +97,9 @@ auto GPU<floating>::getCusolverHandle() const
 }
 
 template<class floating>
-void GPU<floating>::display() const
+std::string GPU<floating>::display() const
 {
-    std::cout << "GPU" << std::endl;
-    return;
+    return "GPU";
 }
 
 template<class floating>
@@ -210,11 +209,9 @@ void GPU<floating>::xgetrf(int * const m, int * const n, floating * const a, int
         cusolverDnSgetrf(getCusolverHandle(), *m, *n, a, *lda, workingBuffer.data(), ipiv, deviceInfo.data());
     else if constexpr(isDouble())
         cusolverDnDgetrf(getCusolverHandle(), *m, *n, a, *lda, workingBuffer.data(), ipiv, deviceInfo.data());
-    // TODO: COMMENT?
-    cudaDeviceSynchronize();
-    cudaMemcpy(info, deviceInfo.data(), sizeof(int), cudaMemcpyDeviceToHost);
 
     cudaDeviceSynchronize();
+    *info = deviceInfo.value();
     return;
 }
 
@@ -249,7 +246,6 @@ void GPU<floating>::xgetrs(const OperationType trans, const int * const n, const
         cusolverDnSgetrs(getCusolverHandle(), toInternalOperation.at(trans), *n, *nrhs, a, *lda, ipiv, b, *ldb, deviceInfo.data());
     else if constexpr(isDouble())
         cusolverDnDgetrs(getCusolverHandle(), toInternalOperation.at(trans), *n, *nrhs, a, *lda, ipiv, b, *ldb, deviceInfo.data());
-    //cudaMemcpy(info, deviceInfo.data(), sizeof(int), cudaMemcpyDeviceToHost);
 
     cudaDeviceSynchronize();
     return;

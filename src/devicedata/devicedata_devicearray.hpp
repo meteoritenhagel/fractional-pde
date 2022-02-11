@@ -1,3 +1,5 @@
+#include <sstream>
+
 template<class T>
 DeviceArray<T>::DeviceArray(const MemoryManager memoryManager)
 : DeviceDataDevice<T>(memoryManager), _size(0), _pointer(nullptr), _hasOwnMemoryManagement(false) {}
@@ -98,14 +100,14 @@ T const & DeviceArray<T>::operator[](const SizeType index) const
 }
 
 template<class T>
-void DeviceArray<T>::resize(SizeType newSize)
+DeviceArray<T> DeviceArray<T>::resize(SizeType newSize)
 {
     if (size() != newSize)
     {
         _size = newSize;
         _pointer = initializePointer();
     }
-    return;
+    return (*this);
 }
 
 template<class T>
@@ -115,13 +117,14 @@ typename DeviceArray<T>::SizeType DeviceArray<T>::size() const
 }
 
 template<class T>
-void DeviceArray<T>::display(const std::string name) const
+std::string DeviceArray<T>::display(const std::string name) const
 {
-    std::cout << name << " = (" << std::endl;
+    std::stringstream ss;
+    ss << name << " = (" << std::endl;
     for (SizeType j = 0; j < size(); ++j)
-        std::cout << std::setprecision(5) << (*this)[j] << "  ";
-    std::cout << ")" << std::endl;
-    return;
+        ss << std::setprecision(5) << (*this)[j] << "  ";
+    ss << ")" << std::endl;
+    return ss.str();
 }
 
 // private:

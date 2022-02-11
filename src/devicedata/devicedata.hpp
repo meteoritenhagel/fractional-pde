@@ -1,5 +1,9 @@
 #include "memorymanager.h"
 
+#include <cassert>
+#include <iostream>
+#include <iomanip>
+
 template<class T>
 void initializeMemory(const MemoryManager memoryManager, T* data, const int size, const T value) {
     if (typeid(*memoryManager) == typeid(*std::make_shared<CPU_Manager>())) {

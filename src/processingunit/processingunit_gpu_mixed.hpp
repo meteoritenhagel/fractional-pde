@@ -24,8 +24,7 @@ MemoryManager GPU_MIXED<floating>::getMemoryManager() const
 template<class floating>
 void GPU_MIXED<floating>::display() const
 {
-    std::cout << "GPU_MIXED" << std::endl;
-    return;
+    return "GPU_MIXED";
 }
 
 template<class floating>

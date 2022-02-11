@@ -212,24 +212,10 @@ floating AlgebraicMatrix<floating>::getMaximum() const
 }
 
 template<class floating>
-void AlgebraicMatrix<floating>::display(std::string name) const
+std::string AlgebraicMatrix<floating>::display(std::string name) const
 {
-    _A.display(name);
-    return;
+    return _A.display(name);
 }
-
-template<class floating>
-void AlgebraicMatrix<floating>::displayData(std::string name) const
-{
-    for (SizeType j = 0; j < getNcols(); ++j)
-    {
-        for (SizeType i = 0; i < getNrows(); ++i)
-            std::cout << (*this)(i,j) << ", ";
-        std::cout << '\n';
-    }
-    return;
-}
-
 
 template<class floating>
 AlgebraicMatrix<floating>& AlgebraicMatrix<floating>::add(AlgebraicMatrix<floating> const &B, floating const alpha)

@@ -11,10 +11,9 @@ MemoryManager CPU<floating>::getMemoryManager() const
 }
 
 template<class floating>
-void CPU<floating>::display() const
+std::string CPU<floating>::display() const
 {
-    std::cout << "CPU" << std::endl;
-    return;
+    return "CPU";
 }
 
 template<class floating>

@@ -26,6 +26,7 @@
 #include <type_traits>
 #include <iostream>
 #include <memory>
+#include <string>
 
 template<class floating>
 class ProcessingUnitDevice;
@@ -47,7 +48,7 @@ public:
 
     virtual Timer createTimer() const = 0;
     virtual MemoryManager getMemoryManager() const = 0;
-    virtual void display() const {};     // GH: needed to compile with ICC_CPU_ONLY_
+    virtual std::string display() const {};     // GH: needed to compile with ICC_CPU_ONLY_
 
     virtual int ixamax(const int n, const floating * const x, const int incx) const = 0;
     virtual void xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy, const bool synchronize = true) const = 0;
@@ -88,7 +89,7 @@ public:
 
     Timer createTimer() const override;
     MemoryManager getMemoryManager() const override;
-    void display() const override;
+    std::string display() const override;
 
     int ixamax(const int n, const floating * const x, const int incx) const override;
     void xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy, const bool synchronize = true) const override;
@@ -128,7 +129,7 @@ public:
 
     Timer createTimer() const override;
     MemoryManager getMemoryManager() const override;
-    void display() const override;
+    std::string display() const override;
     auto getCublasHandle() const;
     auto getCusolverHandle() const;
 
@@ -171,7 +172,7 @@ public:
 
     Timer createTimer() const override;
     MemoryManager getMemoryManager() const override;
-    void display() const override;
+    std::string display() const override;
     auto getMagmaQueue() const;
 
     int ixamax(const int n, const floating * const x, const int incx) const override;
@@ -220,7 +221,7 @@ public:
 
     Timer createTimer() const override;
     MemoryManager getMemoryManager() const override;
-    void display() const override;
+    std::string display() const override;
 
     int ixamax(const int n, const floating * const x, const int incx) const override;
     void xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy, const bool synchronize = true) const override;
@@ -263,7 +264,7 @@ public:
 
     Timer createTimer() const override;
     MemoryManager getMemoryManager() const override;
-    void display() const override;
+    std::string display() const override;
 
     int ixamax(const int n, const floating * const x, const int incx) const override;
     void xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy, const bool synchronize = true) const override;

@@ -244,18 +244,14 @@ public:
     floating getMaximum() const;
 
     /**
-     * Print the matrix's contents on std::cout
-     * @param name Name to be displayed.
-     */
-    void display(std::string name) const;
-
-    /**
-     * Almost the same as display(...)
-     * @param name
-     *
-     * TODO: REMOVE FUNCTION
-     */
-    void displayData(std::string name) const;
+    * Displays the contents in a human-readable format as a string.
+    *
+    * Display is roughly the following: "@param name = (<contents>)"
+    * @param name Name to display
+    *
+    * @return string representation of current instance
+    */
+    std::string display(std::string name) const;
 
     /** Adds alpha times matrix @p B to this matrix.
      *
@@ -599,10 +595,14 @@ public:
     floating getMaximum() const;
 
     /**
-     * Print the vector's contents on std::cout.
-     * @param name Name to be displayed.
-     */
-    void display(std::string name) const;
+    * Displays the contents in a human-readable format as a string.
+    *
+    * Display is roughly the following: "@param name = (<contents>)"
+    * @param name Name to display
+    *
+    * @return string representation of current instance
+    */
+    std::string display(std::string name) const;
 
     /** Adds alpha times vector @p B to this matrix.
      *
