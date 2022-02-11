@@ -105,35 +105,69 @@ public:
 class CPU_Manager : public MemoryManagerDevice {
 
     /**
-     * @copydoc MemoryManagerDevice::allocate()
+     * @copydoc MemoryManagerDevice::allocate(const size_t) const
      */
     void* allocate(const size_t byteSize) const override;
 
+    /**
+     * @copydoc MemoryManagerDevice::free(void*) const
+     */
     void free(void* pointerToMemory) const override;
 
+    /**
+     * @copydoc MemoryManagerDevice::copy(void*, void const *, const size_t) const
+     */
     void* copy(void * destination, void const * source, const size_t byteSize) const override;
 
+    /**
+     * @copydoc MemoryManagerDevice::display() const
+     */
     std::string display() const override;
 };
 
 #ifndef CPU_ONLY
 
 class GPU_Manager : public MemoryManagerDevice {
+    /**
+    * @copydoc MemoryManagerDevice::allocate(const size_t) const
+    */
     void* allocate(const size_t byteSize) const override;
 
+    /**
+     * @copydoc MemoryManagerDevice::free(void*) const
+     */
     void free(void* pointerToMemory) const override;
 
+    /**
+     * @copydoc MemoryManagerDevice::copy(void*, void const *, const size_t) const
+     */
     void* copy(void* destination, void const * source, const size_t byteSize) const override;
 
+    /**
+     * @copydoc MemoryManagerDevice::display() const
+     */
     std::string display() const override;
 };
 
 class UnifiedManager : public MemoryManagerDevice {
+    /**
+    * @copydoc MemoryManagerDevice::allocate(const size_t) const
+    */
     void* allocate(const size_t byteSize) const override;
+
+    /**
+     * @copydoc MemoryManagerDevice::free(void*) const
+     */
     void free(void* pointerToMemory) const override;
 
+    /**
+     * @copydoc MemoryManagerDevice::copy(void*, void const *, const size_t) const
+     */
     void* copy(void* destination, void const * source, const size_t byteSize) const override;
 
+    /**
+     * @copydoc MemoryManagerDevice::display() const
+     */
     std::string display() const override;
 };
 
