@@ -8,20 +8,24 @@
 // public:
 
 template<class floating>
-EquidistantBlock_1D<floating>::EquidistantBlock_1D(const SizeType bdim, const AlgebraicMatrix<floating> &B,
-                                                   const AlgebraicMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating h, const floating alpha,
-                                                   const floating timeGridStepSize, const ProcessingUnit<floating> processingUnit)
+EquidistantBlock_1D<floating>::EquidistantBlock_1D(const SizeType bdim, const AlgebraicMatrix <floating> &B,
+                                                   const AlgebraicMatrix <floating> &D,
+                                                   const AlgebraicMatrix <floating> &M, const floating h,
+                                                   const floating alpha,
+                                                   const floating timeGridStepSize,
+                                                   const ProcessingUnit <floating> processingUnit)
         : EquidistantBlock_1D(bdim, B, D, M, h, alpha, timeGridStepSize,
-                              initializeA(B, D, M, h, alpha, timeGridStepSize), processingUnit)
-{}
+                              initializeA(B, D, M, h, alpha, timeGridStepSize), processingUnit) {}
 
 template<class floating>
-EquidistantBlock_1D<floating>::EquidistantBlock_1D(const SizeType bdim, const AlgebraicMatrix<floating> &B,
-                                                   const CoefficientMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating h, const floating alpha,
-                                                   const floating timeGridStepSize, const ProcessingUnit<floating> processingUnit)
-: EquidistantBlock_1D(bdim, B, D.copyToDense(), M, h, alpha, timeGridStepSize,
-                      initializeA(B, D.copyToDense(), M, h, alpha, timeGridStepSize), processingUnit)
-{}
+EquidistantBlock_1D<floating>::EquidistantBlock_1D(const SizeType bdim, const AlgebraicMatrix <floating> &B,
+                                                   const CoefficientMatrix <floating> &D,
+                                                   const AlgebraicMatrix <floating> &M, const floating h,
+                                                   const floating alpha,
+                                                   const floating timeGridStepSize,
+                                                   const ProcessingUnit <floating> processingUnit)
+        : EquidistantBlock_1D(bdim, B, D.copyToDense(), M, h, alpha, timeGridStepSize,
+                              initializeA(B, D.copyToDense(), M, h, alpha, timeGridStepSize), processingUnit) {}
 
 template<class floating>
 typename EquidistantBlock_1D<floating>::SizeType EquidistantBlock_1D<floating>::getNdim() const
@@ -54,7 +58,17 @@ AlgebraicMatrix<floating> EquidistantBlock_1D<floating>::copyToDense() const
     // dimensions of dense matrix
     const SizeType glob_rows = getDenseDim();
 
-    auto DD = *getMatrixFactory().createMatrix(glob_rows, glob_rows);
+    auto cpu = std::make_shared<CPU<floating>>();
+
+    auto host_A(_A);
+    auto host_B(_B);
+    auto host_M(_M);
+
+    host_A.moveTo(cpu);
+    host_B.moveTo(cpu);
+    host_M.moveTo(cpu);
+
+    auto DD = *host_M.getMatrixFactory().createMatrix(glob_rows, glob_rows);
 
     // TODO: REMOVE?
     const floating scale_factor = 1.0;//2 * _h;
@@ -64,7 +78,7 @@ AlgebraicMatrix<floating> EquidistantBlock_1D<floating>::copyToDense() const
     // Now, copy the data
     for (SizeType j = 0; j < loc_rows; j++)
         for (SizeType i = 0; i < loc_rows; i++)
-            DD(i,j) = _M(i,j);
+            DD(i,j) = host_M(i,j);
 
     // TODO: exchange loops for i and j (column major storage)
     for (SizeType k = 1; k < getBlockDim() - 1; ++k)
@@ -75,23 +89,24 @@ AlgebraicMatrix<floating> EquidistantBlock_1D<floating>::copyToDense() const
         {
             for (SizeType j = startIndex - loc_rows; j < startIndex; j++)
             {
-                DD(i,j) = - (scale_factor*scale_b)*_B(i - startIndex, j - startIndex + loc_rows);
+                DD(i,j) = - (scale_factor*scale_b)*host_B(i - startIndex, j - startIndex + loc_rows);
             }
             for (SizeType j = startIndex; j < endIndex; j++)
             {
-                DD(i,j) = scale_factor*_A(i - startIndex, j - startIndex);
+                DD(i,j) = scale_factor*host_A(i - startIndex, j - startIndex);
             }
             for (SizeType j = endIndex; j < endIndex + loc_rows; j++)
             {
-                DD(i,j) = - (scale_factor*scale_b)*_B(i - startIndex, j - endIndex);
+                DD(i,j) = - (scale_factor*scale_b)*host_B(i - startIndex, j - endIndex);
             }
         }
     }
 
     for (SizeType j = glob_rows - loc_rows; j < glob_rows; j++)
         for (SizeType i = glob_rows - loc_rows; i < glob_rows; i++)
-            DD(i,j) = _M(i - glob_rows + loc_rows, j - glob_rows + loc_rows);
+            DD(i,j) = host_M(i - glob_rows + loc_rows, j - glob_rows + loc_rows);
 
+    DD.moveTo(getProcessingUnit());
     return DD;
 }
 
@@ -109,7 +124,9 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
     const SizeType N = getNdim();
     const SizeType M = getBlockDim();
 
-    auto rs_rhs = rescale_rhs(rhs);
+    auto rhs_copy(rhs);
+    rhs_copy.moveTo(getProcessingUnit());
+    auto rs_rhs = rescale_rhs(rhs_copy);
     const floating relativeAccuracy = accuracy * rs_rhs.getEuclidean();
 
     std::cout << "relative Accuracy: " << relativeAccuracy << std::endl;
@@ -130,16 +147,13 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
 
     floating euclideanNorm = 0;
 
-    // TODO: REMOVE
-    CHRONO_Timer stopwatch;
-
     size_t n = 0;
     do
     {
         switch(solvingProcedure)
         {
             case SolvingProcedure::CyclicReduction:
-                return cyclicReduction(1/_h/_h * _B, rhs);
+                return cyclicReduction(1/_h/_h * _B, rhs_copy);
 
             case SolvingProcedure::PCBiCGStab:
                 std::cerr << "EquidistantBlock_1D does not support preconditioned BiCGStab. Abort.\n";
@@ -181,10 +195,6 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
         // 1. if maxNumberOfIterations has a feasible value, repeat until maxNumberOfIterations is reached
         // 2. if maxNormResidual has a feasible value, repeat until relative error is smaller than desired accuracy
     while ((maxNumberOfIterations <= 0 || n < maxNumberOfIterations) && (accuracy <= 0 || euclideanNorm >= relativeAccuracy));
-
-    // TODO: REMOVE
-    stopwatch.stop();
-    getProcessingUnit()->_multigridTime += stopwatch.elapsedTime();
 
     return solution;
 }
@@ -230,12 +240,17 @@ AlgebraicMatrix<floating> EquidistantBlock_1D<floating>::initializeA(const Algeb
     const SizeType N = B.getNrows();
     auto A = static_cast<floating>(2)/h/h * M - getSystemCoeff(alpha, timeGridStepSize) * D;
 
+    // operator() can only be invoked for CPU objects
+    auto Mcopy(M);
+    A.moveTo(std::make_shared<CPU<floating>>());
+    Mcopy.moveTo(std::make_shared<CPU<floating>>());
+
     const SizeType colIndices[3] = {0, 1, N-1};
     for (SizeType col  : colIndices)
     {
         for (SizeType row = 0; row < N; ++row)
         {
-            A(col, row) = M(col, row);
+            A(col, row) = Mcopy(col, row);
         }
     }
 
@@ -252,22 +267,25 @@ template<class floating>
 BlockVector<floating> EquidistantBlock_1D<floating>::cyclicReduction(const AlgebraicMatrix<floating> &scaledB, BlockVector<floating> const &f) const
 {
     std::cout << "   cyclicReduction:   " <<  this->getBlockDim() << "  " << this->getBlockDim() << '\n';
+
     auto returnMatrix = *getMatrixFactory().createMatrix();
-    
+
     if (getBlockDim() <= 3)
     {
         EquidistantBlock_1D<floating> const K0(3, scaledB, _D, _M, _h, _alpha, _timeGridStepSize, _A, getProcessingUnit());
         AlgebraicMatrix<floating> const K = K0.copyToDense();
 
-        auto const x = K / f.values();
+        auto returnMatrix = K / f.flat();
+        returnMatrix.resize(f.getNrows(), f.getNcols());
 
-        returnMatrix = *getMatrixFactory().createMatrix(f.getNrows(), x.values());
+        return returnMatrix;
     }
     else
     {
         SizeType const cnr = (getBlockDim() + 1) / 2;
         BlockVector<floating> const _B0  = scaledB * (_A / scaledB);
-        EquidistantBlock_1D<floating> const Bs(cnr, _B0, _D, _M, _h, _alpha, _timeGridStepSize,
+
+        const EquidistantBlock_1D<floating> Bs(cnr, _B0, _D, _M, _h, _alpha, _timeGridStepSize,
                                                _A - static_cast<floating>(2) * _B0, getProcessingUnit());
 
         returnMatrix = CRProlongation(scaledB, f, Bs.cyclicReduction(_B0, CRRestriction(scaledB, f)));
@@ -279,6 +297,7 @@ BlockVector<floating> EquidistantBlock_1D<floating>::cyclicReduction(const Algeb
 template<class floating>
 BlockVector<floating> EquidistantBlock_1D<floating>::CRProlongation(const AlgebraicMatrix<floating> &scaledB, const BlockVector<floating> &ff, const BlockVector<floating> &uc) const
 {
+    // TODO: write GPU kernel
     const SizeType fnr = getBlockDim();
     const SizeType cnr = (getBlockDim() + 1) / 2;
 
@@ -302,11 +321,8 @@ BlockVector<floating> EquidistantBlock_1D<floating>::CRProlongation(const Algebr
         SizeType jt = 0;
         for (SizeType i = ib; i < iend; ++i, ++jt)
         {
-            for (SizeType k = 0; k < nrow; ++k)
-            {
-                bmt(k, jt) = uc(k, i-1) + uc(k, i);
-                icv(k, jt) = ff(k, 2*i - 1);
-            }
+            bmt[jt] = uc[i-1] + uc[i];
+            icv[jt] = ff[2*i - 1];
             uf[2 * i] = uc[i];
         }
 
@@ -328,8 +344,7 @@ BlockVector<floating> EquidistantBlock_1D<floating>::CRRestriction(const Algebra
     assert(ff.getNrows() == _A.getNcols());
 
     const SizeType nrow = ff.getNrows();
-
-    AlgebraicMatrix<floating> fc = *getMatrixFactory().createMatrix(nrow, cnr);
+    AlgebraicMatrix <floating> fc = *getMatrixFactory().createMatrix(nrow, cnr);
 
     fc[0] = ff[0];
 
@@ -337,18 +352,15 @@ BlockVector<floating> EquidistantBlock_1D<floating>::CRRestriction(const Algebra
 
 #pragma omp parallel for
     for (SizeType ib = 2; ib < fnr - 1; ib += 2 * BLOCKSIZE) {
-        AlgebraicMatrix<floating> bmt  = *getMatrixFactory().createMatrix(nrow, BLOCKSIZE);
-        const SizeType iend  = std::min(ib + 2 * BLOCKSIZE, fnr - 1);
+        AlgebraicMatrix <floating> bmt = *getMatrixFactory().createMatrix(nrow, BLOCKSIZE);
+        const SizeType iend = std::min(ib + 2 * BLOCKSIZE, fnr - 1);
         SizeType jt = 0;
-        for (SizeType i = ib; i < iend; i += 2, ++jt ) {
 
+        for (SizeType i = ib; i < iend; i += 2, ++jt) {
             fc[i / 2] = ff[i];
-
-            for (SizeType k = 0; k < ff.getNrows(); ++k) {
-                bmt(k,jt) = ff(k, i-1) + ff(k, i+1);
-            }
+            bmt[jt] = ff[i-1] + ff[i+1];
         }
-        bmt = scaledB * ( _A / bmt);
+        bmt = scaledB * (_A / bmt);
 
         fc.updateAdd(ib / 2, iend / 2, bmt);
     }

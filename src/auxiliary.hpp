@@ -1,5 +1,10 @@
 #include "auxiliary.h"
 
+#include <cassert>
+#include <cmath>      // exp()
+#include <algorithm>  // std::max()
+
+
 template<class T, enable_if_is_integral<T> = true>
 static constexpr T twoToThe(T const x)
 {

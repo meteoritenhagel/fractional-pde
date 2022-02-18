@@ -95,6 +95,7 @@ DeviceMatrix<T>& DeviceMatrix<T>::resize(const SizeType nrows, const SizeType nc
     assert(nrows*ncols == getN() * getM() && "ERROR: Cannot resize. Dimension mismatch.");
     _N = nrows;
     _M = ncols;
+
     resetArray();
     
     return *this;
@@ -177,8 +178,8 @@ std::string DeviceMatrix<T>::display(const std::string& name) const
     for (SizeType i = 0; i < getN(); ++i)
     {
         for (SizeType j = 0; j < getM(); ++j)
-            std::cout << std::setprecision(5) << (*this)(i,j) << "  ";
-        std::cout << std::endl;
+            ss << std::setprecision(5) << (*this)(i,j) << "  ";
+        ss<< std::endl;
     }
     ss << ")" << std::endl;
     return ss.str();

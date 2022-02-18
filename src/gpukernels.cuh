@@ -2,6 +2,9 @@
 #define TR_HACK_GPUKERNELS_CUH
 
 template<class floating>
+__global__ void crRestrictionKernel(const int N, const int M, const floating * const h, floating const * const ff, floating * const ffOnCoarseGrid);
+
+template<class floating>
 __global__ void prolongationKernel(const int N, const int M, const floating * const h, floating const * const ff, floating * const solution);
 
 template<class floating>
@@ -18,6 +21,9 @@ __global__ void smoothScaleKernel(const int N, const int i, const floating * con
 
 template<class floating>
 __global__ void smoothFullScaleKernel(const int N, const int M, const floating * const h, floating * const X);
+
+template<class floating>
+void deviceCrRestriction(const int N, const int M, const floating * const h, const floating * const ff, floating * const ffOnCoarseGrid);
 
 template<class floating>
 void deviceProlongation(const int N, const int M, const floating * const h, floating const * const ff, floating * const solution);

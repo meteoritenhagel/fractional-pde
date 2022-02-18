@@ -29,9 +29,13 @@ int main()
     const size_t stepsPerIteration = 20;
     const floating accuracy = 1e-9;
 
-    testNonEquidistantWithGeneralGrid(pu, N, M, T, alpha,
-                                      maxNumberOfIterations, stepsPerIteration, accuracy,
-                                      SolvingProcedure::PCBiCGStab);
+    testEquidistantGeneralSolvingProcedure(pu, N, M, T, alpha,
+                                           maxNumberOfIterations, stepsPerIteration, accuracy,
+                                           SolvingProcedure::CyclicReduction);
+
+    //testNonEquidistantWithGeneralGrid(pu, N, M, T, alpha,
+    //                                  maxNumberOfIterations, stepsPerIteration, accuracy,
+    //                                  SolvingProcedure::PCBiCGStab);
 
     return 0;
 }

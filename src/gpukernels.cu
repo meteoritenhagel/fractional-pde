@@ -177,9 +177,6 @@ void deviceSmoothFullScale(const int N, const int M, const floating * const h, f
     cudaDeviceSynchronize();
 }
 
-
-
-
 template void deviceProlongation<float> (const int N, const int M, const float * const h, float const * const ff, float * const solution);
 template void deviceProlongation<double>(const int N, const int M, const double * const h, double const * const ff, double * const solution);
 template void deviceRescaleRhs<float> (const int N, const int M, const float * const h, float * const rhs);

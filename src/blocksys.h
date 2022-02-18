@@ -10,6 +10,14 @@
 #include "auxiliary.h"
 #include "algebraiccontainers/containerfactory.h"
 
+/*+
+ * Class SolvingProcedure is for defining with which solver
+ * the linear system of equations for the fractional PDE is
+ * going to be solved.
+ *
+ * Note that CyclicReduction is only possible for systems
+ * with both equidistant space and time grids.
+ */
 enum class SolvingProcedure
 {
     CyclicReduction,
@@ -19,82 +27,113 @@ enum class SolvingProcedure
     PCRichardson
 };
 
-/** 	Matrix with block tridiagonal structure.
+/**     Matrix with block tridiagonal structure.
  *      Each block has the same dimension and it is a dense matrix.
  *
- *      |    M   -B   0   ...           0   |
- *      |   -B    A  -B                 .   |
- *      |    0   -B   A   -B                |
- *      |    .        .    .   .            |
- *      |    .             .   .   .        |
- *      |                     -B   A   -B   |
- *      |                          -B   M   |
+ *      [    M   -B   0   ...           0   ]
+ *      [   -B    A  -B                 .   ]
+ *      [    0   -B   A   -B                ]
+ *      [    .        .    .   .            ]
+ *      [    .             .   .   .        ]
+ *      [                     -B   A   -B   ]
+ *      [                          -B   M   ]
  *
- *      @f$ \begin{pmatrix}
- *          M &&&& \\ -B & A &-B \\  & -B & A &-B \\ && -B & A &-B \\  &&&& M
- *         \end{pmatrix}_{n_b\times n_b} @f$
- *
- *      Matrix A is computed via A:=2M-h^2 g D  with dense matrix D
+ *      Matrix A is computed via A := 2/h^2 (M - h^2/2 g D) except for 1st, 2nd and last row, where it
+ *      is equal to M.
  *
  */
-// For matrix in Latex, see https://stackoverflow.com/questions/25833856/doxygen-latex-output-using-mathjax-to-create-a-matrix-definition-produces-an-err
-// In 'Doxyfile':  EXTRA_PACKAGES         = amsmath
 template<class floating>
-class EquidistantBlock_1D// : public BlockSys<floating>
+class EquidistantBlock_1D
 {
 public:
     using SizeType = typename AlgebraicMatrix<floating>::SizeType;
 
-    /** 	Constructor. A and B have to be square with same dimensions.
+    /** Constructor. @param B, @param M and @param D have to be square AlgebraicMatrix, and they must have the same dimensions.
      *
-     * 	@param[in] bdim  number of row respectively column blocks
-     * 	@param[in] M  matrix regarding Dirichlet conditions for all time steps
-     * 	@param[in] A  matrix for diagonal blocks
-     * 	@param[in] B  matrix for off diagonal blocks
-     *
+     * @param[in] bdim number of row respectively column blocks
+     * @param[in] B matrix for off diagonal blocks
+     * @param[in] D used for calculation of A, the diagonal blocks
+     * @param[in] M matrix regarding Dirichlet conditions for all time steps
+     * @param[in] h distance between the equidistant space points
+     * @param[in] alpha anomalous diffusion coefficient
+     * @param[in] timeGridStepSize distance between the equidistant space points
+     * @param[in] processingUnit processingUnit with which the calculations should be performed
      */
     EquidistantBlock_1D(const SizeType bdim,
                         const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating h,
                         const floating alpha, const floating timeGridStepSize, const ProcessingUnit<floating> processingUnit);
 
-    /** 	Constructor. A and B have to be square with same dimensions.
-     *
-     * 	@param[in] bdim  number of row respectively column blocks
-     * 	@param[in] M  matrix regarding Dirichlet conditions for all time steps
-     * 	@param[in] A  matrix for diagonal blocks
-     * 	@param[in] B  matrix for off diagonal blocks
-     *
-     */
+
+
+    /** Constructor. @param B and @param M have to be square, and they must all have the same dimension as CoefficientMatrix @param D.
+      *
+      * @param[in] bdim number of row respectively column blocks
+      * @param[in] B matrix for off diagonal blocks
+      * @param[in] D used for calculation of A, the diagonal blocks
+      * @param[in] M matrix regarding Dirichlet conditions for all time steps
+      * @param[in] h distance between the equidistant space points
+      * @param[in] alpha anomalous diffusion coefficient
+      * @param[in] timeGridStepSize distance between the equidistant space points
+      * @param[in] processingUnit processingUnit with which the calculations should be performed
+      */
     EquidistantBlock_1D(const SizeType bdim,
                         const AlgebraicMatrix<floating> &B, const CoefficientMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating h,
                         const floating alpha, const floating timeGridStepSize, const ProcessingUnit<floating> processingUnit);
+
+    /**
+     * Destructor
+     */
     ~EquidistantBlock_1D() = default;
 
-    /** 	Matrix row dimension.
-     * @return Dimension of each block.
+    /** Returns the order of a single (square) block.
+     * @return Order of a single block.
      */
     SizeType getNdim() const;
 
-    /** 	Block row dimension.
-     * @return Number of block rows.
+    /** Returns block row dimension. (Equal to block column dimension, since the system is square.)
+     * @return Number of blocks in a row.
      */
     SizeType getBlockDim() const;
 
-    /** 	Dimension of square matrix which is obtained by copying the block
-     *      matrix to a dense AlgebraicMatrix.
-     * @return dimension.
+    /** Order of the square system when interpreted as a large dense matrix.
+     * @return Dense system dimension.
      */
     SizeType getDenseDim() const;
 
+    // TODO: Rename to ContainerFactory
+    /**
+     * Returns the container factory which can be used to create new containers
+     * on the same device with the same processing unit.
+     * @return container factory
+     */
     ContainerFactory<floating> getMatrixFactory() const;
 
-    /** 	Copies the block matrix to a dense matrix.
-     *
+    // TODO: Find a better name
+    /**
+     * Returns the system as a dense matrix.
      * @return Dense matrix representation stored columnwise.
      */
     AlgebraicMatrix<floating> copyToDense() const;
 
+    // TODO: do not return beta, but u instead!
+    /**
+     * Solves the system using CyclicReduction, which is the recommended
+     * solver for systems with equidistant time and space grids.
+     *
+     * @param[in] rhs Right-hand side of the system K * beta = rhs
+     * @return the solution beta
+     */
     BlockVector<floating> solve(const BlockVector<floating> &rhs) const;
+
+    /**
+     * Solves the system K * beta = rhs for beta using a SolvingProcedure with the given parameters.
+     * @param[in] rhs right-hand side
+     * @param[in] maxNumberOfIterations
+     * @param[in] stepsPerIteration
+     * @param[in] accuracy desired absolute accuracy
+     * @param[in] solvingProcedure the solver used to solve the system
+     * @return the solution beta
+     */
     BlockVector<floating> solve(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const;
 
 

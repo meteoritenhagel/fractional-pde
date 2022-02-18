@@ -99,6 +99,7 @@ AlgebraicMatrix<floating>& AlgebraicMatrix<floating>::resize(const SizeType nrow
 {
     // TODO: Check if other members have to be reset
     _A.resize(nrows, ncols);
+    resetArrayOfColumns();
     return *this;
 }
 
@@ -151,6 +152,14 @@ std::vector<floating> AlgebraicMatrix<floating>::values() const
     floating const * const strtptr = this->data();
     std::vector<floating> retvec(strtptr, strtptr + getNelems());
     return retvec;
+}
+
+template<class floating>
+AlgebraicMatrix<floating> AlgebraicMatrix<floating>::flat() const
+{
+    auto copy(*this);
+    copy.resize(getNelems(), 1);
+    return copy;
 }
 
 template<class floating>
@@ -246,10 +255,11 @@ void AlgebraicMatrix<floating>::updateAdd(const SizeType col_begin, const SizeTy
     assert((col_end - col_begin) <= B.getNcols());
     for (SizeType j = 0; j < col_end - col_begin; ++j)
     {
-        for (SizeType i = 0; i < getNrows(); ++i)
-        {
-            (*this)(i, col_begin + j)+= B(i,j);
-        }
+        (*this)[col_begin + j] += B[j];
+        //for (SizeType i = 0; i < getNrows(); ++i)
+        //{
+        //    (*this)(i, col_begin + j)+= B(i,j);
+        //}
     }
 
     resetInverse();
@@ -363,10 +373,11 @@ AlgebraicVector<floating> AlgebraicMatrix<floating>::operator*(AlgebraicVector<f
 template<class floating>
 AlgebraicMatrix<floating> AlgebraicMatrix<floating>::operator/(const AlgebraicMatrix<floating> &B) const
 {
-    AlgebraicMatrix<floating> output = *getMatrixFactory().createMatrix(getNrows(), getNcols(), 0.0);
-    this->invTimes(B, output);
+    auto copied(B);
+    //AlgebraicMatrix<floating> output = *getMatrixFactory().createMatrix(getNrows(), getNcols(), 0.0);
+    this->invTimes(copied);
 
-    return output;
+    return copied;
 }
 
 template<class floating>
@@ -379,7 +390,7 @@ void AlgebraicMatrix<floating>::invTimes(AlgebraicMatrix<floating> &B) const
     
     auto &Ainv = accessInverse();
 
-    floating const *const pA = Ainv->data();
+    floating const *const pA = Ainv.data();
     floating const *const pB = B.data();
     floating *const pC = buffer.data();
 

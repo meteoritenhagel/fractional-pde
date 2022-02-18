@@ -1,14 +1,9 @@
 #ifndef FILE_MYLIB
 #define FILE_MYLIB
 
-// TODO: Move as much of this as possible to auxiliary.hpp
-
 #include "algebraiccontainers/algebraiccontainers.h"
 #include "devicedata/devicedata.h"
 
-#include <algorithm>  // std::max()
-#include <cassert>
-#include <cmath>      // exp()
 #include <vector>
 
 // SFINAE helper to ensure that T is integral type

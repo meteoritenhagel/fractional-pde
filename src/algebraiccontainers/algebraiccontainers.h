@@ -188,6 +188,14 @@ public:
     std::vector<floating> values() const;
 
     /**
+     * Returns a copy of the matrix, which is resized to be a long vector,
+     * containing column after column.
+     *
+     * @return AlgebraicMatrix containing matrix elements like a long vector.
+     */
+    AlgebraicMatrix<floating> flat() const;
+
+    /**
      * Return the number of rows of the current instance.
      * @return number of rows
      */
