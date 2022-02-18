@@ -33,9 +33,9 @@ int main()
                                            maxNumberOfIterations, stepsPerIteration, accuracy,
                                            SolvingProcedure::CyclicReduction);
 
-    //testNonEquidistantWithGeneralGrid(pu, N, M, T, alpha,
-    //                                  maxNumberOfIterations, stepsPerIteration, accuracy,
-    //                                  SolvingProcedure::PCBiCGStab);
+    testNonEquidistantWithGeneralGrid(pu, N, M, T, alpha,
+                                      maxNumberOfIterations, stepsPerIteration, accuracy,
+                                      SolvingProcedure::PCBiCGStab);
 
     return 0;
 }

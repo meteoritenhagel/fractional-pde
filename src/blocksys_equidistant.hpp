@@ -1,12 +1,3 @@
-/*
- * blocksys_equidistant.hpp
- *
- *  Created on: Jul 1, 2020
- *      Author: tristan
- */
-
-// public:
-
 template<class floating>
 EquidistantBlock_1D<floating>::EquidistantBlock_1D(const SizeType bdim, const AlgebraicMatrix <floating> &B,
                                                    const AlgebraicMatrix <floating> &D,
@@ -54,8 +45,7 @@ ContainerFactory<floating> EquidistantBlock_1D<floating>::getMatrixFactory() con
 template<class floating>
 AlgebraicMatrix<floating> EquidistantBlock_1D<floating>::copyToDense() const
 {
-    const SizeType loc_rows = _B.getNrows();      // #rows per block
-    // dimensions of dense matrix
+    const SizeType loc_rows = _B.getNrows();
     const SizeType glob_rows = getDenseDim();
 
     auto cpu = std::make_shared<CPU<floating>>();
@@ -70,17 +60,15 @@ AlgebraicMatrix<floating> EquidistantBlock_1D<floating>::copyToDense() const
 
     auto DD = *host_M.getMatrixFactory().createMatrix(glob_rows, glob_rows);
 
-    // TODO: REMOVE?
-    const floating scale_factor = 1.0;//2 * _h;
-
-    const floating scale_b = 1.0;//1/_h/_h;
+    const floating scale_factor = 1.0;
+    const floating scale_b = 1.0;
 
     // Now, copy the data
     for (SizeType j = 0; j < loc_rows; j++)
         for (SizeType i = 0; i < loc_rows; i++)
             DD(i,j) = host_M(i,j);
 
-    // TODO: exchange loops for i and j (column major storage)
+    // TODO: exchange loops for i and j (column major storage) ?
     for (SizeType k = 1; k < getBlockDim() - 1; ++k)
     {
         const SizeType startIndex = k * loc_rows;
@@ -129,7 +117,8 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
     auto rs_rhs = rescale_rhs(rhs_copy);
     const floating relativeAccuracy = accuracy * rs_rhs.getEuclidean();
 
-    std::cout << "relative Accuracy: " << relativeAccuracy << std::endl;
+    std::cout << "target absolute accuracy: " << accuracy << std::endl;
+    std::cout << "target relative accuracy: " << relativeAccuracy << std::endl << std::endl;
 
     BlockVector<floating> solution = *getMatrixFactory().createMatrix(N, M);
     auto x = calculateResidual(solution, rs_rhs);
@@ -137,13 +126,10 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
 
     if (solvingProcedure == SolvingProcedure::PCRichardson)
     {
-        _A.getInverse(); // calculate inverse for multigrid
+        // calculate inverses for multigrid
+        _A.getInverse();
         _M.getInverse();
     }
-
-    // TODO: Uncomment
-//    solution[0] = _M / rs_rhs[0];
-//    solution[M-1] = _M / rs_rhs[M-1];
 
     floating euclideanNorm = 0;
 
@@ -158,13 +144,11 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
             case SolvingProcedure::PCBiCGStab:
                 std::cerr << "EquidistantBlock_1D does not support preconditioned BiCGStab. Abort.\n";
                 exit(-1);
-                //euclideanNorm = PCbiCGStab(rs_rhs, stepsPerIteration, relativeAccuracy, solution);
                 break;
 
             case SolvingProcedure::BiCGStab:
                 std::cerr << "EquidistantBlock_1D does not support BiCGStab. Abort.\n";
                 exit(-1);
-                //euclideanNorm = biCGStab(rs_rhs, stepsPerIteration, relativeAccuracy, solution);
                 break;
 
             case SolvingProcedure::Richardson:
@@ -187,8 +171,6 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
                 exit(-1);
         }
 
-
-        //std::cout << maxNormResidual << std::endl;
         ++n;
     }
         // check for the two breaking conditions:
@@ -214,12 +196,6 @@ EquidistantBlock_1D<floating>::EquidistantBlock_1D(const SizeType bdim,
     assert(_A.getNcols() == _B.getNcols());
     assert(_A.getNrows() == _M.getNrows());
     assert(_A.getNcols() == _M.getNcols());
-
-//    assert(M.getProcessingUnit() == A.getProcessingUnit());
-//    assert(M.getProcessingUnit() == B.getProcessingUnit());
-
-    // TODO:
-    // Move everything to device:
 
     _A.moveTo(processingUnit);
     _B.moveTo(processingUnit);
@@ -372,6 +348,7 @@ BlockVector<floating> EquidistantBlock_1D<floating>::CRRestriction(const Algebra
 template<class floating>
 floating EquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothingSteps, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const
 {
+ floating omega = 2/3.0;
     const SizeType N = getNdim();
     const SizeType M = getBlockDim();
 
@@ -380,37 +357,21 @@ floating EquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothi
     BlockVector<floating> coarseSolution = *getMatrixFactory().createMatrix(N, coarseM);
 
     const auto &coarseSystem = getCoarseSystem();
-    //const auto coarseSystem = EquidistantBlock_1D<floating>(getCoarseDim(), _B, _D, _M, _h/2, _alpha, _timeGridStepSize);
 
     assert(solution.getNrows() == N && solution.getNcols() == M && "ERROR: Dimension mismatch.");
 
     floating euclideanError = 1;
 
-    // TODO: Find right omega
-    const floating omega = 2/3.0;
-
+    const
     if (M == 3)
     {
-//        copyToDense().display("K");
-//        exit(-1);
-        // exact solution on the coarsest grid with 3 points
         jacobiIteration(1.0, f, maxNumberOfIterations, accuracy, solution);
     }
     else
     {
-//        solution.display("init solution");
-//        f.display("rhs");
-//        const auto res = calculateResidual(solution, f);
-//        res.display("res");
-//        copyToDense().display("K");
-//        exit(-1);
-        //std::cout << "     >1 " << calculateResidual(solution, f).getEuclidean() << std::endl;
 
         // Step 1: smoothing
         smooth(omega, f, 2, solution);
-
-        // TODO: Remove
-//        solution.display("after smoothing: ");
 
         // Step 2:
         auto residual = calculateResidual(solution, f);
@@ -418,13 +379,7 @@ floating EquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothi
         // Step 3:
         auto ffOnCoarseGrid = restriction(residual);
 
-        // TODO: Remove
-//        ffOnCoarseGrid.display("residual on coarse grid");
-
-//        std::cout << "     >2 " << calculateResidual(solution, f).getEuclidean() << std::endl;
-
         // Step 4: solve on ffOnCoarseGrid:
-//        coarseSolution.display("coarseSolution");
         coarseSystem.multigrid(numberOfSmoothingSteps, ffOnCoarseGrid, maxNumberOfIterations, accuracy, coarseSolution);
 
         // Step 5: correction:
@@ -468,25 +423,12 @@ BlockVector<floating> EquidistantBlock_1D<floating>::restriction(const BlockVect
 
     auto ffOnCoarseGrid = *getMatrixFactory().createMatrix(N, coarseGridSize);
 
-    // Full weighted restriction
-////    ffOnCoarseGrid[0] = (_h[0]+_h[1])/(_h[0] + 2*_h[1])*ff[0] + _h[1]/(_h[0] + 2*_h[1])*ff[1];
-//    for (SizeType i = 2; i < M-1; i+=2)
-//    {
-//        const floating divisor = (_h*_h + 2*_h*_h + 2*_h*_h + 3*_h*_h);
-//        ffOnCoarseGrid[i/2] = (_h*(_h + _h)/divisor * ff[i-1] + (_h + _h)*(_h + _h)/divisor * ff[i] + _h*(_h + _h)/divisor * ff[i+1]);
-//    }
-////    ffOnCoarseGrid[coarseGridSize-1] = _h[M-3]/(2*_h[M-3] + _h[M-2])*ff[M-2] + (_h[M-3] + _h[M-2])/(2*_h[M-3] + _h[M-2])*ff[M-1]
-
-
-// TODO: Full restriction
-////    ffOnCoarseGrid[0] = ff[0] + 1/2 * ff[1];
+// Full restriction
 #pragma omp parallel for
     for (SizeType i = 2; i < M-1; i+=2)
     {
         ffOnCoarseGrid[i/2] = static_cast<floating>(1/2.) * (ff[i-1] + ff[i+1]) + ff[i];
     }
-////    ffOnCoarseGrid[coarseGridSize-1] = 1/2 * ff[M-2] + ff[M-1]
-
     return ffOnCoarseGrid;
 }
 
@@ -524,15 +466,11 @@ const EquidistantBlock_1D<floating>& EquidistantBlock_1D<floating>::getCoarseSys
 template<class floating>
 floating EquidistantBlock_1D<floating>::jacobiIteration(const floating omega, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating , BlockVector<floating> &solution) const
 {
-    //assert((maxNumberOfIterations > 0 || accuracy > 0) && "ERROR: No valid termination criterion given.");
-
     const SizeType M = f.getNcols();
 
     const floating inv_scale_factor = 1/_h/2;
 
     assert(solution.getNrows() == getNdim() && solution.getNcols() == M && "ERROR: Dimension mismatch.");
-
-    //StatusBar<floating> statusBar(50);
 
     floating euclideanNormResidual = 0;
 
@@ -545,7 +483,6 @@ floating EquidistantBlock_1D<floating>::jacobiIteration(const floating omega, co
 
         solution[0] = _M / f[0];
 
-//#pragma omp parallel for if (M>127) reduction(+:euclideanNormResidual)
         for (unsigned int i = 1; i < M-1; ++i)
         {
             auto residual = calculateRowResidual(i, solution, f);
@@ -561,15 +498,7 @@ floating EquidistantBlock_1D<floating>::jacobiIteration(const floating omega, co
         solution[M-1] = _M / f[M-1];
 
         euclideanNormResidual = sqrt(euclideanNormResidual);
-
-        // TODO: REMOVE
-        //solution.display("solution");
-
-        // TODO: REMOVE
-        //std::cout << "jacobi residual norm: " << euclideanNormResidual << '\n';
         ++n;
-        // TODO: ENABLE/DISABLE
-        //statusBar.draw(n, maxNumberOfIterations, maxNormResidual, accuracy, 10);       
     }
         // check for the two breaking conditions:
         // 1. if maxNumberOfIterations has a feasible value, repeat until maxNumberOfIterations is reached
@@ -582,37 +511,24 @@ floating EquidistantBlock_1D<floating>::jacobiIteration(const floating omega, co
 template<class floating>
 void EquidistantBlock_1D<floating>::smooth(const floating omega, const BlockVector<floating> &f, const size_t maxNumberOfIterations, BlockVector<floating> &solution) const
 {
-    //assert((maxNumberOfIterations > 0 || accuracy > 0) && "ERROR: No valid termination criterion given.");
-
     const SizeType M = f.getNcols();
 
     const floating inv_scale_factor = 1/_h/2;
 
     assert(solution.getNrows() == getNdim() && solution.getNcols() == M && "ERROR: Dimension mismatch.");
 
-    //StatusBar<floating> statusBar(50);
-
     size_t n = 0;
     do
     {
         solution[0] = _M / f[0];
 
-//#pragma omp parallel for if (M>127) reduction(+:euclideanNormResidual)
         for (unsigned int i = 1; i < M-1; ++i) {
             // scale residual: omega * (D * C)^-1 * r_i = omega * C^-1 * (D^-1 * r_i)
             solution[i] += inv_scale_factor * omega * (_A / calculateRowResidual(i, solution, f));
         }
 
         solution[M-1] = _M / f[M-1];
-
-        // TODO: REMOVE
-        //solution.display("solution");
-
-        // TODO: REMOVE
-        //std::cout << "jacobi residual norm: " << euclideanNormResidual << '\n';
         ++n;
-        // TODO: ENABLE/DISABLE
-        //statusBar.draw(n, maxNumberOfIterations, maxNormResidual, accuracy, 10);
     }
         // check for the breaking condition:
         // repeat until maxNumberOfIterations is reached
@@ -643,8 +559,6 @@ AlgebraicVector<floating> EquidistantBlock_1D<floating>::calculateRowResidual(co
 {
     const SizeType M = f.getNcols();
 
-    //assert(u.getNrows() == N && u.getNcols() == M && "ERROR: Dimension mismatch.");
-
     auto residual = f[i];
 
     if (i == 0 || i == M-1)
@@ -657,8 +571,6 @@ AlgebraicVector<floating> EquidistantBlock_1D<floating>::calculateRowResidual(co
         const floating coeff_right =  2/_h;
         const floating scale_factor = 2*_h;
 
-        //const auto Mu_i = _M * u[i];
-
         residual += (_B*((coeff_left * u[i-1]).add(u[i+1], coeff_right))).add(_A*u[i], -scale_factor);
     }
 
@@ -669,8 +581,6 @@ template<class floating>
 BlockVector<floating> EquidistantBlock_1D<floating>::rescale_rhs(const BlockVector<floating> &rhs) const
 {
     const SizeType M = getBlockDim();
-    //assert(rhs.getNrows() == N && rhs.getNcols() == M && "ERROR: Dimension mismatch.");
-
     auto scaled_rhs = rhs;
 
     for (SizeType j = 1; j < M-1; ++j)

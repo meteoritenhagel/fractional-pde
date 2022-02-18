@@ -128,8 +128,8 @@ public:
     /**
      * Solves the system K * beta = rhs for beta using a SolvingProcedure with the given parameters.
      * @param[in] rhs right-hand side
-     * @param[in] maxNumberOfIterations
-     * @param[in] stepsPerIteration
+     * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
+     * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
      * @param[in] accuracy desired absolute accuracy
      * @param[in] solvingProcedure the solver used to solve the system
      * @return the solution beta
@@ -162,7 +162,7 @@ private:
     AlgebraicMatrix<floating> initializeA(const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating h, const floating alpha, const floating timeGridStepSize) const;
     ProcessingUnit<floating> getProcessingUnit() const;
 
-    /** 	Solves the current system using cyclic reduction with RHS f.
+    /** Solves the current system using cyclic reduction with RHS f.
      *
      * @return solution.
      */

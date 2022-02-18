@@ -21,6 +21,7 @@ floating testEquidistantGeneralSolvingProcedure(const ProcessingUnit<floating> p
 
     const auto grid = *colMatrixFactory.createColumn(M, dx);
 
+    std::cout << "Equidistant space grid." << std::endl;
     std::cout << "Calculation via " << processingUnit->display() << std::endl << std::endl;
 
     std::cout << "N (time steps)  = " << N << std::endl
@@ -54,49 +55,8 @@ floating testEquidistantGeneralSolvingProcedure(const ProcessingUnit<floating> p
     ue_device.moveTo(processingUnit);
 
     floating error_max = std::abs((ue_device-xx).getMaximum());
-    std::cout << std::endl << "max norm of absolute error = " << error_max << std::endl;
+    std::cout << std::endl << "max norm of absolute error = " << error_max << std::endl << std::endl;
     return error_max;
-
-//    ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
-//    ContainerFactory<floating> colMatrixFactory(cpu);
-//
-//    std::cout << "N = " << N << "    M =  " << M << std::endl;
-//
-//    auto MM = *colMatrixFactory.createMatrix(N+3, N+3);
-//    auto A = *colMatrixFactory.createMatrix(N+3, N+3);
-//    auto B = *colMatrixFactory.createMatrix(N+3, N+3);
-//    auto D = *B.getMatrixFactory().createCoefficientMatrix(N, alpha);
-//
-//    initializeMatricesEquidistant(N, T, B, MM);
-//
-//    auto rhs = *colMatrixFactory.createMatrix(N+3, M+1);
-//
-//    floating dt = 1.0/N;
-//    floating dx = 1.0/M;
-//    auto grid = *colMatrixFactory.createColumn(M, dx);
-//
-//    initializeRhs(N, M, T, alpha, grid, rhs);
-//
-//    const int block_dim = M + 1;
-//
-//    EquidistantBlock_1D<floating> C(block_dim, B, D, MM, dx, alpha, dt, processingUnit);
-//
-//    BlockVector<floating> CC = C.solve(rhs, maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
-//
-//    auto B_row = *colMatrixFactory.createColumn(N+3);
-//    for (int i = 0; i < N+3; i++)  B_row[i] = MM(N+1, i);
-//
-//    auto xx = B_row * CC;
-//
-//    std::vector<floating> ue(M+1);
-//    ue = exactSolution(M, T, alpha, grid);
-//
-// TODO: Change to .getMaximum()
-//
-//    floating error_max = max_norm<floating>(ue, xx);
-//    std::cout << "max norm of error = " << error_max << std::endl;
-//
-//    return error_max;
 }
 
 template<class floating>
@@ -110,6 +70,7 @@ floating testNonEquidistantWithGeneralGrid(const ProcessingUnit<floating> proces
 
     floating dt = T / static_cast<floating>(N);
 
+    std::cout << "Non-equidistant space grid." << std::endl;
     std::cout << "Calculation via " << processingUnit->display() << std::endl << std::endl;
 
     std::cout << "N (time steps)  = " << N << std::endl
@@ -146,7 +107,7 @@ floating testNonEquidistantWithGeneralGrid(const ProcessingUnit<floating> proces
     ue_device.moveTo(processingUnit);
 
     floating error_max = std::abs((ue_device-xx).getMaximum());
-    std::cout << std::endl << "max norm of absolute error = " << error_max << std::endl;
+    std::cout << std::endl << "max norm of absolute error = " << error_max << std::endl << std::endl;
     return error_max;
 }
 
