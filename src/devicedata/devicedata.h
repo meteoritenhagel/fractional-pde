@@ -163,13 +163,10 @@ public:
     DeviceMatrix(DeviceMatrix&& rhs);
 
     /**
-     * @copydoc DeviceDataDevice::~DeviceDataDevice()
+     * Destructor
      */
     ~DeviceMatrix() override = default;
 
-    /**
-     * @copydoc DeviceDataDevice::moveTo(const MemoryManager&)
-     */
     void moveTo(const MemoryManager& targetDevice) override;
 
     /**
@@ -196,14 +193,7 @@ public:
      */
     DeviceMatrix<T>& resize(const SizeType nrows, const SizeType ncols);
 
-    /**
-     * @copydoc DeviceDataDevice::data()
-     */
     T* data() override;
-
-    /**
-     * @copydoc DeviceDataDevice::data() const
-     */
     T const * data() const override;
 
     /**
@@ -246,9 +236,6 @@ public:
      */
     T const & operator()(const SizeType i, const SizeType j) const;
 
-    /**
-     * @copydoc DeviceDataDevice::size() const
-     */
     SizeType size() const override;
 
     // TODO: here, the functions are called getN() and getM(), but for AlgebraicMatrix it is getNrows() and getNcols()
@@ -270,9 +257,6 @@ public:
      */
     bool isSquare() const;
 
-    /**
-     * @copydoc DeviceDataDevice::display(const std::string&) const
-     */
     std::string display(const std::string& name) const override;
 
 private:
@@ -344,13 +328,10 @@ public:
     DeviceArray(DeviceArray&& rhs) = default;
 
     /**
-     * @copydoc DeviceDataDevice::~DeviceDataDevice()
+     * Destructor
      */
     ~DeviceArray() override = default;
 
-    /**
-     * @copydoc DeviceDataDevice::moveTo(const MemoryManager&)
-     */
     void moveTo(const MemoryManager& targetDevice) override;
 
     /**
@@ -367,14 +348,7 @@ public:
      */
     DeviceArray& operator=(DeviceArray&& other);
 
-    /**
-    * @copydoc DeviceDataDevice::data()
-    */
     T* data() override;
-
-    /**
-    * @copydoc DeviceDataDevice::data() const
-    */
     T const * data() const override;
 
     /**
@@ -402,14 +376,7 @@ public:
     */
     DeviceArray<T> resize(SizeType newSize);
 
-    /**
-     * @copydoc DeviceDataDevice::size() const
-     */
     SizeType size() const override;
-
-    /**
-     * @copydoc DeviceDataDevice::display(const std::string&) const
-     */
     std::string display(const std::string& name) const override;
 
 private:
@@ -481,13 +448,10 @@ public:
     DeviceScalar(DeviceScalar&& rhs);
 
     /**
-     * @copydoc DeviceDataDevice::~DeviceDataDevice()
+     * Destructor
      */
     ~DeviceScalar() override = default;
 
-    /**
-     * @copydoc DeviceDataDevice::moveTo(const MemoryManager&)
-     */
     void moveTo(const MemoryManager& targetDevice) override;
 
     /**
@@ -504,14 +468,7 @@ public:
      */
     DeviceScalar& operator=(DeviceScalar&& other);
 
-    /**
-     * @copydoc DeviceDataDevice::data()
-     */
     T* data() override;
-
-    /**
-     * @copydoc DeviceDataDevice::data() const
-     */
     T const * data() const override;
 
     /**
@@ -520,14 +477,7 @@ public:
      */
     T value() const;
 
-    /**
-     * @copydoc DeviceDataDevice::size() const
-     */
     SizeType size() const override;
-
-    /**
-     * @copydoc DeviceDataDevice::display(const std::string&)
-     */
     std::string display(const std::string& name) const override;
 
 private:

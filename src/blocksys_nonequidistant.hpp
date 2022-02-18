@@ -555,8 +555,8 @@ void NonEquidistantBlock_1D<floating>::restriction(const BlockVector<floating> &
             const auto coeff1 = _h[j - 2] / (_h[j - 2] + _h[j - 1]);
             const auto coeff2 = _h[j + 1] / (_h[j] + _h[j + 1]);
             ffOnCoarseGrid[j / 2] = ff[j];
-            getProcessingUnit()->xaxpy(getNdim(), coeff1, ff[j - 1].data(), 1, ffOnCoarseGrid[j / 2].data(), 1, false);
-            getProcessingUnit()->xaxpy(getNdim(), coeff2, ff[j + 1].data(), 1, ffOnCoarseGrid[j / 2].data(), 1, false);
+            getProcessingUnit()->xaxpy(getNdim(), coeff1, ff[j - 1].data(), 1, ffOnCoarseGrid[j / 2].data(), 1);
+            getProcessingUnit()->xaxpy(getNdim(), coeff2, ff[j + 1].data(), 1, ffOnCoarseGrid[j / 2].data(), 1);
         }
     }
     else

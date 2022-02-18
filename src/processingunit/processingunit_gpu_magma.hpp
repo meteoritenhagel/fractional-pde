@@ -39,16 +39,13 @@ int GPU_MAGMA<floating>::ixamax(const int n, const floating * const x, const int
 }
 
 template<class floating>
-void GPU_MAGMA<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy, const bool synchronize) const
+void GPU_MAGMA<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const
 {
     if constexpr(isFloat())
         magma_saxpy(n, alpha, x, incx, y, incy, getMagmaQueue());
     else if constexpr(isDouble())
         magma_daxpy(n, alpha, x, incx, y, incy, getMagmaQueue());
-        
-    if (synchronize)
-        cudaDeviceSynchronize();
-        
+    cudaDeviceSynchronize();
     return;
 }
 

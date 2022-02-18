@@ -28,7 +28,7 @@ int CPU<floating>::ixamax(const int n, const floating * const x, const int incx)
 }
 
 template<class floating>
-void CPU<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy, const bool synchronize) const
+void CPU<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const
 {
     if constexpr(isFloat())
         cblas_saxpy(n, alpha, x, incx, y, incy);

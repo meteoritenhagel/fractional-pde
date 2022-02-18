@@ -114,15 +114,13 @@ int GPU<floating>::ixamax(const int n, const floating * const x, const int incx)
 }
 
 template<class floating>
-void GPU<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy, const bool synchronize) const
+void GPU<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const
 {
     if constexpr(isFloat())
         cublasSaxpy(getCublasHandle(), n, &alpha, x, incx, y, incy);
     else if constexpr(isDouble())
         cublasDaxpy(getCublasHandle(), n, &alpha, x, incx, y, incy);
-        
-    if (synchronize)
-        cudaDeviceSynchronize();
+    cudaDeviceSynchronize();
     return;
 }
 

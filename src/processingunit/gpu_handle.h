@@ -9,7 +9,7 @@
 
 /**
  * The class GPU_Handle is a wrapper for cublasHandle_t and cusolverDnHandle_,
- * which are needed for CUBLAS and cuSOLVER use.
+ * which are needed for cuBLAS and cuSOLVER use.
  * It ensures easy handling of the construction / destruction actions.
  */
 class GPU_Handle {
@@ -26,8 +26,8 @@ public:
     ~GPU_Handle();
 
     /**
-     * Returns the handle for CUBLAS
-     * @return CUBLAS handle
+     * Returns the handle for cuBLAS
+     * @return cuBLAS handle
      */
     cublasHandle_t const& getCublasHandle() const;
 
@@ -39,8 +39,8 @@ public:
 
 private:
     /**
-     * Allocates and initializes a new CUBLAS handle
-     * @return the new CUBLAS handle
+     * Allocates and initializes a new cuBLAS handle
+     * @return the new cuBLAS handle
      */
     static cublasHandle_t initializeCublasHandle();
 
@@ -50,7 +50,7 @@ private:
      */
     static cusolverDnHandle_t initializeCusolverHandle();
 
-    cublasHandle_t _cublasHandle; //!< CUBLAS handle
+    cublasHandle_t _cublasHandle; //!< cuBLAS handle
     cusolverDnHandle_t _cusolverHandle; //!< cuSOLVER handle
 
     GPU_Handle(const GPU_Handle&) = delete;

@@ -37,12 +37,12 @@ int GPU_MIXED<floating>::ixamax(const int n, const floating * const x, const int
 }
 
 template<class floating>
-void GPU_MIXED<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy, const bool synchronize) const
+void GPU_MIXED<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const
 {
     if (getReplacementNumber() == ReplacementNumber::XAXPY)
-        _gpu_magma.xaxpy(n, alpha, x, incx, y, incy, synchronize);
+        _gpu_magma.xaxpy(n, alpha, x, incx, y, incy);
     else
-        _gpu.xaxpy(n, alpha, x, incx, y, incy, synchronize);
+        _gpu.xaxpy(n, alpha, x, incx, y, incy);
     return;
 }
 
