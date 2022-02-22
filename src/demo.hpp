@@ -8,11 +8,33 @@
 #include "algebraiccontainers/containerfactory.h"
 
 template<class floating>
+FunctionTuple<floating> exact_solution_to_pde_condition_functions(const SpaceTimeCoeffFunction<floating>& exact_solution,
+                                                                  const SpaceTimeCoeffFunction<floating>& exact_solution_dt,
+                                                                  const floating alpha)
+{
+    // Define the boundary and initial value conditions based on the given exact solution and its symbolic derivative
+
+    // phi and varphi are actually TimeFunction, but for compatibility with rhs_helper they are
+    // interpreted as SpaceTimeFunction.
+    const SpaceTimeFunction<floating> phi = [exact_solution, alpha](floating x, floating t){ return exact_solution(0., t, alpha); };
+    const SpaceTimeFunction<floating> varphi = [exact_solution, alpha](floating x, floating t){ return exact_solution(1., t, alpha); };
+    const SpaceTimeFunction<floating> up_exact = [exact_solution_dt, alpha](floating x, floating t){ return exact_solution_dt(x, t, alpha); };
+    const SpaceFunction<floating> u_zero = [exact_solution, alpha](floating x){ return exact_solution(x, 0., alpha); };
+    const SpaceTimeFunction<floating> rhs_function = [alpha](floating x, floating t){ return f(x, t, alpha); };
+
+    return std::make_tuple(phi, varphi, up_exact, u_zero, rhs_function);
+}
+
+
+template<class floating>
 floating testEquidistantGeneralSolvingProcedure(const ProcessingUnit<floating> processingUnit,
                                                 const int N, const int M, const floating T, const floating alpha,
                                                 const size_t maxNumberOfIterations, const size_t stepsPerIteration,
                                                 const floating accuracy, const SolvingProcedure solvingProcedure)
 {
+    const auto [phi, varphi, up_exact, u_zero, rhs_function] = exact_solution_to_pde_condition_functions(u_exact_f<floating>,
+                                                                                                         up_exact_f<floating>,
+                                                                                                         alpha);
     ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
 
@@ -35,7 +57,7 @@ floating testEquidistantGeneralSolvingProcedure(const ProcessingUnit<floating> p
 
     auto rhs = *colMatrixFactory.createMatrix(N+3, M+1);
 
-    initializeRhs(N, M, T, alpha, grid, rhs);
+    initializeRhs<floating>(N, M, T, phi, varphi, up_exact, u_zero, rhs_function, grid, rhs);
 
     const int block_dim = M + 1;
     EquidistantBlock_1D<floating> C(block_dim, B, D, MM, dx, alpha, dt, processingUnit);
@@ -65,6 +87,10 @@ floating testNonEquidistantWithGeneralGrid(const ProcessingUnit<floating> proces
                                            const size_t maxNumberOfIterations, const size_t stepsPerIteration,
                                            const floating accuracy, const SolvingProcedure solvingProcedure)
 {
+    const auto [phi, varphi, up_exact, u_zero, rhs_function] = exact_solution_to_pde_condition_functions(u_exact_f<floating>,
+                                                                                                         up_exact_f<floating>,
+                                                                                                         alpha);
+
     ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
 
@@ -87,7 +113,7 @@ floating testNonEquidistantWithGeneralGrid(const ProcessingUnit<floating> proces
 
     auto rhs = *colMatrixFactory.createMatrix(N+3, M+1);
 
-    initializeRhs(N, M, T, alpha, grid, rhs);
+    initializeRhs<floating>(N, M, T, phi, varphi, up_exact, u_zero, rhs_function, grid, rhs);
 
     const int block_dim = M + 1;
     NonEquidistantBlock_1D<floating> C(block_dim, B, D, MM, grid, alpha, dt, processingUnit);
@@ -143,22 +169,25 @@ void initializeMatricesNonEquidistant(const int N, const floating T,
 }
 
 template<class floating>
-void initializeRhs(const int N, const int M, const floating T, const floating alpha,
+void initializeRhs(const int N, const int M, const floating T,
+                   const SpaceTimeFunction<floating> &phi, const SpaceTimeFunction<floating> &varphi,
+                   const SpaceTimeFunction<floating> &up_exact, const SpaceFunction<floating> &u_zero,
+                   const SpaceTimeFunction<floating> &rhs_function,
                    const AlgebraicVector<floating> &grid, AlgebraicMatrix<floating> &rhs)
 {
     floating spacePoint = 0;
-    constF1(spacePoint, T, alpha, rhs[0]);
+    rhs_helper<floating>(spacePoint, T, up_exact, u_zero, phi, rhs[0]);
 
     spacePoint += grid[0];
 
     std::vector<floating> gg(N+3);
     for (int i = 1; i < M; i++)
     {
-        constF2<floating>(spacePoint, T, alpha, rhs[i]);
+        rhs_helper<floating>(spacePoint, T, up_exact, u_zero, rhs_function, rhs[i]);
         spacePoint += grid[i];
     }
 
-    constF1(spacePoint, T, alpha, rhs[M]);
+    rhs_helper<floating>(spacePoint, T, up_exact, u_zero, varphi, rhs[M]);
 
     return;
 }
@@ -172,10 +201,10 @@ std::vector<floating> exactSolution(const int M, const floating T, const floatin
     floating spacePoint = 0;
     for (int i = 0; i < M; i++)
     {
-        solution.at(i) = u_exact(spacePoint, T, alpha);
+        solution.at(i) = u_exact_f(spacePoint, T, alpha);
         spacePoint += grid[i];
     }
-    solution.at(M) = u_exact(spacePoint, T, alpha);
+    solution.at(M) = u_exact_f(spacePoint, T, alpha);
 
     return solution;
 }

@@ -120,7 +120,6 @@ public:
      */
     AlgebraicMatrix<floating> copyToDense() const;
 
-    // TODO: do not return beta, but u instead!
     /**
      * Solves the system using CyclicReduction, which is the recommended
      * solver for systems with equidistant time and space grids.
@@ -462,7 +461,6 @@ public:
      */
     void mult(const BlockVector<floating> &u, BlockVector<floating> &result) const;
 
-    // TODO: do not return beta, but u instead!
     /**
      * Solves the system K * beta = rhs for beta using a SolvingProcedure with the given parameters.
      *

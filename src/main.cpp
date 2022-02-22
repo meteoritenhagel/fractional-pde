@@ -1,8 +1,5 @@
 //#define NDEBUG
 
-//#define MAGMA 1
-//#define UNSYMMETRIZED 1
-//#define CPU_ONLY 1
 //#define GAUSS_SEIDEL 1
 //#define PLU
 //#define PRINT
