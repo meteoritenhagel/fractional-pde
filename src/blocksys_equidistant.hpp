@@ -204,7 +204,7 @@ EquidistantBlock_1D<floating>::EquidistantBlock_1D(const SizeType bdim,
 }
 
 template<class floating>
-floating EquidistantBlock_1D<floating>::getSystemCoeff(const floating alpha, const floating timeGridStepSize) const
+floating EquidistantBlock_1D<floating>::getSystemCoeff(const floating alpha, const floating timeGridStepSize)
 {
     floating coeff = pow(timeGridStepSize, -alpha)/tgamma(4-alpha);
     return coeff;
@@ -348,7 +348,7 @@ BlockVector<floating> EquidistantBlock_1D<floating>::CRRestriction(const Algebra
 template<class floating>
 floating EquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothingSteps, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const
 {
- floating omega = 2/3.0;
+    floating omega = 2/3.0;
     const SizeType N = getNdim();
     const SizeType M = getBlockDim();
 
@@ -362,7 +362,6 @@ floating EquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothi
 
     floating euclideanError = 1;
 
-    const
     if (M == 3)
     {
         jacobiIteration(1.0, f, maxNumberOfIterations, accuracy, solution);

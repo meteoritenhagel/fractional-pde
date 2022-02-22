@@ -50,7 +50,9 @@ NonEquidistantBlock_1D<floating>::NonEquidistantBlock_1D(const SizeType bdim,
     _host_h = _h;
     _h.moveTo(processingUnit);
 
-    _C.getInverse(); // calculate inverse for multigrid
+
+    // calculate inverses for multigrid
+    _C.getInverse();
     _M.getInverse();
 }
 
@@ -586,10 +588,12 @@ AlgebraicVector<floating> NonEquidistantBlock_1D<floating>::getReducedGrid() con
     else
     {
 #ifndef CPU_ONLY
-        // TODO: REMOVE
-        _h.moveTo(getProcessingUnit());
+        // Since this funcion is called during initialization, it is not yet guaranteed that
+        // _h is already on the right processing unit.
+        auto h_copy(_h);
+        h_copy.moveTo(getProcessingUnit());
         coarseGrid.moveTo(getProcessingUnit());
-        deviceGetReducedGrid(Mf, _h.data(), coarseGrid.data());
+        deviceGetReducedGrid(Mf, h_copy.data(), coarseGrid.data());
 #endif
     }
 
@@ -617,71 +621,6 @@ const NonEquidistantBlock_1D<floating>& NonEquidistantBlock_1D<floating>::getCoa
 {
     return *_coarseSystemPtr;
 }
-
-template<class floating>
-floating NonEquidistantBlock_1D<floating>::jacobiIteration(const floating omega, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating , BlockVector<floating> &solution) const
-{
-    //assert((maxNumberOfIterations > 0 || accuracy > 0) && "ERROR: No valid termination criterion given.");
-
-    const SizeType N = getNdim();
-    const SizeType M = f.getNcols();
-
-    assert(solution.getNrows() == N && solution.getNcols() == M && "ERROR: Dimension mismatch.");
-
-    floating euclideanNormResidual = 0;
-
-    auto &residual = _vectorBuffer[2];
-    auto &outputBuffer = _vectorBuffer[3];
-
-    size_t n = 0;
-    do
-    {
-        euclideanNormResidual = 0;
-
-        // Since these two lines are invariants of the algortithm, we assume that they already
-        // have been computed!
-        //solution[0] = _M / f[0];
-        //solution[M-1] = _M / f[M-1];
-
-#pragma omp parallel for reduction(+:euclideanNormResidual) if (M>63) //schedule(dynamic)
-        for (unsigned int i = 1; i < M-1; ++i)
-        {
-
-#ifdef UNSYMMETRIZED
-            // Plain system
-            const floating inv_scale_factor = 1.0;
-            const floating inv_coeff_middle = _h[i-1]*_h[i]/2;
-#else
-            // Symmetrised system
-            const floating inv_scale_factor = 1/(_h[i-1] + _h[i]);
-            const floating inv_coeff_middle = 1/(2*(_h[i-1] + _h[i])/_h[i-1]/_h[i]);
-#endif
-
-            calculateRowResidual(i, solution, f, residual);
-
-            euclideanNormResidual += scalarProduct(residual, residual);
-
-            // scale residual: omega * (D * C)^-1 * r_i = omega * C^-1 * (D^-1 * r_i)
-            getProcessingUnit()->xscal(N, inv_scale_factor, residual.data(), 1);
-            getProcessingUnit()->xscal(N-3, inv_coeff_middle/inv_scale_factor, residual.data()+2, 1);
-
-            //solution[i] += omega*(_C/residual);
-            _C.invTimes(residual, outputBuffer);
-            getProcessingUnit()->xaxpy(N, omega, outputBuffer.data(), 1, solution[i].data(), 1);
-        }
-
-        euclideanNormResidual = sqrt(euclideanNormResidual);
-
-        ++n;
-    }
-        // check for the two breaking conditions:
-        // 1. if maxNumberOfIterations has a feasible value, repeat until maxNumberOfIterations is reached
-        // 2. if maxNormResidual has a feasible value, repeat until relative error is smaller than desired accuracy
-    while ((maxNumberOfIterations <= 0 || n < maxNumberOfIterations) /*&& (accuracy <= 0 || euclideanNormResidual >= accuracy)*/);
-
-    return euclideanNormResidual;
-}
-
 
 template<class floating>
 void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockVector<floating> &f, const size_t maxNumberOfIterations, BlockVector<floating> &solution) const {
