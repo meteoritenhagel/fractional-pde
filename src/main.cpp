@@ -16,8 +16,8 @@
 int main()
 {
     using floating = float;
-    ProcessingUnit<floating> pu = std::make_shared<CPU<floating>>();
-    //ProcessingUnit<floating> pu = std::make_shared<GPU<floating>>();
+    //ProcessingUnit<floating> pu = std::make_shared<CPU<floating>>();
+    ProcessingUnit<floating> pu = std::make_shared<GPU<floating>>();
 
     const size_t N = twoToThe(5);
     const size_t M = twoToThe(7);

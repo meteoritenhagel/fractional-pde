@@ -3,10 +3,37 @@ project(fractional_pde)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_compile_definitions(CPU_ONLY)
+### OpenBLAS include ###
+set(BLA_VENDER OpenBLAS)
+find_package(BLAS REQUIRED)
+if(BLAS_FOUND)
+    message("OpenBLAS found.")
+    include_directories(/opt/OpenBLAS/include/)
+    link_libraries(${BLAS_LIBRARIES})
+endif(BLAS_FOUND)
 
-add_executable(
-        fractional_pde
+### OpenMP include ###
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    message("OpenMP found.")
+    link_libraries(OpenMP::OpenMP_CXX)
+endif(OpenMP_CXX_FOUND)
+
+
+### CUDA include if possible ###
+find_package(CUDAToolkit)
+if(CUDAToolkit_FOUND)
+    if(NOT CMAKE_CUDA_COMPILER)
+        # In case this happens, check and modify your compiler path
+        SET(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
+    endif()
+    message("CUDA found.")
+    enable_language(CUDA)
+else()
+    message("No CUDA found.")
+endif()
+
+set(COMMON_SOURCES
         src/main.cpp
         src/auxiliary.h
         src/auxiliary.hpp
@@ -36,16 +63,70 @@ add_executable(
         src/processingunit/timer.cpp
 )
 
-set(BLA_VENDER OpenBLAS)
-find_package(BLAS REQUIRED)
-if(BLAS_FOUND)
-    message("OpenBLAS found.")
-    include_directories(/opt/OpenBLAS/include/)
-    target_link_libraries(fractional_pde ${BLAS_LIBRARIES})
-endif(BLAS_FOUND)
+set(GPU_SOURCES
+        src/processingunit/gpu_handle.h
+        src/processingunit/gpu_handle.cpp
+        src/processingunit/processingunit_gpu.hpp
+        src/processingunit/processingunit_gpu_mixed.hpp
+)
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    message("OpenMP found.")
-    target_link_libraries(fractional_pde OpenMP::OpenMP_CXX)
-endif(OpenMP_CXX_FOUND)
+set(MAGMA_SOURCES
+        src/processingunit/gpu_magma_queue.h
+        src/processingunit/gpu_magma_queue.cpp
+        src/processingunit/processingunit_gpu_magma.hpp
+)
+
+set(CUDA_SOURCES
+        src/gpukernels.cuh
+        src/gpukernels.cu
+        src/devicedata/initializememory.cuh
+        src/devicedata/initializememory.cu
+)
+
+
+### CPU only mode ###
+add_executable(fractional_pde_cpu_only
+        ${COMMON_SOURCES}
+)
+target_compile_definitions(fractional_pde_cpu_only PRIVATE CPU_ONLY)
+target_compile_options(fractional_pde_cpu_only PRIVATE
+        -Wall -pedantic -Wextra -Weffc++ -Woverloaded-virtual -Wfloat-equal -Wshadow -Wredundant-decls
+        -fmax-errors=1 -Wno-error=redundant-decls
+        -ffast-math -O3
+)
+target_link_options(fractional_pde_cpu_only PRIVATE -O3 -flto)
+
+if(CUDAToolkit_FOUND)
+    ### CUDA mode ###
+    add_executable(fractional_pde_cuda
+            ${COMMON_SOURCES}
+            ${GPU_SOURCES}
+            ${CUDA_SOURCES}
+    )
+    target_link_libraries(fractional_pde_cuda CUDA::cudart CUDA::cublas CUDA::cusolver)
+    target_compile_options(fractional_pde_cuda PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:
+            --resource-usage -src-in-ptx --restrict --Wreorder --ftemplate-backtrace-limit 1
+            -use_fast_math -restrict
+            >)
+
+    ### CUDA + MAGMA mode ###
+    add_executable(fractional_pde_cuda_magma
+            ${COMMON_SOURCES}
+            ${GPU_SOURCES}
+            ${CUDA_SOURCES}
+            ${MAGMA_SOURCES}
+            )
+
+    ### Set the MAGMA directories manually ###
+    set(MAGMA_DIR /usr/local/magma)
+    set(MAGMA_INCDIR ${MAGMA_DIR}/include)
+    set(MAGMA_LIBDIR ${MAGMA_DIR}/lib)
+    target_compile_definitions(fractional_pde_cuda_magma PUBLIC MAGMA)
+    target_include_directories(fractional_pde_cuda_magma PUBLIC ${MAGMA_INCDIR})
+    target_link_directories(fractional_pde_cuda_magma PUBLIC ${MAGMA_LIBDIR})
+    target_link_libraries(fractional_pde_cuda_magma CUDA::cudart CUDA::cublas CUDA::cusolver)
+    target_compile_options(fractional_pde_cuda_magma PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:
+            --resource-usage -src-in-ptx --restrict --Wreorder --ftemplate-backtrace-limit 1
+            -use_fast_math -restrict
+            >)
+endif()
