@@ -56,6 +56,8 @@ std::string CPU_Manager::display() const {
     return "CPU MANAGER";
 }
 
+#ifndef CPU_ONLY
+
 void* GPU_Manager::allocate(const size_t byteSize) const {
     void *pointer = nullptr;
     cudaError_t cudaerr;
@@ -107,3 +109,5 @@ void *UnifiedManager::copy(void *destination, void const *source, const size_t b
 std::string UnifiedManager::display() const {
     return "UNIFIED MANAGER";
 }
+
+#endif

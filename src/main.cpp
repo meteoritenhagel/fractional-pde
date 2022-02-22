@@ -2,7 +2,7 @@
 
 //#define MAGMA 1
 //#define UNSYMMETRIZED 1
-//#define CPU_ONLY 1
+#define CPU_ONLY 1
 //#define GAUSS_SEIDEL 1
 //#define PLU
 //#define PRINT
@@ -10,14 +10,14 @@
 #include "demo.h"
 
 #ifdef CPU_ONLY
-#pragma message(" ##########  CPU_ONLY MODE ACTIVATED. GPU features are not available.  ###############")
+#pragma message("CPU_ONLY mode activated. GPU features are not available.")
 #endif
 
 int main()
 {
     using floating = float;
-    //ProcessingUnit<floating> pu = std::make_shared<CPU<floating>>();
-    ProcessingUnit<floating> pu = std::make_shared<GPU<floating>>();
+    ProcessingUnit<floating> pu = std::make_shared<CPU<floating>>();
+    //ProcessingUnit<floating> pu = std::make_shared<GPU<floating>>();
 
     const size_t N = twoToThe(5);
     const size_t M = twoToThe(7);
