@@ -13,11 +13,11 @@
 #include <typeinfo>
 
 /**
- * Given a classical C-style array in the CPU memory, this function initializes @param size elements starting
- * from @param data with value @param value.
+ * Given a classical C-style array in the CPU memory, this function initializes @p size elements starting
+ * from @p data with value @p value.
  *
  * @tparam T data type of array elements
- * @param hostMemory[in/out] first element of array (in the CPU memory)
+ * @param hostMemory[in,out] first element of array (in the CPU memory)
  * @param size number of elements in the array
  * @param value value to initialize elements with
  */
@@ -29,7 +29,7 @@ void hostInitializeMemory(T* hostMemory, const int size, const T value);
  * identity matrix.
  *
  * @tparam T data type of matrix elements
- * @param hostMemory[in/out] pointer to start of data (in the CPU memory)
+ * @param hostMemory[in,out] pointer to start of data (in the CPU memory)
  * @param N number of the matrix' rows
  * @param M number of the matrix' columns
  *
@@ -67,15 +67,15 @@ public:
     virtual void * allocate(const size_t byteSize) const = 0;
 
     /**
-     * Frees the memory allocated on position @param pointerToMemory.
+     * Frees the memory allocated on position @p pointerToMemory.
      * @param pointerToMemory Pointer to memory block which should be freed.
      */
     virtual void free(void* pointerToMemory) const = 0;
 
     /**
-     * Copies @param byteSize bytes from the @param source to the @param destination pointer.
+     * Copies @param byteSize bytes from the @p source to the @p destination pointer.
      *
-     * @warning after the destination pointer, @param byteSize bytes have to be allocated
+     * @warning after the destination pointer, @p byteSize bytes have to be allocated
      * @param destination destination of copy process
      * @param source source of copy process
      * @param byteSize number of bytes being copied
@@ -90,8 +90,8 @@ public:
     virtual std::string display() const = 0;
 
     /**
-     * Allocates @param byteSize memory on the device corresponding the other MemoryManager @param manager,
-     * and copies @param byteSize bytes from @param pointerToMemory to new newly allocated
+     * Allocates @p byteSize memory on the device corresponding the other MemoryManager @p manager,
+     * and copies @p byteSize bytes from @p pointerToMemory to new newly allocated
      * space.
      *
      * @param pointerToMemory pointer to source memory (must have been allocated on the device corresponding to the current instance)
@@ -173,5 +173,5 @@ class UnifiedManager : public MemoryManagerDevice {
 
 #endif
 
-#include "memorymanager.cpp"
+#include "memorymanager.hpp"
 #endif //TR_HACK_DEVICEDATAPOINTER_H
