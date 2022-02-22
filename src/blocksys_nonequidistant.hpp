@@ -87,10 +87,8 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
     const SizeType M = getBlockDim();
     rhs.moveTo(getProcessingUnit());
 
-#ifndef UNSYMMETRIZED
     // Since we work with the symmetrized system, also rhs must be rescaled appropiately
     rescale_rhs(rhs);
-#endif
 
     const floating relativeAccuracy = accuracy * rhs.getEuclidean();
     std::cout << "target absolute accuracy: " << accuracy << std::endl;
@@ -103,7 +101,6 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
 
     std::cout << "initial error: " << residual.getEuclidean() << std::endl;
 
-    // TODO: Uncomment
     solution[0] = _M / rhs[0];
     solution[M-1] = _M / rhs[M-1];
 
@@ -190,19 +187,12 @@ AlgebraicMatrix<floating> NonEquidistantBlock_1D<floating>::copyToDense() const
         {
             const SizeType blockNumber = i / loc_rows - 1;
 
-#ifdef UNSYMMETRIZED
-            // unsymmetrised system
-            const floating coeff_left = - 2/_host_h[blockNumber]/(_host_h[blockNumber] + _host_h[blockNumber+1]);
-            const floating coeff_middle = 2/_host_h[blockNumber]/_host_h[blockNumber+1];
-            const floating coeff_right = - 2/_host_h[blockNumber + 1]/(_host_h[blockNumber] + _host_h[blockNumber+1]);
-            const floating scale_factor = 1.0;
-#else
             // Symmetrised system
             const floating coeff_left =  - 2/_host_h[blockNumber];
             const floating coeff_middle = 2*(_host_h[blockNumber] + _host_h[blockNumber+1])/_host_h[blockNumber]/_host_h[blockNumber+1];
             const floating coeff_right =  - 2/_host_h[blockNumber+1];
             const floating scale_factor = (_host_h[blockNumber] + _host_h[blockNumber+1]);
-#endif
+            
             // TODO: exchange loops for i and j (column major storage)
             for (SizeType j = startIndex - loc_rows; j < startIndex; j++) DD(i,j) = coeff_left * _B(i - startIndex, j - startIndex + loc_rows);
 
@@ -246,20 +236,11 @@ void NonEquidistantBlock_1D<floating>::mult(const BlockVector<floating> &u, Bloc
 
     for (SizeType i = 1; i < getBlockDim()-1; ++i)
     {
-
-#ifdef UNSYMMETRIZED
-        // Plain system
-        const floating coeff_left =  2/_host_h[i-1]/(_host_h[i-1] + _host_h[i]);
-        const floating coeff_middle = 2/_host_h[i-1]/_host_h[i];
-        const floating coeff_right =  2/_host_h[i]/(_host_h[i-1] + _host_h[i]);
-        const floating scale_factor = 1.0;
-#else
         // Symmetrised system
         const floating coeff_left =  2/_host_h[i-1];
         const floating coeff_middle = 2*(_host_h[i-1] + _host_h[i])/_host_h[i-1]/_host_h[i];
         const floating coeff_right =  2/_host_h[i];
         const floating scale_factor = (_host_h[i-1] + _host_h[i]);
-#endif
 
         // WE WANT: scaled -_B * u[i-1] + _A * u[i] + -_B * u[i+1]
         // Note that _A = (c1 * _M - c2 * _D) except for rows 1, 2, N, where it is _M
@@ -542,13 +523,6 @@ void NonEquidistantBlock_1D<floating>::restriction(const BlockVector<floating> &
     const SizeType M = getBlockDim();
     assert(getBlockDim() % 2 == 1 && "ERROR: Need odd number of rows in each step.");
 
-#ifdef UNSYMMETRIZED
-    for (SizeType i = 2; i < M-1; i+=2)
-    {
-        const floating divisor = (_h[i-1]*_h[i] + 2*_h[i-2]*_h[i] + 2*_h[i-1]*_h[i+1] + 3*_h[i-2]*_h[i+1]);
-        ffOnCoarseGrid[i/2] = (_h[i-2]*(_h[i] + _h[i+1])/divisor * ff[i-1] + (_h[i-2] + _h[i])*(_h[i] + _h[i+1])/divisor * ff[i] + _h[i+1]*(_h[i-2] + _h[i-1])/divisor * ff[i+1]);
-    }
-#else
     if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
     {
 #pragma omp parallel for  if (M>127)
@@ -567,7 +541,6 @@ void NonEquidistantBlock_1D<floating>::restriction(const BlockVector<floating> &
         deviceRestriction(N, M, _h.data(), ff.data(), ffOnCoarseGrid.data());
 #endif
     }
-#endif
 }
 
 template<class floating>
@@ -646,15 +619,6 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
         for (unsigned int i = 1; i < M - 1; ++i) {
             calculateRowResidual(i, solution, f, residual);
 
-#ifdef UNSYMMETRIZED
-            // Plain system
-            //const floating coeff_middle = 2/_h[i-1]/_h[i];
-            const floating inv_scale_factor = 1.0;
-            const floating inv_coeff_middle = _h[i-1]*_h[i]/2;
-
-            getProcessingUnit()->xscal(N, inv_scale_factor, residual.data(), 1);
-            getProcessingUnit()->xscal(N-3, inv_coeff_middle/inv_scale_factor, residual.data()+2, 1);
-#else
             // scale residual: omega * (D * C)^-1 * r_i = omega * C^-1 * (D^-1 * r_i)
             if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
             {
@@ -670,7 +634,6 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
                 deviceSmoothScale(N, i, _h.data(), residual.data());
 #endif
             }
-#endif
 
             //solution[i] += omega*(_C/residual);
             _C.invTimes(residual, outputBuffer);
@@ -684,12 +647,6 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
     while (n < maxNumberOfIterations);
 
 #else // ######################### JACOBI ###########################
-
-    #ifdef UNSYMMETRIZED
-    std::cerr << "Jacobi-type smoothing function is not supported for unsymmetrized system yet. Use Gauss-Seidel instead."
-    exit(-1);
-    #endif
-
     auto &fullResidual = _buffer2;
 
     do {
@@ -769,19 +726,11 @@ void NonEquidistantBlock_1D<floating>::calculateRowResidual(const SizeType i, co
     }
     else
     {
-#ifdef UNSYMMETRIZED
-        // Plain system
-        const floating coeff_left =  2/_host_h[i-1]/(_host_h[i-1] + _host_h[i]);
-        const floating coeff_middle = 2/_host_h[i-1]/_host_h[i];
-        const floating coeff_right =  2/_host_h[i]/(_host_h[i-1] + _host_h[i]);
-        const floating scale_factor = 1.0;
-#else
         // Symmetrised system
         const floating coeff_left =  2/_host_h[i-1];
         const floating coeff_middle = 2*(_host_h[i-1] + _host_h[i])/_host_h[i-1]/_host_h[i];
         const floating coeff_right =  2/_host_h[i];
         const floating scale_factor = (_host_h[i-1] + _host_h[i]);
-#endif
         // WE WANT: f[i] - (scaled -_B * u[i-1] + _A * u[i] + -_B * u[i+1])
         // Note that _A = (c1 * _M - c2 * _D) except for rows 1, 2, N, where it is _M
 
