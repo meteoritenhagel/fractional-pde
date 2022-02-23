@@ -26,13 +26,30 @@ int main()
     const size_t stepsPerIteration = 20;
     const floating accuracy = 1e-9;
 
-    testEquidistantGeneralSolvingProcedure(pu, N, M, T, alpha,
-                                           maxNumberOfIterations, stepsPerIteration, accuracy,
-                                           SolvingProcedure::CyclicReduction);
+    std::cout << "Calculation via " << pu->display() << std::endl
+              << "N (time steps)  = " << N << std::endl
+              << "M (space steps) = " << M << std::endl << std::endl
+              << "####################################################################" << std::endl
+              << "Equidistant grid:" << std::endl;
 
-    testNonEquidistantWithGeneralGrid(pu, N, M, T, alpha,
-                                      maxNumberOfIterations, stepsPerIteration, accuracy,
-                                      SolvingProcedure::PCBiCGStab);
+    const auto error_equi = equidistant_test_solver_against_exact_solution(pu, N, M, T, alpha,
+                                                                           maxNumberOfIterations, stepsPerIteration,
+                                                                           accuracy,
+                                                                           SolvingProcedure::CyclicReduction);
+
+    std::cout << std::endl << "max norm of absolute error (equidistant grid) = " << error_equi << std::endl;
+
+    std::cout << "####################################################################" << std::endl << std::endl
+              << "####################################################################" << std::endl
+              << "Non-equidistant grid:" << std::endl
+              << "    target system absolute accuracy: " << accuracy << std::endl << std::endl;
+
+    const auto error_nonequi = non_equidistant_test_solver_against_exact_solution(pu, N, M, T, alpha,
+                                                                                  maxNumberOfIterations,
+                                                                                  stepsPerIteration, accuracy,
+                                                       SolvingProcedure::PCBiCGStab);
+    std::cout << std::endl << "max norm of absolute error (nonequidistant grid) = " << error_nonequi << std::endl
+              << "####################################################################" << std::endl;
 
     return 0;
 }

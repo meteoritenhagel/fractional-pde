@@ -115,10 +115,6 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
     auto rhs_copy(rhs);
     rhs_copy.moveTo(getProcessingUnit());
     auto rs_rhs = rescale_rhs(rhs_copy);
-    const floating relativeAccuracy = accuracy * rs_rhs.getEuclidean();
-
-    std::cout << "target absolute accuracy: " << accuracy << std::endl;
-    std::cout << "target relative accuracy: " << relativeAccuracy << std::endl << std::endl;
 
     BlockVector<floating> solution = *getMatrixFactory().createMatrix(N, M);
     auto x = calculateResidual(solution, rs_rhs);
@@ -131,52 +127,57 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
         _M.getInverse();
     }
 
-    floating euclideanNorm = 0;
+    floating euclideanError = 0;
 
     size_t n = 0;
-    do
+
+    if(solvingProcedure == SolvingProcedure::CyclicReduction)
     {
-        switch(solvingProcedure)
-        {
-            case SolvingProcedure::CyclicReduction:
-                return cyclicReduction(1/_h/_h * _B, rhs_copy);
-
-            case SolvingProcedure::PCBiCGStab:
-                std::cerr << "EquidistantBlock_1D does not support preconditioned BiCGStab. Abort.\n";
-                exit(-1);
-                break;
-
-            case SolvingProcedure::BiCGStab:
-                std::cerr << "EquidistantBlock_1D does not support BiCGStab. Abort.\n";
-                exit(-1);
-                break;
-
-            case SolvingProcedure::Richardson:
-                euclideanNorm = jacobiIteration(static_cast<floating>(1.0), rs_rhs, stepsPerIteration, relativeAccuracy, solution);
-                std::cout << euclideanNorm << std::endl;
-                break;
-
-            case SolvingProcedure::PCRichardson:
-                euclideanNorm = multigrid(2, rs_rhs, stepsPerIteration, relativeAccuracy, solution);
-
-                // TODO: REMOVE
-                static size_t totalCounter2 = 0;
-                ++totalCounter2;
-                std::cout << "   " << totalCounter2 << ": " << euclideanNorm << std::endl;
-
-                break;
-
-            default:
-                std::cerr << "Unknown SolvingProcedure found. Abort.\n";
-                exit(-1);
-        }
-
-        ++n;
+        solution = cyclicReduction(1/_h/_h * _B, rhs_copy);
     }
+    else
+    {
+        do
+        {
+            switch(solvingProcedure)
+            {
+                case SolvingProcedure::PCBiCGStab:
+                    std::cerr << "EquidistantBlock_1D does not support preconditioned BiCGStab. Abort.\n";
+                    exit(-1);
+                    break;
+
+                case SolvingProcedure::BiCGStab:
+                    std::cerr << "EquidistantBlock_1D does not support BiCGStab. Abort.\n";
+                    exit(-1);
+                    break;
+
+                case SolvingProcedure::Richardson:
+                    euclideanError = jacobiIteration(static_cast<floating>(1.0), rs_rhs, stepsPerIteration, accuracy, solution);
+                    std::cout << euclideanError << std::endl;
+                    break;
+
+                case SolvingProcedure::PCRichardson:
+                    euclideanError = multigrid(2, rs_rhs, stepsPerIteration, accuracy, solution);
+
+                    // TODO: REMOVE
+                    static size_t totalCounter2 = 0;
+                    ++totalCounter2;
+                    std::cout << "   " << totalCounter2 << ": " << euclideanError << std::endl;
+
+                    break;
+
+                default:
+                    std::cerr << "Unknown SolvingProcedure found. Abort.\n";
+                    exit(-1);
+            }
+
+            ++n;
+        }
         // check for the two breaking conditions:
         // 1. if maxNumberOfIterations has a feasible value, repeat until maxNumberOfIterations is reached
         // 2. if maxNormResidual has a feasible value, repeat until relative error is smaller than desired accuracy
-    while ((maxNumberOfIterations <= 0 || n < maxNumberOfIterations) && (accuracy <= 0 || euclideanNorm >= relativeAccuracy));
+        while ((maxNumberOfIterations <= 0 || n < maxNumberOfIterations) && (accuracy <= 0 || euclideanError >= accuracy));
+    }
 
     return solution;
 }

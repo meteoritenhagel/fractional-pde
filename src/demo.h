@@ -13,27 +13,42 @@
 #include <vector>
 
 template<class floating>
-using FunctionTuple = std::tuple<SpaceTimeFunction<floating>, SpaceTimeFunction<floating>, SpaceTimeFunction<floating>, SpaceFunction<floating>, SpaceTimeFunction<floating>>;
+using PDEFunctionTuple = std::tuple<SpaceTimeFunction<floating>, SpaceTimeFunction<floating>, SpaceTimeFunction<floating>, SpaceFunction<floating>, SpaceTimeFunction<floating>>;
 
 template<class floating>
 using SpaceTimeCoeffFunction = std::function<floating(floating, floating, floating)>;
 
 template<class floating>
-FunctionTuple<floating> exact_solution_to_pde_condition_functions(const SpaceTimeCoeffFunction<floating>& exact_solution,
-                                                                  const SpaceTimeCoeffFunction<floating>& exact_solution_dt,
-                                                                  const floating alpha);
+AlgebraicVector<floating> solve_equidistant(const ProcessingUnit<floating> processingUnit,
+                                            const int N, const int M, const floating T, const floating alpha,
+                                            const PDEFunctionTuple<floating>& pde_function_tuple,
+                                            const size_t maxNumberOfIterations, const size_t stepsPerIteration,
+                                            const floating accuracy, const SolvingProcedure solvingProcedure);
 
 template<class floating>
-floating testEquidistantGeneralSolvingProcedure(const ProcessingUnit<floating> processingUnit,
-                                                const int N, const int M, const floating T, const floating alpha,
-                                                const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                                const floating accuracy, const SolvingProcedure solvingProcedure);
+AlgebraicVector<floating> solve_nonequidistant(const ProcessingUnit<floating> processingUnit,
+                                               const int N, const int M, const floating T, const floating alpha,
+                                               const AlgebraicVector<floating>& grid,
+                                               const PDEFunctionTuple<floating>& pde_function_tuple,
+                                               const size_t maxNumberOfIterations, const size_t stepsPerIteration,
+                                               const floating accuracy, const SolvingProcedure solvingProcedure);
 
 template<class floating>
-floating testNonEquidistantWithGeneralGrid(const ProcessingUnit<floating> processingUnit, const int N, const int M,
-                                           const floating T, const floating alpha,
-                                           const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                           const floating accuracy, const SolvingProcedure solvingProcedure);
+PDEFunctionTuple<floating> exact_solution_to_pde_condition_functions(const SpaceTimeCoeffFunction<floating>& exact_solution,
+                                                                     const SpaceTimeCoeffFunction<floating>& exact_solution_dt,
+                                                                     const floating alpha);
+
+template<class floating>
+floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<floating> processingUnit,
+                                                        const int N, const int M, const floating T, const floating alpha,
+                                                        const size_t maxNumberOfIterations, const size_t stepsPerIteration,
+                                                        const floating accuracy, const SolvingProcedure solvingProcedure);
+
+template<class floating>
+floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit<floating> processingUnit, const int N, const int M,
+                                                            const floating T, const floating alpha,
+                                                            const size_t maxNumberOfIterations, const size_t stepsPerIteration,
+                                                            const floating accuracy, const SolvingProcedure solvingProcedure);
 
 template<class floating>
 void initializeMatricesEquidistant(const int N, const floating T,
@@ -44,10 +59,7 @@ void initializeMatricesNonEquidistant(const int N, const floating T,
                                       AlgebraicMatrix<floating> &B, AlgebraicMatrix<floating> &MM);
 
 template<class floating>
-void initializeRhs(const int N, const int M, const floating T,
-                   const SpaceTimeFunction<floating> &phi, const SpaceTimeFunction<floating> &varphi,
-                   const SpaceTimeFunction<floating> &up_exact, const SpaceFunction<floating> &u_zero,
-                   const SpaceTimeFunction<floating> &rhs_function,
+void initializeRhs(const int N, const int M, const floating T, const PDEFunctionTuple<floating> &pde_function_tuple,
                    const AlgebraicVector<floating> &grid, AlgebraicMatrix<floating> &rhs);
 
 template<class floating>

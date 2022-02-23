@@ -90,10 +90,6 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
     // Since we work with the symmetrized system, also rhs must be rescaled appropiately
     rescale_rhs(rhs);
 
-    const floating relativeAccuracy = accuracy * rhs.getEuclidean();
-    std::cout << "target absolute accuracy: " << accuracy << std::endl;
-    std::cout << "target relative accuracy: " << relativeAccuracy << std::endl << std::endl;
-
     BlockVector<floating> solution = *getMatrixFactory().createMatrix(N, M);
 
     auto residual{solution};
@@ -104,7 +100,7 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
     solution[0] = _M / rhs[0];
     solution[M-1] = _M / rhs[M-1];
 
-    floating euclideanNorm = 0;
+    floating euclideanError = 0;
 
     size_t totalCounter = 0;
 
@@ -116,29 +112,29 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
             case SolvingProcedure::CyclicReduction:
                 throw std::runtime_error("EquidistantBlock_1D does not support Cyclic Reduction. Abort.");
             case SolvingProcedure::PCBiCGStab:
-                euclideanNorm = PCbiCGStab(rhs, stepsPerIteration, relativeAccuracy, solution);
+                euclideanError = PCbiCGStab(rhs, stepsPerIteration, accuracy, solution);
                 break;
 
             case SolvingProcedure::BiCGStab:
-                euclideanNorm = biCGStab(rhs, stepsPerIteration, relativeAccuracy, solution);
+                euclideanError = biCGStab(rhs, stepsPerIteration, accuracy, solution);
                 break;
 
             case SolvingProcedure::Richardson:
                 smooth(static_cast<floating>(1.0), rhs, stepsPerIteration, solution);
                 calculateResidual(solution, rhs, residual);
-                euclideanNorm = residual.getEuclidean();
+                euclideanError = residual.getEuclidean();
 
                 ++totalCounter;
-                std::cout << "   " << totalCounter << ": " << euclideanNorm << std::endl;
+                std::cout << "   " << totalCounter << ": " << euclideanError << std::endl;
                 break;
 
             case SolvingProcedure::PCRichardson:
-                multigrid(2, rhs, stepsPerIteration, relativeAccuracy, solution);
+                multigrid(2, rhs, stepsPerIteration, accuracy, solution);
                 
                 calculateResidual(solution, rhs, residual);
-                euclideanNorm = residual.getEuclidean();
+                euclideanError = residual.getEuclidean();
                 ++totalCounter;
-                std::cout << "   " << totalCounter << ": " << euclideanNorm << std::endl;
+                std::cout << "   " << totalCounter << ": " << euclideanError << std::endl;
 
                 break;
             }
@@ -148,7 +144,7 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
     // check for the two breaking conditions:
     // 1. if maxNumberOfIterations has a feasible value, repeat until maxNumberOfIterations is reached
     // 2. if maxNormResidual has a feasible value, repeat until relative error is smaller than desired accuracy
-    while ((maxNumberOfIterations <= 0 || n < maxNumberOfIterations) && (accuracy <= 0 || euclideanNorm >= relativeAccuracy));
+    while ((maxNumberOfIterations <= 0 || n < maxNumberOfIterations) && (accuracy <= 0 || euclideanError >= accuracy));
 
     return solution;
 }
@@ -192,7 +188,7 @@ AlgebraicMatrix<floating> NonEquidistantBlock_1D<floating>::copyToDense() const
             const floating coeff_middle = 2*(_host_h[blockNumber] + _host_h[blockNumber+1])/_host_h[blockNumber]/_host_h[blockNumber+1];
             const floating coeff_right =  - 2/_host_h[blockNumber+1];
             const floating scale_factor = (_host_h[blockNumber] + _host_h[blockNumber+1]);
-            
+
             // TODO: exchange loops for i and j (column major storage)
             for (SizeType j = startIndex - loc_rows; j < startIndex; j++) DD(i,j) = coeff_left * _B(i - startIndex, j - startIndex + loc_rows);
 
