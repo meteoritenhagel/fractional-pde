@@ -13,14 +13,11 @@ PDEFunctionTuple<floating> exact_solution_to_pde_condition_functions(const Space
                                                                      const floating alpha)
 {
     // Define the boundary and initial value conditions based on the given exact solution and its symbolic derivative
-
-    // phi and varphi are actually TimeFunction, but for compatibility with rhs_helper they are
-    // interpreted as SpaceTimeFunction.
-    const SpaceTimeFunction<floating> phi = [exact_solution, alpha](floating x, floating t){ return exact_solution(0., t, alpha); };
-    const SpaceTimeFunction<floating> varphi = [exact_solution, alpha](floating x, floating t){ return exact_solution(1., t, alpha); };
-    const SpaceTimeFunction<floating> up_exact = [exact_solution_dt, alpha](floating x, floating t){ return exact_solution_dt(x, t, alpha); };
-    const SpaceFunction<floating> u_zero = [exact_solution, alpha](floating x){ return exact_solution(x, 0., alpha); };
-    const SpaceTimeFunction<floating> rhs = [rhs_function, alpha](floating x, floating t){ return rhs_function(x, t, alpha); };
+    const TimeFunction<floating> phi = [exact_solution, alpha](TimePoint<floating> t){ return exact_solution(0., t, alpha); };
+    const TimeFunction<floating> varphi = [exact_solution, alpha](TimePoint<floating> t){ return exact_solution(1., t, alpha); };
+    const SpaceTimeFunction<floating> up_exact = [exact_solution_dt, alpha](SpacePoint<floating> x, TimePoint<floating> t){ return exact_solution_dt(x, t, alpha); };
+    const SpaceFunction<floating> u_zero = [exact_solution, alpha](SpacePoint<floating> x){ return exact_solution(x, 0., alpha); };
+    const SpaceTimeFunction<floating> rhs = [rhs_function, alpha](SpacePoint<floating> x, TimePoint<floating> t){ return rhs_function(x, t, alpha); };
 
     return std::make_tuple(phi, varphi, up_exact, u_zero, rhs);
 }
@@ -38,19 +35,19 @@ floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<flo
     ContainerFactory<floating> colMatrixFactory(cpu);
 
     const auto pde_function_tuple = exact_solution_to_pde_condition_functions(exact_solution, exact_solution_dt, rhs_function, alpha);
-    const auto xx = solve_equidistant(processingUnit, N, M, T, alpha,
-                                      pde_function_tuple,
-                                      maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
+    auto full_solution = solve_equidistant(processingUnit, N, M, T, alpha,
+                                           pde_function_tuple,
+                                           maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
+
+    // only take latest time point solution, but for every space point
+    full_solution.moveTo(cpu);
+    auto xx = full_solution.getRow(N+1);
 
     const auto grid = *colMatrixFactory.createColumn(M,  T / static_cast<floating>(M));
 
-    std::vector<floating> ue(M+1);
-    ue = get_exact_solution_vector(M, T, alpha, exact_solution, grid);
-    auto ue_device = *colMatrixFactory.createColumn(ue.size());
-    memcpy(ue_device.data(), ue.data(), ue.size()*sizeof(floating));
-    ue_device.moveTo(processingUnit);
+    const auto ue = get_exact_solution_vector(T, alpha, exact_solution, grid);
 
-    floating error_max = std::abs((ue_device-xx).getMaximum());
+    floating error_max = std::abs((ue-xx).getMaximum());
     return error_max;
 }
 
@@ -73,33 +70,36 @@ floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit
     auto grid = *colMatrixFactory.createColumn(M);
     getGeneralGrid(grid);
 
-    const auto xx = solve_nonequidistant(processingUnit, N, M, T, alpha, grid,
-                                         pde_function_tuple,
-                                         maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
-    std::vector<floating> ue(M+1);
-    ue = get_exact_solution_vector(M, T, alpha, exact_solution, grid);
-    auto ue_device = *colMatrixFactory.createColumn(ue.size());
-    memcpy(ue_device.data(), ue.data(), ue.size()*sizeof(floating));
-    ue_device.moveTo(processingUnit);
+    auto full_solution = solve_nonequidistant(processingUnit, N, T, alpha, grid,
+                                              pde_function_tuple,
+                                              maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
 
-    floating error_max = std::abs((ue_device-xx).getMaximum());
+    // only take latest time point solution, but for every space point
+    full_solution.moveTo(cpu);
+    auto xx = full_solution.getRow(N+1);
+
+    const auto ue = get_exact_solution_vector(T, alpha, exact_solution, grid);
+
+    floating error_max = std::abs((ue-xx).getMaximum());
     return error_max;
 }
 
 template<class floating>
-std::vector<floating> get_exact_solution_vector(const int M, const floating T, const floating alpha,
-                                                const SpaceTimeCoeffFunction<floating>& exact_solution,
-                                                const AlgebraicVector<floating> &grid)
+AlgebraicVector<floating> get_exact_solution_vector(const floating T, const floating alpha,
+                                                    const SpaceTimeCoeffFunction<floating>& exact_solution,
+                                                    const AlgebraicVector<floating> &grid)
 {
-    std::vector<floating> solution(M+1);
+    assert(typeid(*grid.getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    const auto M = grid.size();
+    auto solution = *grid.getMatrixFactory().createColumn(M+1);
 
     floating spacePoint = 0;
     for (int i = 0; i < M; i++)
     {
-        solution.at(i) = exact_solution(spacePoint, T, alpha);
+        solution[i] = exact_solution(spacePoint, T, alpha);
         spacePoint += grid[i];
     }
-    solution.at(M) = exact_solution(spacePoint, T, alpha);
+    solution[M] = exact_solution(spacePoint, T, alpha);
 
     return solution;
 }

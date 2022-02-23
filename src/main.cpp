@@ -108,7 +108,7 @@ int main()
                                                                                   rhs_f<floating>,
                                                                                   maxNumberOfIterations,
                                                                                   stepsPerIteration, accuracy,
-                                                       SolvingProcedure::PCBiCGStab);
+                                                                                  SolvingProcedure::PCBiCGStab);
     std::cout << std::endl << "max norm of absolute error (nonequidistant grid) = " << error_nonequi << std::endl
               << "####################################################################" << std::endl;
 

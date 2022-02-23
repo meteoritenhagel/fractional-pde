@@ -58,7 +58,7 @@ public:
      * @param[in] bdim number of row respectively column blocks
      * @param[in] B matrix for off diagonal blocks
      * @param[in] D used for calculation of A, the diagonal blocks
-     * @param[in] M matrix regarding Dirichlet conditions for all time steps
+     * @param[in] M matrix containing Dirichlet conditions
      * @param[in] h distance between the equidistant space points
      * @param[in] alpha anomalous diffusion coefficient
      * @param[in] timeGridStepSize distance between the equidistant space points
@@ -75,7 +75,7 @@ public:
       * @param[in] bdim number of row respectively column blocks
       * @param[in] B matrix for off diagonal blocks
       * @param[in] D used for calculation of A, the diagonal blocks
-      * @param[in] M matrix regarding Dirichlet conditions for all time steps
+      * @param[in] M matrix containing Dirichlet conditions
       * @param[in] h distance between the equidistant space points
       * @param[in] alpha anomalous diffusion coefficient
       * @param[in] timeGridStepSize distance between the equidistant space points
@@ -121,10 +121,53 @@ public:
     AlgebraicMatrix<floating> copyToDense() const;
 
     /**
-     * Solves the system using CyclicReduction, which is the recommended
-     * solver for systems with equidistant time and space grids.
+     * Solves the auxiliary linear system using CyclicReduction, which is the recommended
+     * solver for systems with equidistant time and space grids, and then
+     * calculates the PDE solution BlockVector out of it.
+     *
+     * The solution is a matrix consisting of dimension (N+1)x(M+1),
+     * where N is the number of time intervals in the time grid,
+     * and M is the number of space intervals in the space grid.
+     * The entry solution(i, j) is the numerical PDE solution u(x_j, t_i)
+     * in the space point x_j and the time point t_i,
+     * where i is in [[0, N]] and j is in [[0, M]].
+     *
+     * The right-hand side @p rhs is obtained by executing the function initialize_rhs in fractional_pde.h.
+     *
+     * @param[in] rhs Right-hand side of the PDE system.
+     * @return the numerical solution to the PDE as BlockVector
+     */
+    BlockVector<floating> solve_pde(const BlockVector<floating> &rhs) const;
+
+    /**
+     * Solves the auxiliary linear system using a SolvingProcedure with the given parameters,
+     * and then calculates the PDE solution BlockVector out of it.
      *
      * Note that BiCGStab and PCBiCGStab are not available.
+     * The solution is a matrix consisting of dimension (N+1)x(M+1),
+     * where N is the number of time intervals in the time grid,
+     * and M is the number of space intervals in the space grid.
+     * The entry solution(i, j) is the numerical PDE solution u(x_j, t_i)
+     * in the space point x_j and the time point t_i,
+     * where i is in [[0, N]] and j is in [[0, M]].
+     *
+     * The right-hand side @p rhs is obtained by executing the function initialize_rhs in fractional_pde.h.
+     *
+     * Note that BiCGStab and PCBiCGStab are not available.
+     *
+     * @param[in] rhs right-hand side
+     * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
+     * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
+     * @param[in] accuracy desired absolute accuracy
+     * @param[in] solvingProcedure the solver used to solve the system
+     * @return the numerical solution to the PDE as BlockVector
+     */
+    BlockVector<floating> solve_pde(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const;
+
+
+    /**
+     * Solves the auxiliary linear system using CyclicReduction, which is the recommended
+     * solver for systems with equidistant time and space grids.
      *
      * @param[in] rhs Right-hand side of the system K * beta = rhs
      * @return the solution beta
@@ -132,7 +175,9 @@ public:
     BlockVector<floating> solve(const BlockVector<floating> &rhs) const;
 
     /**
-     * Solves the system K * beta = rhs for beta using a SolvingProcedure with the given parameters.
+     * Solves the auxiliary linear system K * beta = rhs for beta using a SolvingProcedure with the given parameters.
+     * Note that BiCGStab and PCBiCGStab are not available.
+     *
      * @param[in] rhs right-hand side
      * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
      * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
@@ -162,7 +207,7 @@ private:
      * @param[in] bdim number of row respectively column blocks
      * @param[in] B matrix for off diagonal blocks
      * @param[in] D used for calculation of A, the diagonal blocks
-     * @param[in] M matrix regarding Dirichlet conditions for all time steps
+     * @param[in] M matrix containing Dirichlet conditions
      * @param[in] h distance between the equidistant space points
      * @param[in] alpha anomalous diffusion coefficient
      * @param[in] timeGridStepSize distance between the equidistant space points
@@ -184,26 +229,11 @@ private:
     static floating getSystemCoeff(const floating alpha, const floating timeGridStepSize);
 
     /**
-     * Constructor exclusively used for the cyclic reduction routine, where the matrix A is substituted by
-     * a modified version in each step.
-     *
-     * @param[in] bdim number of row respectively column blocks
-     * @param[in] B matrix for off diagonal blocks
-     * @param[in] D used for calculation of A, the diagonal blocks
-     * @param[in] M matrix regarding Dirichlet conditions for all time steps
-     * @param[in] h distance between the equidistant space points
-     * @param[in] alpha anomalous diffusion coefficient
-     * @param[in] timeGridStepSize distance between the equidistant space points
-     * @param[in] A matrix contained in the system's diagonal blocks
-     * @param[in] processingUnit processingUnit with which the calculations should be performed
-     */
-
-    /**
      * Calculate matrix A which occurs in the system's diagonals.
      *
      * @param B matrix for off diagonal blocks
      * @param D used for calculation of A, the diagonal blocks
-     * @param M matrix regarding Dirichlet conditions for all time steps
+     * @param M matrix containing Dirichlet conditions
      * @param h distance between the equidistant space points
      * @param alpha anomalous diffusion coefficient
      * @param timeGridStepSize distance between the equidistant space points
@@ -389,7 +419,7 @@ public:
      * @param[in] bdim number of row respectively column blocks
      * @param[in] B matrix for off diagonal blocks
      * @param[in] D used for calculation of A, the diagonal blocks
-     * @param[in] M matrix regarding Dirichlet conditions for all time steps
+     * @param[in] M matrix containing Dirichlet conditions
      * @param[in] h AlgebraicVector containing distances between subsequent space grid points
      * @param[in] alpha anomalous diffusion coefficient
      * @param[in] timeGridStepSize distance between the equidistant space points
@@ -406,7 +436,7 @@ public:
       * @param[in] bdim number of row respectively column blocks
       * @param[in] B matrix for off diagonal blocks
       * @param[in] D used for calculation of A, the diagonal blocks
-      * @param[in] M matrix regarding Dirichlet conditions for all time steps
+      * @param[in] M matrix containing Dirichlet conditions
       * @param[in] h AlgebraicVector containing distances between subsequent space grid points
       * @param[in] alpha anomalous diffusion coefficient
       * @param[in] timeGridStepSize distance between the equidistant space points
@@ -462,18 +492,47 @@ public:
     void mult(const BlockVector<floating> &u, BlockVector<floating> &result) const;
 
     /**
-     * Solves the system K * beta = rhs for beta using a SolvingProcedure with the given parameters.
+     * Solves the auxiliary linear system using a SolvingProcedure with the given parameters,
+     * and then calculates the PDE solution BlockVector out of it.
+     *
+     * Note that BiCGStab and PCBiCGStab are not available.
+     * The solution is a matrix consisting of dimension (N+3)x(M+1),
+     * where N is the number of time intervals in the time grid,
+     * and M is the number of space intervals in the space grid.
+     * The entry solution(i, j) is
+     *     *  for i == 0:
+     *        the boundary condition d/dt u(x_j, 0)
+     *     *  for i == N+2:
+     *        the boundary condition d/dt u(x_j, t_N)
+     *     *  otherwise, it is the numerical PDE solution u(x_j, t_(i-1))
+     *        in the space point x_j and the time point t_(i-1),
+     *        where i is in [[1, N+1]] and j is in [[0, M]].
+     *
+     * The right-hand side @p rhs is obtained by executing the function initialize_rhs in fractional_pde.h.
      *
      * Note that CyclicReduction is not available.
      *
      * @param[in] rhs right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations
-     * @param[in] stepsPerIteration number of steps in each iteration
+     * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
+     * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
+     * @param[in] accuracy desired absolute accuracy
+     * @param[in] solvingProcedure the solver used to solve the system
+     * @return the numerical solution to the PDE as BlockVector
+     */
+    BlockVector<floating> solve_pde(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const;
+
+    /**
+     * Solves the auxiliary linear system K * beta = rhs for beta using a SolvingProcedure with the given parameters.
+     * Note that CyclicReduction is not available.
+     *
+     * @param[in] rhs right-hand side
+     * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
+     * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
      * @param[in] accuracy desired absolute accuracy
      * @param[in] solvingProcedure the solver used to solve the system
      * @return the solution beta
      */
-    BlockVector<floating> solve(BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure = SolvingProcedure::PCBiCGStab) const;
+    BlockVector<floating> solve(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const;
 
 private:
     SizeType _bdim; //!< number of block rows and block columns

@@ -170,8 +170,10 @@ public:
      */
     floating& operator()(const SizeType i, const SizeType j);
 
-    /** Access to const element in row @param i and column @param j.
+    /** Access to const element in row @p i and column @p j.
      * This is equivalent to a 2D access [j][i] to the matrix.
+     *
+     * @warning the matrix must already be in RAM before calling this function
      *
      * @param[in] i row index
      * @param[in] j column index
@@ -179,6 +181,14 @@ public:
      * @return element in row i and column j
      */
     floating const & operator()(const SizeType i, const SizeType j) const;
+
+    /**
+     * Copies the entries of matrix row @p i to a new AlgebraicVector.
+     * @warning the matrix must already be in RAM before calling this function
+     * @param i row index
+     * @return AlgebraicVector containing the @p i-th row of the matrix
+     */
+    AlgebraicVector<floating> getRow(const SizeType i) const;
 
     /** Return the elements of the matrix in form of a long std::vector<floating>,
      *  containing column after column.

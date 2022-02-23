@@ -130,19 +130,28 @@ AlgebraicVector<floating> const & AlgebraicMatrix<floating>::operator[](const Si
 template<class floating>
 floating& AlgebraicMatrix<floating>::operator()(const SizeType i, const SizeType j)
 {
-#ifndef NDEBUG
     assert(typeid(*getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
-#endif
     return _A(i,j);
 }
 
 template<class floating>
 floating const & AlgebraicMatrix<floating>::operator()(const SizeType i, const SizeType j) const
 {
-#ifndef NDEBUG
     assert(typeid(*getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
-#endif
     return _A(i,j);
+}
+template<class floating>
+
+AlgebraicVector<floating> AlgebraicMatrix<floating>::getRow(const SizeType i) const
+{
+    assert(typeid(*getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    const SizeType N = getNcols();
+    auto row = *getMatrixFactory().createColumn(N);
+    for(SizeType j = 0; j < N; ++j)
+    {
+        row[j] = _A(i, j);
+    }
+    return row;
 }
 
 

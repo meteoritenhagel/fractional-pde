@@ -99,6 +99,27 @@ AlgebraicMatrix<floating> EquidistantBlock_1D<floating>::copyToDense() const
 }
 
 template<class floating>
+BlockVector<floating> EquidistantBlock_1D<floating>::solve_pde(const BlockVector<floating> &rhs) const
+{
+    return solve_pde(rhs, 0.0, 0.0, SolvingProcedure::CyclicReduction);
+}
+
+template<class floating>
+BlockVector<floating> EquidistantBlock_1D<floating>::solve_pde(const BlockVector<floating> &rhs,
+                                                               const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy,
+                                                               const SolvingProcedure solvingProcedure) const
+{
+    auto pde_solution = solve(rhs, maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
+    const auto M = pde_solution.getNrows();
+    const auto N = pde_solution.getNcols();
+
+    for(size_t j = 0; j < N; ++j)
+        pde_solution[j] = _M * pde_solution[j];
+
+    return pde_solution;
+}
+
+template<class floating>
 BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<floating> &rhs) const
 {
     return solve(rhs, 0, 0, 0.0, SolvingProcedure::CyclicReduction);

@@ -1,191 +1,191 @@
 #include "gpukernels.cuh"
 
 template<class floating>
-__global__ void prolongationKernel(const int N, const int M, const floating *const h, const floating *const ff,
-                              floating *const solution) {
+__global__ void prolongation_kernel(const int block_dim, const int num_blocks, const floating *const grid, const floating *const coarse_rhs,
+                                    floating *const fine_rhs) {
     const int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-    if (idx < N*M)
+    if (idx < block_dim * num_blocks)
     {
-        if (idx < N) // 0th column
+        if (idx < block_dim) // 0th column
         {
-            solution[idx] += ff[idx];
+            fine_rhs[idx] += coarse_rhs[idx];
         }
         else // jth column
         {
-            const size_t j = idx / N;
-            const size_t i = idx - j*N;
+            const size_t j = idx / block_dim;
+            const size_t i = idx - j * block_dim;
 
             if (j % 2) // odd number of columns, i.e. 1st, 3rd, 5th etc.
             {
-                const auto coeff1 = h[j] / (h[j - 1] + h[j]);
-                const auto coeff2 = h[j-1] / (h[j - 1] + h[j]);
-                solution[idx] += coeff1 * ff[(j-1)/2 * N + i] + coeff2*ff[(j+1)/2 * N + i];
+                const auto coeff1 = grid[j] / (grid[j - 1] + grid[j]);
+                const auto coeff2 = grid[j - 1] / (grid[j - 1] + grid[j]);
+                fine_rhs[idx] += coeff1 * coarse_rhs[(j - 1) / 2 * block_dim + i] + coeff2 * coarse_rhs[(j + 1) / 2 * block_dim + i];
             }
             else // even number of columns, i.e. 2nd, 4th, 6th etc.
             {
-                solution[idx] += ff[(j + 1) / 2 * N + i];
+                fine_rhs[idx] += coarse_rhs[(j + 1) / 2 * block_dim + i];
             }
         }
     }
 }
 
 template<class floating>
-__global__ void rescaleRhsKernel(const int N, const int M, const floating * const h, floating * const rhs)
+__global__ void rescale_rhs_kernel(const int block_dim, const int num_blocks, const floating * const grid, floating * const rhs)
 {
     const int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-    if (idx < N*M)
+    if (idx < block_dim * num_blocks)
     {
-        const size_t j = idx / N;
+        const size_t j = idx / block_dim;
 
-        if (1 <= j && j <= M-2)
+        if (1 <= j && j <= num_blocks - 2)
         {
-            rhs[idx] *= h[j] + h[j-1];
+            rhs[idx] *= grid[j] + grid[j - 1];
         }
     }
 }
 
 template<class floating>
-__global__ void restrictionKernel(const int N, const int M, const floating * const h, const floating * const ff, floating * const ffOnCoarseGrid)
+__global__ void restriction_kernel(const int block_dim, const int num_blocks, const floating * const grid, const floating * const fine_rhs, floating * const coarse_rhs)
 {
     const int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-    const size_t j = idx / N;
-    const size_t i = idx - j*N;
+    const size_t j = idx / block_dim;
+    const size_t i = idx - j * block_dim;
 
-    if (idx < N*M && (j%2 == 0) && 2 <= j && j < M-1)
+    if (idx < block_dim * num_blocks && (j % 2 == 0) && 2 <= j && j < num_blocks - 1)
     {
-        const auto coeff1 = h[j - 2] / (h[j - 2] + h[j - 1]);
-        const auto coeff2 = h[j + 1] / (h[j] + h[j + 1]);
-        ffOnCoarseGrid[j/2 * N + i] = coeff1 * ff[(j-1) * N + i] + ff[j * N + i] + coeff2 * ff[(j+1)*N + i];
+        const auto coeff1 = grid[j - 2] / (grid[j - 2] + grid[j - 1]);
+        const auto coeff2 = grid[j + 1] / (grid[j] + grid[j + 1]);
+        coarse_rhs[j / 2 * block_dim + i] = coeff1 * fine_rhs[(j - 1) * block_dim + i] + fine_rhs[j * block_dim + i] + coeff2 * fine_rhs[(j + 1) * block_dim + i];
 
     }
 }
 
 template<class floating>
-__global__ void getReducedGridKernel(const int coarseLen, const floating * const h, floating * const coarseH)
+__global__ void get_reduced_grid_kernel(const int coarse_len, const floating * const grid, floating * const coarse_grid)
 {
     const int idx = threadIdx.x + blockDim.x * blockIdx.x;
-    if (idx < coarseLen)
-        coarseH[idx] = h[2*idx] + h[2*idx+1];
+    if (idx < coarse_len)
+        coarse_grid[idx] = grid[2 * idx] + grid[2 * idx + 1];
 }
 
 template<class floating>
-__global__ void smoothScaleKernel(const int N, const int i, const floating * const h, floating * const x)
+__global__ void smooth_scale_kernel(const int block_dim, const int i, const floating * const grid, floating * const residual_i)
 {
     const int idx = threadIdx.x + blockDim.x * blockIdx.x;
-    if (idx < N)
+    if (idx < block_dim)
     {
-        const floating inv_scale_factor = 1/(h[i-1] + h[i]);
-        const floating inv_coeff_middle = 1/(2*(h[i-1] + h[i])/h[i-1]/h[i]);
-        if (idx == 0 || idx == 1 || idx == N-1)
-            x[idx] *= inv_scale_factor;
+        const floating inv_scale_factor = 1/(grid[i - 1] + grid[i]);
+        const floating inv_coeff_middle = 1/(2 * (grid[i - 1] + grid[i]) / grid[i - 1] / grid[i]);
+        if (idx == 0 || idx == 1 || idx == block_dim - 1)
+            residual_i[idx] *= inv_scale_factor;
         else
-            x[idx] *= inv_coeff_middle;
+            residual_i[idx] *= inv_coeff_middle;
     }
 }
 
 template<class floating>
-__global__ void smoothFullScaleKernel(const int N, const int M, const floating * const h, floating * const X)
+__global__ void smooth_full_scale_kernel(const int block_dim, const int num_blocks, const floating * const grid, floating * const residual)
 {
     const int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-    if (idx < N*M)
+    if (idx < block_dim * num_blocks)
     {
-        const size_t j = idx / N;
+        const size_t j = idx / block_dim;
 
-        if (1 <= j && j < M-1)
+        if (1 <= j && j < num_blocks - 1)
         {
-            const size_t i = idx - j*N;
+            const size_t i = idx - j * block_dim;
 
-            const floating inv_scale_factor = 1/(h[j-1] + h[j]);
-            const floating inv_coeff_middle = 1/(2*(h[j-1] + h[j])/h[j-1]/h[j]);
+            const floating inv_scale_factor = 1/(grid[j - 1] + grid[j]);
+            const floating inv_coeff_middle = 1/(2 * (grid[j - 1] + grid[j]) / grid[j - 1] / grid[j]);
 
-            if (i == 0 || i == 1 || i == N-1)
-                X[idx] *= inv_scale_factor;
+            if (i == 0 || i == 1 || i == block_dim - 1)
+                residual[idx] *= inv_scale_factor;
             else
-                X[idx] *= inv_coeff_middle;
+                residual[idx] *= inv_coeff_middle;
         }
     }
 }
 
 template<class floating>
-void deviceProlongation(const int N, const int M, const floating *const h, const floating *const ff,
-                        floating *const solution) {
+void device_prolongation(const int block_dim, const int num_blocks, const floating *const grid, const floating *const coarse_rhs,
+                         floating *const fine_rhs) {
     const int block_size = 1024;
-    const int number_of_blocks = N*M / block_size + 1;
+    const int number_of_blocks = block_dim * num_blocks / block_size + 1;
     dim3 gridDim(number_of_blocks, 1);
     dim3 blockDim(block_size, 1);
-    prolongationKernel<floating> <<<gridDim, blockDim>>>(N, M, h, ff, solution);
+    prolongation_kernel<floating> <<<gridDim, blockDim>>>(block_dim, num_blocks, grid, coarse_rhs, fine_rhs);
 
     cudaDeviceSynchronize();
 }
 
 template<class floating>
-void deviceRescaleRhs(const int N, const int M, const floating * const h, floating * const rhs)
+void device_rescale_rhs(const int block_dim, const int num_blocks, const floating * const grid, floating * const rhs)
 {
     const int block_size = 1024;
-    const int number_of_blocks = N*M / block_size + 1;
+    const int number_of_blocks = block_dim * num_blocks / block_size + 1;
     dim3 gridDim(number_of_blocks, 1);
     dim3 blockDim(block_size, 1);
-    rescaleRhsKernel<floating> <<<gridDim, blockDim>>>(N, M, h, rhs);
+    rescale_rhs_kernel<floating> <<<gridDim, blockDim>>>(block_dim, num_blocks, grid, rhs);
     cudaDeviceSynchronize();
 }
 
 template<class floating>
-void deviceRestriction(const int N, const int M, const floating * const h, const floating * const ff, floating * const ffOnCoarseGrid)
+void device_restriction(const int block_dim, const int num_blocks, const floating * const grid, const floating * const fine_rhs, floating * const coarse_rhs)
 {
     const int block_size = 1024;
-    const int number_of_blocks = N*M / block_size + 1;
+    const int number_of_blocks = block_dim * num_blocks / block_size + 1;
     dim3 gridDim(number_of_blocks, 1);
     dim3 blockDim(block_size, 1);
-    restrictionKernel<floating> <<<gridDim, blockDim>>>(N, M, h, ff, ffOnCoarseGrid);
+    restriction_kernel<floating> <<<gridDim, blockDim>>>(block_dim, num_blocks, grid, fine_rhs, coarse_rhs);
     cudaDeviceSynchronize();
 }
 
 template<class floating>
-void deviceGetReducedGrid(const int coarseLen, const floating * const h, floating * const coarseH)
+void device_get_reduced_grid(const int coarse_len, const floating * const grid, floating * const coarse_grid)
 {
     const int block_size = 1024;
-    const int number_of_blocks = coarseLen / block_size + 1;
+    const int number_of_blocks = coarse_len / block_size + 1;
     dim3 gridDim(number_of_blocks, 1);
     dim3 blockDim(block_size, 1);
-    getReducedGridKernel<floating> <<<gridDim, blockDim>>>(coarseLen, h, coarseH);
+    get_reduced_grid_kernel<floating> <<<gridDim, blockDim>>>(coarse_len, grid, coarse_grid);
     cudaDeviceSynchronize();
 }
 
 template<class floating>
-void deviceSmoothScale(const int N, const int i, const floating * const h, floating * const x)
+void device_smooth_scale(const int block_dim, const int i, const floating * const grid, floating * const residual_i)
 {
     const int block_size = 1024;
-    const int number_of_blocks = N / block_size + 1;
+    const int number_of_blocks = block_dim / block_size + 1;
     dim3 gridDim(number_of_blocks, 1);
     dim3 blockDim(block_size, 1);
-    smoothScaleKernel<floating> <<<gridDim, blockDim>>>(N, i, h, x);
+    smooth_scale_kernel<floating> <<<gridDim, blockDim>>>(block_dim, i, grid, residual_i);
     cudaDeviceSynchronize();
 }
 
 template<class floating>
-void deviceSmoothFullScale(const int N, const int M, const floating * const h, floating * const X)
+void device_smooth_full_scale(const int block_dim, const int num_blocks, const floating * const grid, floating * const residual)
 {
     const int block_size = 1024;
-    const int number_of_blocks = N*M / block_size + 1;
+    const int number_of_blocks = block_dim * num_blocks / block_size + 1;
     dim3 gridDim(number_of_blocks, 1);
     dim3 blockDim(block_size, 1);
-    smoothFullScaleKernel<floating> <<<gridDim, blockDim>>>(N, M, h, X);
+    smooth_full_scale_kernel<floating> <<<gridDim, blockDim>>>(block_dim, num_blocks, grid, residual);
     cudaDeviceSynchronize();
 }
 
-template void deviceProlongation<float> (const int N, const int M, const float * const h, float const * const ff, float * const solution);
-template void deviceProlongation<double>(const int N, const int M, const double * const h, double const * const ff, double * const solution);
-template void deviceRescaleRhs<float> (const int N, const int M, const float * const h, float * const rhs);
-template void deviceRescaleRhs<double>(const int N, const int M, const double * const h, double * const rhs);
-template void deviceRestriction<float> (const int N, const int M, const float * const h, const float * const ffOnCoarseGrid, float * const ff);
-template void deviceRestriction<double>(const int N, const int M, const double * const h, const double * const ffOnCoarseGrid, double * const ff);
-template void deviceGetReducedGrid<float> (const int coarseLen, const float * const h, float * const coarseH);
-template void deviceGetReducedGrid<double>(const int coarseLen, const double * const h, double * const coarseH);
-template void deviceSmoothScale<float> (const int N, const int i, const float * const h, float * const x);
-template void deviceSmoothScale<double>(const int N, const int i, const double * const h, double * const x);
-template void deviceSmoothFullScale<float> (const int N, const int M, const float * const h, float * const X);
-template void deviceSmoothFullScale<double>(const int N, const int M, const double * const h, double * const X);
+template void device_prolongation<float> (const int, const int, const float * const, float const * const, float * const);
+template void device_prolongation<double>(const int, const int, const double * const, double const * const, double * const);
+template void device_rescale_rhs<float> (const int, const int, const float * const, float * const);
+template void device_rescale_rhs<double>(const int, const int, const double * const, double * const);
+template void device_restriction<float> (const int, const int, const float * const, const float * const, float * const);
+template void device_restriction<double>(const int, const int, const double * const, const double * const, double * const);
+template void device_get_reduced_grid<float> (const int, const float * const, float * const);
+template void device_get_reduced_grid<double>(const int, const double * const, double * const);
+template void device_smooth_scale<float> (const int, const int , const float * const, float * const);
+template void device_smooth_scale<double>(const int, const int , const double * const, double * const);
+template void device_smooth_full_scale<float> (const int, const int , const float * const, float * const);
+template void device_smooth_full_scale<double>(const int, const int , const double * const, double * const);

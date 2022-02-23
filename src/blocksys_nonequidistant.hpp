@@ -81,24 +81,41 @@ ContainerFactory<floating> NonEquidistantBlock_1D<floating>::getMatrixFactory() 
 }
 
 template<class floating>
-BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const
+BlockVector<floating> NonEquidistantBlock_1D<floating>::solve_pde(const BlockVector<floating> &rhs,
+                                                                  const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy,
+                                                                  const SolvingProcedure solvingProcedure) const
+{
+    auto pde_solution = solve(rhs, maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
+    const auto M = pde_solution.getNrows();
+    const auto N = pde_solution.getNcols();
+
+    for(size_t j = 0; j < N; ++j)
+        pde_solution[j] = _M * pde_solution[j];
+
+    return pde_solution;
+}
+
+template<class floating>
+BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const
 {
     const SizeType N = getNdim();
     const SizeType M = getBlockDim();
-    rhs.moveTo(getProcessingUnit());
+
+    auto rhs_copy(rhs);
+    rhs_copy.moveTo(getProcessingUnit());
 
     // Since we work with the symmetrized system, also rhs must be rescaled appropiately
-    rescale_rhs(rhs);
+    rescale_rhs(rhs_copy);
 
     BlockVector<floating> solution = *getMatrixFactory().createMatrix(N, M);
 
     auto residual{solution};
-    calculateResidual(solution, rhs, residual);
+    calculateResidual(solution, rhs_copy, residual);
 
     std::cout << "initial system error: " << residual.getEuclidean() << std::endl;
 
-    solution[0] = _M / rhs[0];
-    solution[M-1] = _M / rhs[M-1];
+    solution[0] = _M / rhs_copy[0];
+    solution[M-1] = _M / rhs_copy[M-1];
 
     floating euclideanError = 0;
 
@@ -112,16 +129,16 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
             case SolvingProcedure::CyclicReduction:
                 throw std::runtime_error("EquidistantBlock_1D does not support Cyclic Reduction. Abort.");
             case SolvingProcedure::PCBiCGStab:
-                euclideanError = PCbiCGStab(rhs, stepsPerIteration, accuracy, solution);
+                euclideanError = PCbiCGStab(rhs_copy, stepsPerIteration, accuracy, solution);
                 break;
 
             case SolvingProcedure::BiCGStab:
-                euclideanError = biCGStab(rhs, stepsPerIteration, accuracy, solution);
+                euclideanError = biCGStab(rhs_copy, stepsPerIteration, accuracy, solution);
                 break;
 
             case SolvingProcedure::Richardson:
-                smooth(static_cast<floating>(1.0), rhs, stepsPerIteration, solution);
-                calculateResidual(solution, rhs, residual);
+                smooth(static_cast<floating>(1.0), rhs_copy, stepsPerIteration, solution);
+                calculateResidual(solution, rhs_copy, residual);
                 euclideanError = residual.getEuclidean();
 
                 ++totalCounter;
@@ -129,9 +146,9 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
                 break;
 
             case SolvingProcedure::PCRichardson:
-                multigrid(2, rhs, stepsPerIteration, accuracy, solution);
+                multigrid(2, rhs_copy, stepsPerIteration, accuracy, solution);
                 
-                calculateResidual(solution, rhs, residual);
+                calculateResidual(solution, rhs_copy, residual);
                 euclideanError = residual.getEuclidean();
                 ++totalCounter;
                 std::cout << "   " << totalCounter << ": " << euclideanError << std::endl;
@@ -507,7 +524,7 @@ void NonEquidistantBlock_1D<floating>::prolongation(const BlockVector<floating> 
     else
     {
 #ifndef CPU_ONLY
-        deviceProlongation(N, M, _h.data(), ff.data(), solution.data());
+        device_prolongation(N, M, _h.data(), ff.data(), solution.data());
 #endif
     }
 }
@@ -534,7 +551,7 @@ void NonEquidistantBlock_1D<floating>::restriction(const BlockVector<floating> &
     else
     {
 #ifndef CPU_ONLY
-        deviceRestriction(N, M, _h.data(), ff.data(), ffOnCoarseGrid.data());
+        device_restriction(N, M, _h.data(), ff.data(), ffOnCoarseGrid.data());
 #endif
     }
 }
@@ -562,7 +579,7 @@ AlgebraicVector<floating> NonEquidistantBlock_1D<floating>::getReducedGrid() con
         auto h_copy(_h);
         h_copy.moveTo(getProcessingUnit());
         coarseGrid.moveTo(getProcessingUnit());
-        deviceGetReducedGrid(Mf, h_copy.data(), coarseGrid.data());
+        device_get_reduced_grid(Mf, h_copy.data(), coarseGrid.data());
 #endif
     }
 
@@ -627,7 +644,7 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
             else
             {
 #ifndef CPU_ONLY
-                deviceSmoothScale(N, i, _h.data(), residual.data());
+                device_smooth_scale(N, i, _h.data(), residual.data());
 #endif
             }
 
@@ -664,7 +681,7 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
         else
         {
 #ifndef CPU_ONLY
-            deviceSmoothFullScale(N, M, _h.data(), fullResidual.data());
+            device_smooth_full_scale(N, M, _h.data(), fullResidual.data());
 #endif
         }
 
@@ -833,7 +850,7 @@ void NonEquidistantBlock_1D<floating>::rescale_rhs(BlockVector<floating> &rhs) c
     else
     {
 #ifndef CPU_ONLY
-        deviceRescaleRhs(N, M, _h.data(), rhs.data());
+        device_rescale_rhs(N, M, _h.data(), rhs.data());
 #endif
     }
 }
