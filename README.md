@@ -23,12 +23,12 @@ The program has the following features:
 * Templatized solving routines allowing to choose the precision of the floating point numbers
   used between `float` or `double`.
 * Custom data types for scalars, arrays and matrices allowing to be allocated and transferred
-  from the CPU's to GPU's memory and vice versa. They are contained in the folder
+  from the Cpu's to Gpu's memory and vice versa. They are contained in the folder
   `src/devicedata`.
 * Additional data types for arrays and matrices supporting efficient linear algebra
   operations. The data types are contained in the folder `srd/algebraiccontainers`.
 * These linear algebra operations are accelerated using an adapter generalizing BLAS/LAPACK,
-  cuBLAS/cuSOLVER, and MAGMA, for calculation on the CPU or GPU. This adapter is contained
+  cuBLAS/cuSOLVER, and MAGMA, for calculation on the Cpu or Gpu. This adapter is contained
   in the folder `src/processingunit`.
 
 The contents of the folders `src/devicedata`, `src/processingunit` and

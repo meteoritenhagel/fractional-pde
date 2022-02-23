@@ -18,12 +18,12 @@ using Timer = std::unique_ptr<TimerDevice>;
 /**
  * Class TimerDevice serves as an abstract interface for time stopping purposes.
  * This is necessary, since e.g. CUDA has its own time stopping functions and the
- * use of stopping CUDA applications with CPU-only timers might result in unexpected behavior.
+ * use of stopping CUDA applications with Cpu-only timers might result in unexpected behavior.
  */
 class TimerDevice {
 public:
-    using timepoint = float;
-    using timespan_sec = float;
+    using TimePoint = float;
+    using TimespanSec = float;
 
     /**
      * Constructor
@@ -49,28 +49,28 @@ public:
      * Returns the elapsed time between calls of start() and stop()
      * @return the elapsed time
      */
-    virtual timespan_sec elapsedTime() const = 0;
+    virtual TimespanSec elapsed_time() const = 0;
 };
 
 /**
- * Class CHRONO_Timer is a stop watch for measuring time elapsed in CPU-only processes.
+ * Class ChronoTimer is a stop watch for measuring time elapsed in Cpu-only processes.
  * It is based on std::chrono::system_clock.
  */
-class CHRONO_Timer : public TimerDevice {
+class ChronoTimer : public TimerDevice {
 public:
-    using chronoClock = std::chrono::system_clock;
-    using chronoTimespan = TimerDevice::timespan_sec;
-    using chronoTimepoint = std::chrono::time_point<chronoClock>;
+    using ChronoClock = std::chrono::system_clock;
+    using ChronoTimespan = TimerDevice::TimespanSec;
+    using ChronoTimepoint = std::chrono::time_point<ChronoClock>;
 
     /**
      * Constructor
      */
-    CHRONO_Timer();
+    ChronoTimer();
 
     /**
      * @copydoc TimerDevice::~TimerDevice()
      */
-    ~CHRONO_Timer() override = default;
+    ~ChronoTimer() override = default;
 
     /**
     * @copydoc TimerDevice::start()
@@ -83,33 +83,33 @@ public:
     void stop() override;
 
     /**
-    * @copydoc TimerDevice::elapsedTime() const
+    * @copydoc TimerDevice::elapsed_time() const
     */
-    chronoTimespan elapsedTime() const override;
+    ChronoTimespan elapsed_time() const override;
 
 private:
-    chronoTimepoint _startTime{}; //!< time point representing the starting point
-    chronoTimepoint _stopTime{}; //!< time point representing the stopping point
+    ChronoTimepoint _start_time{}; //!< time point representing the starting point
+    ChronoTimepoint _stop_time{}; //!< time point representing the stopping point
 };
 
 /**
- * Class OMP_Timer is a stop watch for measuring time elapsed in parallelized CPU-only processes.
+ * Class OmpTimer is a stop watch for measuring time elapsed in parallelized Cpu-only processes.
  * It is based on the OpenMP timing tools.
  */
-class OMP_Timer : public TimerDevice {
+class OmpTimer : public TimerDevice {
 public:
-    using ompTimepoint = TimerDevice::timepoint;
-    using ompTimespan = TimerDevice::timespan_sec;
+    using OmpTimepoint = TimerDevice::TimePoint;
+    using OmpTimespan = TimerDevice::TimespanSec;
 
     /**
      * Constructor
      */
-    OMP_Timer();
+    OmpTimer();
 
     /**
      * @copydoc TimerDevice::~TimerDevice()
      */
-    ~OMP_Timer() override = default;
+    ~OmpTimer() override = default;
 
     /**
      * @copydoc TimerDevice::start()
@@ -122,31 +122,31 @@ public:
     void stop() override;
 
     /**
-     * @copydoc TimerDevice::elapsedTime() const
+     * @copydoc TimerDevice::elapsed_time() const
      */
-    ompTimespan elapsedTime() const override;
+    OmpTimespan elapsed_time() const override;
 
 private:
-    ompTimepoint _startTime; //!< time point representing the starting point
-    ompTimepoint _stopTime; //!< time point representing the stopping point
+    OmpTimepoint _start_time; //!< time point representing the starting point
+    OmpTimepoint _stop_time; //!< time point representing the stopping point
 };
 
 #ifndef CPU_ONLY
-class GPU_Timer : public TimerDevice {
+class GpuTimer : public TimerDevice {
 public:
-    using gpuEvent = cudaEvent_t;
-    using gpuTimespan = TimerDevice::timespan_sec;
-    using gpuTimetype = gpuTimespan;
+    using GpuEvent = cudaEvent_t;
+    using GpuTimespan = TimerDevice::TimespanSec;
+    using GpuTimetype = GpuTimespan;
 
     /**
      * Constructor
      */
-    GPU_Timer();
+    GpuTimer();
 
     /**
      * @copydoc TimerDevice::~TimerDevice()
      */
-    ~GPU_Timer() override;
+    ~GpuTimer() override;
 
     /**
      * @copydoc TimerDevice::start()
@@ -159,25 +159,25 @@ public:
     void stop() override;
 
     /**
-     * @copydoc TimerDevice::elapsedTime() const
+     * @copydoc TimerDevice::elapsed_time() const
      */
-    gpuTimespan elapsedTime() const override;
+    GpuTimespan elapsed_time() const override;
 
 
 private:
-    gpuEvent _startEvent; //!< event representing the starting point of time measurement
-    gpuEvent _stopEvent; //!< event representing the stopping point of time measurement
+    GpuEvent _start_event; //!< event representing the starting point of time measurement
+    GpuEvent _stop_event; //!< event representing the stopping point of time measurement
 
     /**
      * Creates a cudaEvent_t instance.
      * @return CUDA event
      */
-    gpuEvent initializeEvent();
+    GpuEvent initialize_event();
 
-    GPU_Timer(const GPU_Timer&) = delete;
-    GPU_Timer(GPU_Timer&&) = delete;
-    GPU_Timer& operator=(const GPU_Timer&) = delete;
-    GPU_Timer& operator=(GPU_Timer&&) = delete;
+    GpuTimer(const GpuTimer&) = delete;
+    GpuTimer(GpuTimer&&) = delete;
+    GpuTimer& operator=(const GpuTimer&) = delete;
+    GpuTimer& operator=(GpuTimer&&) = delete;
 };
 #endif
 

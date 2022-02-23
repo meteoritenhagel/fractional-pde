@@ -38,7 +38,7 @@ floating scalarProduct(const AlgebraicVector<floating> &A, const AlgebraicVector
 
 template<class floating>
 AlgebraicMatrix<floating>::AlgebraicMatrix(const ProcessingUnit<floating>& processingUnit, const MatrixDataType& A)
-: _colMatrixFactory(processingUnit), _A(A), _Ainv(nullptr), _ipiv(0, 0, get_processing_unit()->getMemoryManager()), _arrayOfColumns(initializeArrayOfColumns())
+: _colMatrixFactory(processingUnit), _A(A), _Ainv(nullptr), _ipiv(0, 0, get_processing_unit()->get_memory_manager()), _arrayOfColumns(initializeArrayOfColumns())
 {
 }
 
@@ -62,9 +62,9 @@ void AlgebraicMatrix<floating>::moveTo(const ProcessingUnit<floating> processing
     if (_Ainv)
         _Ainv->moveTo(processingUnit);
 
-    _A.moveTo(processingUnit->getMemoryManager());
+    _A.moveTo(processingUnit->get_memory_manager());
 
-    _ipiv.moveTo(processingUnit->getMemoryManager());
+    _ipiv.moveTo(processingUnit->get_memory_manager());
     resetArrayOfColumns();
 }
 
@@ -76,7 +76,7 @@ AlgebraicMatrix<floating>& AlgebraicMatrix<floating>::operator=(const AlgebraicM
     {
         _colMatrixFactory = other._colMatrixFactory;
         _A = other._A;
-        _ipiv = DeviceArray<int>(0, 0, get_processing_unit()->getMemoryManager());
+        _ipiv = DeviceArray<int>(0, 0, get_processing_unit()->get_memory_manager());
         _arrayOfColumns = initializeArrayOfColumns();
 
         // copy _Ainv
@@ -130,21 +130,21 @@ AlgebraicVector<floating> const & AlgebraicMatrix<floating>::operator[](const Si
 template<class floating>
 floating& AlgebraicMatrix<floating>::operator()(const SizeType i, const SizeType j)
 {
-    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()) && "Must be on Cpu");
     return _A(i,j);
 }
 
 template<class floating>
 floating const & AlgebraicMatrix<floating>::operator()(const SizeType i, const SizeType j) const
 {
-    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()) && "Must be on Cpu");
     return _A(i,j);
 }
 template<class floating>
 
 AlgebraicVector<floating> AlgebraicMatrix<floating>::getRow(const SizeType i) const
 {
-    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()) && "Must be on Cpu");
     const SizeType N = getNcols();
     auto row = *get_container_factory().createColumn(N);
     for(SizeType j = 0; j < N; ++j)
@@ -224,7 +224,7 @@ template<class floating>
 floating AlgebraicMatrix<floating>::getMaximum() const
 {
     const auto index = get_processing_unit()->ixamax(getNelems(), data(), 1);
-    DeviceScalar<floating> maximum(data()[index], get_processing_unit()->getMemoryManager());
+    DeviceScalar<floating> maximum(data()[index], get_processing_unit()->get_memory_manager());
     maximum.moveTo(std::make_shared<CPU_Manager>());
     return maximum.value();
 }
@@ -540,11 +540,11 @@ void AlgebraicMatrix<floating>::recalculateInverse() const
     
     int N = eye.getNrows();
     
-    initializeIdentityMatrix(get_processing_unit()->getMemoryManager(), eye.data(), eye.getNrows(), eye.getNcols());
+    initializeIdentityMatrix(get_processing_unit()->get_memory_manager(), eye.data(), eye.getNrows(), eye.getNcols());
 
     int LDA = N;
 
-    _ipiv = DeviceArray<int>(N, 0, get_processing_unit()->getMemoryManager());
+    _ipiv = DeviceArray<int>(N, 0, get_processing_unit()->get_memory_manager());
     int info(0);
 
     get_processing_unit()->xgetrf(&N, &N, Afactorization.data(), &LDA, _ipiv.data(), &info);
@@ -565,7 +565,7 @@ void AlgebraicMatrix<floating>::recalculateInverse() const
     int N = Ainv.getNrows();
     int LDA = N;
 
-    _ipiv = DeviceArray<int>(N, 0, getProcessingUnit()->getMemoryManager());
+    _ipiv = DeviceArray<int>(N, 0, getProcessingUnit()->get_memory_manager());
     int info(0);
 
     getProcessingUnit()->xgetrf(&N, &N, Ainv.data(), &LDA, _ipiv.data(), &info);

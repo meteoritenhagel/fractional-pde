@@ -31,7 +31,7 @@ floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<flo
                                                         const size_t maxNumberOfIterations, const size_t stepsPerIteration,
                                                         const floating accuracy, const SolvingProcedure solvingProcedure)
 {
-    ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
+    ProcessingUnit<floating> cpu = std::make_shared<Cpu<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
 
     const auto pde_function_tuple = exact_solution_to_pde_condition_functions(exact_solution, exact_solution_dt, rhs_function, alpha);
@@ -62,7 +62,7 @@ floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit
 {
     const auto pde_function_tuple = exact_solution_to_pde_condition_functions(exact_solution, exact_solution_dt, rhs_function, alpha);
 
-    ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
+    ProcessingUnit<floating> cpu = std::make_shared<Cpu<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
 
     floating dt = T / static_cast<floating>(N);
@@ -89,7 +89,7 @@ AlgebraicVector<floating> get_exact_solution_vector(const floating T, const floa
                                                     const SpaceTimeCoeffFunction<floating>& exact_solution,
                                                     const AlgebraicVector<floating> &grid)
 {
-    assert(typeid(*grid.get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*grid.get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()) && "Must be on Cpu");
     const auto M = grid.size();
     auto solution = *grid.get_container_factory().createColumn(M + 1);
 

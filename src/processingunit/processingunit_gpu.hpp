@@ -73,91 +73,91 @@ static std::string cusolverErrorToString(cusolverStatus_t error)
 #endif
 
 template<class floating>
-Timer GPU<floating>::createTimer() const
+Timer Gpu<floating>::create_timer() const
 {
-    return std::make_unique<GPU_Timer>();
+    return std::make_unique<GpuTimer>();
 }
 
 template<class floating>
-MemoryManager GPU<floating>::getMemoryManager() const
+MemoryManager Gpu<floating>::get_memory_manager() const
 {
     return _deviceManager;
 }
 
 template<class floating>
-auto GPU<floating>::getCublasHandle() const
+auto Gpu<floating>::get_cublas_handle() const
 {
-    return _handle.getCublasHandle();
+    return _handle.get_cublas_handle();
 }
 
 template<class floating>
-auto GPU<floating>::getCusolverHandle() const
+auto Gpu<floating>::get_cusolver_handle() const
 {
-    return _handle.getCusolverHandle();
+    return _handle.get_cusolver_handle();
 }
 
 template<class floating>
-std::string GPU<floating>::display() const
+std::string Gpu<floating>::display() const
 {
-    return "GPU";
+    return "Gpu";
 }
 
 template<class floating>
-int GPU<floating>::ixamax(const int n, const floating * const x, const int incx) const
+int Gpu<floating>::ixamax(const int n, const floating * const x, const int incx) const
 {
     int output = 0;
     if constexpr(isFloat())
-        cublasIsamax(getCublasHandle(), n, x, incx, &output);
+        cublasIsamax(get_cublas_handle(), n, x, incx, &output);
     else if constexpr(isDouble())
-        cublasIdamax(getCublasHandle(), n, x, incx, &output);
+        cublasIdamax(get_cublas_handle(), n, x, incx, &output);
     return output - 1; //since cuBLAS uses Fortran indexing here...
 }
 
 template<class floating>
-void GPU<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const
+void Gpu<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const
 {
     if constexpr(isFloat())
-        cublasSaxpy(getCublasHandle(), n, &alpha, x, incx, y, incy);
+        cublasSaxpy(get_cublas_handle(), n, &alpha, x, incx, y, incy);
     else if constexpr(isDouble())
-        cublasDaxpy(getCublasHandle(), n, &alpha, x, incx, y, incy);
+        cublasDaxpy(get_cublas_handle(), n, &alpha, x, incx, y, incy);
     cudaDeviceSynchronize();
     return;
 }
 
 template<class floating>
-void GPU<floating>::xcopy(const int n, const floating * const source, const int incx, floating * const dest, const int incy) const
+void Gpu<floating>::xcopy(const int n, const floating * const source, const int incx, floating * const dest, const int incy) const
 {
     if constexpr(isFloat())
-        cublasScopy(getCublasHandle(), n, source, incx, dest, incy);
+        cublasScopy(get_cublas_handle(), n, source, incx, dest, incy);
     else if constexpr(isDouble())
-        cublasDcopy(getCublasHandle(), n, source, incx, dest, incy);
+        cublasDcopy(get_cublas_handle(), n, source, incx, dest, incy);
     return;
 }
 
 template<class floating>
-floating GPU<floating>::xdot(const int n, const floating * const x, const int incx, const floating * const y, const int incy) const
+floating Gpu<floating>::xdot(const int n, const floating * const x, const int incx, const floating * const y, const int incy) const
 {
     floating result = 0;
 
     if constexpr(isFloat())
-        cublasSdot(getCublasHandle(), n, x, incx, y, incy, &result);
+        cublasSdot(get_cublas_handle(), n, x, incx, y, incy, &result);
     else if constexpr(isDouble())
-        cublasDdot(getCublasHandle(), n, x, incx, y, incy, &result);
+        cublasDdot(get_cublas_handle(), n, x, incx, y, incy, &result);
     cudaDeviceSynchronize();
     return result;
 }
 
 template<class floating>
-void GPU<floating>::xgemm(const OperationType TransA, const OperationType TransB,
-        const int M, const int N, const int K, const floating alpha, const floating * const A,
-        const int lda, const floating * const B, const int ldb, const floating beta, floating * const C, const int ldc) const
+void Gpu<floating>::xgemm(const OperationType TransA, const OperationType TransB,
+                          const int M, const int N, const int K, const floating alpha, const floating * const A,
+                          const int lda, const floating * const B, const int ldb, const floating beta, floating * const C, const int ldc) const
 {
     if constexpr(isFloat())
-        cublasSgemm(getCublasHandle(), toInternalOperation.at(TransA), toInternalOperation.at(TransB),
+        cublasSgemm(get_cublas_handle(), to_internal_operation.at(TransA), to_internal_operation.at(TransB),
                     M, N, K, &alpha, A,
                     lda, B, ldb, &beta, C, ldc);
     else if constexpr(isDouble())
-        cublasDgemm(getCublasHandle(), toInternalOperation.at(TransA), toInternalOperation.at(TransB),
+        cublasDgemm(get_cublas_handle(), to_internal_operation.at(TransA), to_internal_operation.at(TransB),
                     M, N, K, &alpha, A,
                     lda, B, ldb, &beta, C, ldc);
 
@@ -166,16 +166,16 @@ void GPU<floating>::xgemm(const OperationType TransA, const OperationType TransB
 }
 
 template<class floating>
-void GPU<floating>::xgemv(const OperationType trans, const int m, const int n,
-        const floating alpha, floating const * const a, const int lda, floating const * const x, const int incx,
-        const floating beta, floating * const y, const int incy) const
+void Gpu<floating>::xgemv(const OperationType trans, const int m, const int n,
+                          const floating alpha, floating const * const a, const int lda, floating const * const x, const int incx,
+                          const floating beta, floating * const y, const int incy) const
 {
     if constexpr(isFloat())
-        cublasSgemv(getCublasHandle(), toInternalOperation.at(trans), m, n,
+        cublasSgemv(get_cublas_handle(), to_internal_operation.at(trans), m, n,
                     &alpha, a, lda, x, incx,
                     &beta, y, incy);
     else if constexpr(isDouble())
-        cublasDgemv(getCublasHandle(), toInternalOperation.at(trans), m, n,
+        cublasDgemv(get_cublas_handle(), to_internal_operation.at(trans), m, n,
                     &alpha, a, lda, x, incx,
                     &beta, y, incy);
     cudaDeviceSynchronize();
@@ -184,18 +184,18 @@ void GPU<floating>::xgemv(const OperationType trans, const int m, const int n,
 
 
 template<class floating>
-void GPU<floating>::xgetrf(int * const m, int * const n, floating * const a, int * const lda,
-        int * const ipiv, int * const info) const
+void Gpu<floating>::xgetrf(int * const m, int * const n, floating * const a, int * const lda,
+                           int * const ipiv, int * const info) const
 {
     int workingBufferSize = 0;
 
     if constexpr(isFloat())
-                cusolverDnSgetrf_bufferSize(getCusolverHandle(), *m, *n, a, *lda, &workingBufferSize);
+                cusolverDnSgetrf_bufferSize(get_cusolver_handle(), *m, *n, a, *lda, &workingBufferSize);
     else if constexpr(isDouble())
-                cusolverDnDgetrf_bufferSize(getCusolverHandle(), *m, *n, a, *lda, &workingBufferSize);
+                cusolverDnDgetrf_bufferSize(get_cusolver_handle(), *m, *n, a, *lda, &workingBufferSize);
     cudaDeviceSynchronize();
 
-    // allocate GPU Memory
+    // allocate Gpu Memory
     const auto memoryManager = std::make_shared<GPU_Manager>();
     // buffer for cusolverDnSgetrf
     DeviceArray<floating> workingBuffer(workingBufferSize, 0, memoryManager);
@@ -204,9 +204,9 @@ void GPU<floating>::xgetrf(int * const m, int * const n, floating * const a, int
     DeviceScalar<int> deviceInfo(0, memoryManager);
 
     if constexpr(isFloat())
-        cusolverDnSgetrf(getCusolverHandle(), *m, *n, a, *lda, workingBuffer.data(), ipiv, deviceInfo.data());
+        cusolverDnSgetrf(get_cusolver_handle(), *m, *n, a, *lda, workingBuffer.data(), ipiv, deviceInfo.data());
     else if constexpr(isDouble())
-        cusolverDnDgetrf(getCusolverHandle(), *m, *n, a, *lda, workingBuffer.data(), ipiv, deviceInfo.data());
+        cusolverDnDgetrf(get_cusolver_handle(), *m, *n, a, *lda, workingBuffer.data(), ipiv, deviceInfo.data());
 
     cudaDeviceSynchronize();
     *info = deviceInfo.value();
@@ -214,7 +214,7 @@ void GPU<floating>::xgetrf(int * const m, int * const n, floating * const a, int
 }
 
 template<class floating>
-void GPU<floating>::xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
+void Gpu<floating>::xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
                            floating * const work, const int * const lwork, int * const info) const
 {
     // NOT PROVIDED BY cuSOLVER!
@@ -230,45 +230,45 @@ void GPU<floating>::xgetri(const int * const n, floating * const a, const int * 
 }
 
 template<class floating>
-void GPU<floating>::xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
-        const floating * const a, const int * const lda, const int * const ipiv,
-        floating * const b, const int * const ldb, int * const info) const
+void Gpu<floating>::xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
+                           const floating * const a, const int * const lda, const int * const ipiv,
+                           floating * const b, const int * const ldb, int * const info) const
 {
 
-    // allocate GPU Memory
+    // allocate Gpu Memory
     const auto memoryManager = std::make_shared<GPU_Manager>();
     // int* devInfo in cusolverDn<t>getrf(..., devInfo) is expected to be on the device
     DeviceScalar<int> deviceInfo(0, memoryManager);
 
     if constexpr(isFloat())
-        cusolverDnSgetrs(getCusolverHandle(), toInternalOperation.at(trans), *n, *nrhs, a, *lda, ipiv, b, *ldb, deviceInfo.data());
+        cusolverDnSgetrs(get_cusolver_handle(), to_internal_operation.at(trans), *n, *nrhs, a, *lda, ipiv, b, *ldb, deviceInfo.data());
     else if constexpr(isDouble())
-        cusolverDnDgetrs(getCusolverHandle(), toInternalOperation.at(trans), *n, *nrhs, a, *lda, ipiv, b, *ldb, deviceInfo.data());
+        cusolverDnDgetrs(get_cusolver_handle(), to_internal_operation.at(trans), *n, *nrhs, a, *lda, ipiv, b, *ldb, deviceInfo.data());
 
     cudaDeviceSynchronize();
     return;
 }
 
 template<class floating>
-void GPU<floating>::xscal(const int N, const floating alpha, floating * const X, const int incX) const
+void Gpu<floating>::xscal(const int N, const floating alpha, floating * const X, const int incX) const
 {
     if constexpr(isFloat())
-        cublasSscal(getCublasHandle(), N, &alpha, X, incX);
+        cublasSscal(get_cublas_handle(), N, &alpha, X, incX);
     else if constexpr(isDouble())
-        cublasDscal(getCublasHandle(), N, &alpha, X, incX);
+        cublasDscal(get_cublas_handle(), N, &alpha, X, incX);
     cudaDeviceSynchronize();
     return;
 }
 
 template<class floating>
-std::map<OperationType, cublasOperation_t> GPU<floating>::toInternalOperation = {
+std::map<OperationType, cublasOperation_t> Gpu<floating>::to_internal_operation = {
         {OperationType::Identical, CUBLAS_OP_N},
         {OperationType::Transposed, CUBLAS_OP_T},
         {OperationType::Hermitian, CUBLAS_OP_HERMITAN}
 };
 
 template<class floating>
-GPU_Handle GPU<floating>::_handle;
+GpuHandle Gpu<floating>::_handle;
 
 template<class floating>
-MemoryManager GPU<floating>::_deviceManager = std::make_shared<GPU_Manager>();
+MemoryManager Gpu<floating>::_deviceManager = std::make_shared<GPU_Manager>();

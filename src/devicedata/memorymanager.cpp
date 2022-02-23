@@ -35,7 +35,7 @@ void *CPU_Manager::copy(void *destination, void const *source, const size_t byte
 }
 
 std::string CPU_Manager::display() const {
-    return "CPU MANAGER";
+    return "Cpu MANAGER";
 }
 
 #ifndef CPU_ONLY
@@ -67,7 +67,7 @@ void* GPU_Manager::copy(void *destination, void const *source, const size_t byte
 }
 
 std::string GPU_Manager::display() const {
-    return "GPU MANAGER";
+    return "Gpu MANAGER";
 }
 
 void* UnifiedManager::allocate(const size_t byteSize) const {

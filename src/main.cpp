@@ -7,7 +7,7 @@
 #include "demo.h"
 
 #ifdef CPU_ONLY
-#pragma message("CPU_ONLY mode activated. GPU features are not available.")
+#pragma message("CPU_ONLY mode activated. Gpu features are not available.")
 #endif
 
 /**
@@ -68,8 +68,8 @@ floating rhs_f(const floating x, const floating t, const floating alpha)
 int main()
 {
     using floating = float;
-    //ProcessingUnit<floating> pu = std::make_shared<CPU<floating>>();
-    ProcessingUnit<floating> pu = std::make_shared<GPU<floating>>();
+    //ProcessingUnit<floating> pu = std::make_shared<Cpu<floating>>();
+    ProcessingUnit<floating> pu = std::make_shared<Gpu<floating>>();
 
     const size_t N = two_to_the(5);
     const size_t M = two_to_the(7);

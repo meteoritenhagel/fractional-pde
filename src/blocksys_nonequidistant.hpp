@@ -22,7 +22,7 @@ NonEquidistantBlock1D<floating>::NonEquidistantBlock1D(const SizeType block_dim,
         : _block_dim(block_dim), _B(B), _D(D), _M(M), _alpha(alpha), _time_grid_step_size(time_grid_step_size), _grid(grid),
           _C(initialize_c()), _container_factory(processingUnit), _coarse_system(std::move(initialize_coarse_system())),
           _vector_buffer(*get_container_factory().createMatrix(get_num_blocks(), 10)),
-          _host_h(*ContainerFactory(static_cast<ProcessingUnit<floating>>(std::make_shared<CPU<floating>>())).createColumn(
+          _host_h(*ContainerFactory(static_cast<ProcessingUnit<floating>>(std::make_shared<Cpu<floating>>())).createColumn(
                   get_num_blocks())),
           _buffer_1(*get_container_factory().createMatrix(get_num_blocks(), get_block_dim())),
           _buffer_2(*get_container_factory().createMatrix(get_num_blocks(), get_block_dim())),
@@ -46,8 +46,8 @@ NonEquidistantBlock1D<floating>::NonEquidistantBlock1D(const SizeType block_dim,
     _D.moveTo(processingUnit);
     _M.moveTo(processingUnit);
 
-    // _space_grid_step_size is used in coefficients only, which must be on the CPU
-    _grid.moveTo(std::make_shared<CPU<floating>>());
+    // _space_grid_step_size is used in coefficients only, which must be on the Cpu
+    _grid.moveTo(std::make_shared<Cpu<floating>>());
     _host_h = _grid;
     _grid.moveTo(processingUnit);
 
@@ -176,7 +176,7 @@ AlgebraicMatrix<floating> NonEquidistantBlock1D<floating>::get_dense_representat
     // dimensions of dense matrix
     const SizeType glob_rows = get_dense_dim();
 
-    const auto cpu = std::make_shared<CPU<floating>>();
+    const auto cpu = std::make_shared<Cpu<floating>>();
     auto DD = *ContainerFactory(cpu).createMatrix(glob_rows, glob_rows);
 
     const auto host_M(_M);
@@ -273,7 +273,7 @@ void NonEquidistantBlock1D<floating>::mult(const BlockVector<floating> &beta, Bl
 
 
         // result[i] holds scaled _A * beta[i]
-        get_processing_unit()->getMemoryManager()->copy(result[i].data() + 2, _vector_buffer[0].data() + 2, (N - 3) * sizeof(floating));
+        get_processing_unit()->get_memory_manager()->copy(result[i].data() + 2, _vector_buffer[0].data() + 2, (N - 3) * sizeof(floating));
 
 
         // _vector_buffer[1] holds scaled _B * (beta[i-1] + beta[i+1])
@@ -466,13 +466,13 @@ void NonEquidistantBlock1D<floating>::multigrid(const unsigned num_smoothing_ste
     const SizeType M = get_block_dim();
 
     BlockVector<floating> &coarseSolution = _coarse_buffer_1;
-    initializeMemory(get_processing_unit()->getMemoryManager(), coarseSolution.data(), coarseSolution.getNelems(), static_cast<floating>(0.0));
+    initializeMemory(get_processing_unit()->get_memory_manager(), coarseSolution.data(), coarseSolution.getNelems(), static_cast<floating>(0.0));
 
     BlockVector<floating> &ffOnCoarseGrid = _coarse_buffer_2;
-    initializeMemory(get_processing_unit()->getMemoryManager(), ffOnCoarseGrid.data(), ffOnCoarseGrid.getNelems(), static_cast<floating>(0.0));
+    initializeMemory(get_processing_unit()->get_memory_manager(), ffOnCoarseGrid.data(), ffOnCoarseGrid.getNelems(), static_cast<floating>(0.0));
 
     BlockVector<floating> &residual = _buffer_1;
-    initializeMemory(get_processing_unit()->getMemoryManager(), residual.data(), residual.getNelems(), static_cast<floating>(0.0));
+    initializeMemory(get_processing_unit()->get_memory_manager(), residual.data(), residual.getNelems(), static_cast<floating>(0.0));
 
     const auto &coarseSystem = get_coarse_system();
 
@@ -507,7 +507,7 @@ void NonEquidistantBlock1D<floating>::prolongation(const BlockVector<floating> &
 
     assert(coarse_rhs.getNrows() == N && coarse_rhs.getNcols() == (M + 1) / 2 && "ERROR: Wrong dimensions.");
 
-    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
+    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()))
     {
         fine_rhs[0] += coarse_rhs[0];
 #pragma omp parallel for  if (M>127)               // GH
@@ -537,7 +537,7 @@ void NonEquidistantBlock1D<floating>::restriction(const BlockVector<floating> &f
     const SizeType M = get_block_dim();
     assert(get_block_dim() % 2 == 1 && "ERROR: Need odd number of rows in each step.");
 
-    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
+    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()))
     {
 #pragma omp parallel for  if (M>127)
         for (SizeType j = 2; j < M - 1; j += 2)
@@ -562,11 +562,11 @@ AlgebraicVector<floating> NonEquidistantBlock1D<floating>::get_reduced_grid() co
 {
     assert(_grid.size() % 2 == 0 && "ERROR: Dimension mismatch. Grid size has to be even number.");
 
-    auto coarseGrid = *ContainerFactory<floating>(std::make_shared<CPU<floating>>()).createColumn(_grid.size() / 2);
+    auto coarseGrid = *ContainerFactory<floating>(std::make_shared<Cpu<floating>>()).createColumn(_grid.size() / 2);
 
     SizeType const Mf = coarseGrid.size();                // GH
 
-    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
+    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()))
     {
 #pragma omp parallel for  //if (Mf >127)
         for (SizeType i = 0; i < Mf; ++i)
@@ -617,7 +617,7 @@ void NonEquidistantBlock1D<floating>::smooth(const floating omega, const BlockVe
     assert(solution.getNrows() == N && solution.getNcols() == M && "ERROR: Dimension mismatch.");
 
     size_t n = 0;
-    // Since these two lines are invariants of the algortithm, we assume that they already
+    // Since these two lines are invariants of the algorithm, we assume that they already
     // have been computed!
     //solution[0] = _M / rhs_f[0];
     //solution[M - 1] = _M / rhs_f[M-1];
@@ -634,7 +634,7 @@ void NonEquidistantBlock1D<floating>::smooth(const floating omega, const BlockVe
             calculateRowResidual(i, solution, rhs_f, residual);
 
             // scale residual: omega * (D * C)^-1 * r_i = omega * C^-1 * (D^-1 * r_i)
-            if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
+            if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<Cpu<floating>>()))
             {
                 // Symmetrised system
                 const floating inv_scale_factor = 1/(_space_grid_step_size[i-1] + _space_grid_step_size[i]);
@@ -668,7 +668,7 @@ void NonEquidistantBlock1D<floating>::smooth(const floating omega, const BlockVe
         // scale residual: omega * (D * C)^-1 * r_i = omega * C^-1 * (D^-1 * r_i)
 
 
-        if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
+        if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()))
         {
 #pragma omp parallel for if (M>63) //schedule(dynamic)
             for (unsigned int j = 1; j < M - 1; ++j) {
@@ -772,7 +772,7 @@ void NonEquidistantBlock1D<floating>::calculate_row_residual(const SizeType i, c
 
 
         // b3 holds scaled _A * beta_i[i]
-        //get_processing_unit()->getMemoryManager()->copy(b3.data()+2, b1.data()+2, (N-3)*sizeof(floating));
+        //get_processing_unit()->get_memory_manager()->copy(b3.data()+2, b1.data()+2, (N-3)*sizeof(floating));
         get_processing_unit()->xcopy(N - 3, b1.data() + 2, 1, b3.data() + 2, 1);
 
 
@@ -840,7 +840,7 @@ void NonEquidistantBlock1D<floating>::rescale_rhs(BlockVector<floating> &rhs) co
     const SizeType M = get_block_dim();
     //assert(rhs.getNrows() == N && rhs.getNcols() == M && "ERROR: Dimension mismatch.");
 
-    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
+    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()))
     {
 #pragma omp parallel for  if (M>127)
         for (SizeType j = 1; j < M-1; ++j)

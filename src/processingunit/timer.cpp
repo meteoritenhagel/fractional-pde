@@ -5,93 +5,93 @@ TimerDevice::~TimerDevice()
 
 // ###############################################################
 
-CHRONO_Timer::CHRONO_Timer()
-        : _startTime(chronoClock::now())
+ChronoTimer::ChronoTimer()
+        : _start_time(ChronoClock::now())
 {}
 
-void CHRONO_Timer::start()
+void ChronoTimer::start()
 {
-    _startTime = chronoClock::now();
-    _stopTime = chronoTimepoint{};
+    _start_time = ChronoClock::now();
+    _stop_time = ChronoTimepoint{};
     return;
 }
 
-void CHRONO_Timer::stop()
+void ChronoTimer::stop()
 {
-    _stopTime = chronoClock::now();
+    _stop_time = ChronoClock::now();
     return;
 }
 
-CHRONO_Timer::chronoTimespan CHRONO_Timer::elapsedTime() const
+ChronoTimer::ChronoTimespan ChronoTimer::elapsed_time() const
 {
-    return std::chrono::duration<chronoTimespan>(_stopTime - _startTime).count();
+    return std::chrono::duration<ChronoTimespan>(_stop_time - _start_time).count();
 }
 
 // ###############################################################
 
-OMP_Timer::OMP_Timer()
-: _startTime(static_cast<ompTimepoint>(omp_get_wtime())), _stopTime(0)
+OmpTimer::OmpTimer()
+: _start_time(static_cast<OmpTimepoint>(omp_get_wtime())), _stop_time(0)
 {}
 
-void OMP_Timer::start()
+void OmpTimer::start()
 {
-    _startTime = static_cast<ompTimepoint>(omp_get_wtime());
-    _stopTime = -1;
+    _start_time = static_cast<OmpTimepoint>(omp_get_wtime());
+    _stop_time = -1;
     return;
 }
 
-void OMP_Timer::stop()
+void OmpTimer::stop()
 {
-    _stopTime = static_cast<ompTimepoint>(omp_get_wtime());
+    _stop_time = static_cast<OmpTimepoint>(omp_get_wtime());
     return;
 }
 
-OMP_Timer::ompTimespan OMP_Timer::elapsedTime() const
+OmpTimer::OmpTimespan OmpTimer::elapsed_time() const
 {
-    return _stopTime - _startTime;
+    return _stop_time - _start_time;
 }
 
 // ###############################################################
 
 #ifndef CPU_ONLY
 // public:
-GPU_Timer::GPU_Timer()
-: _startEvent(initializeEvent()),  _stopEvent(initializeEvent())
+GpuTimer::GpuTimer()
+: _start_event(initialize_event()), _stop_event(initialize_event())
 {}
 
-GPU_Timer::~GPU_Timer()
+GpuTimer::~GpuTimer()
 {
-    cudaEventDestroy(_startEvent);
-    cudaEventDestroy(_stopEvent);
+    cudaEventDestroy(_start_event);
+    cudaEventDestroy(_stop_event);
 }
 
-void GPU_Timer::start()
+void GpuTimer::start()
 {
-    cudaEventRecord(_startEvent);
+    cudaEventRecord(_start_event);
     return;
 }
 
-void GPU_Timer::stop()
+void GpuTimer::stop()
 {
-    cudaEventRecord(_stopEvent);
+    cudaEventRecord(_stop_event);
     return;
 }
 
-GPU_Timer::gpuTimespan GPU_Timer::elapsedTime() const
+GpuTimer::GpuTimespan GpuTimer::elapsed_time() const
 {
-    gpuTimetype conversionFactor = static_cast<gpuTimetype>(1/1000.0);
-    gpuTimetype elapsedSeconds;
+    GpuTimetype conversionFactor = static_cast<GpuTimetype>(1 / 1000.0);
+    GpuTimetype elapsedSeconds;
 
-    cudaEventSynchronize(_stopEvent);
-    cudaEventElapsedTime(&elapsedSeconds, _startEvent, _stopEvent);
+    cudaEventSynchronize(_stop_event);
+    cudaEventElapsedTime(&elapsedSeconds, _start_event, _stop_event);
     return conversionFactor*elapsedSeconds;
 }
 
 
 //private:
-GPU_Timer::gpuEvent GPU_Timer::initializeEvent()
+GpuTimer::GpuEvent GpuTimer::initialize_event()
 {
-    gpuEvent event;
+    GpuEvent event;
     cudaEventCreate(&event);
     return event;
 }

@@ -200,7 +200,7 @@ private:
     floating _time_grid_step_size; //!< step size between points of the equidistant time grid
     floating _space_grid_step_size; //!< step size between points of the equidistant space grid
     AlgebraicMatrix<floating> _A; //!< matrix contained in the system's diagonal blocks
-    ContainerFactory<floating> _container_factory; //!< factory for creating algebraic containers using suitable processing unit (e.g. CPU or GPU)
+    ContainerFactory<floating> _container_factory; //!< factory for creating algebraic containers using suitable processing unit (e.g. Cpu or Gpu)
     std::unique_ptr<EquidistantBlock1D<floating>> _coarse_system; //!< for optimization purposes, the coarse systems for Cyclic Reduction or Multigrid are allocated at construction
 
     /**
@@ -558,10 +558,10 @@ private:
     floating _time_grid_step_size; //!< step size between points of the equidistant time grid
     AlgebraicVector<floating> _grid; //!< vector of differences between points of the space grid.
     AlgebraicMatrix<floating> _C; //!< matrix used for approximation of the matrices A_i occurring in the system's diagonals
-    ContainerFactory<floating> _container_factory; //!< factory for creating algebraic containers using suitable processing unit (e.g. CPU or GPU)
+    ContainerFactory<floating> _container_factory; //!< factory for creating algebraic containers using suitable processing unit (e.g. Cpu or Gpu)
     std::unique_ptr<NonEquidistantBlock1D<floating>> _coarse_system; //!< for optimization purposes, the coarse system for Multigrid is allocated at construction
     mutable AlgebraicMatrix<floating> _vector_buffer; //!< buffer where the individual columns can be used independently internally
-    mutable AlgebraicVector<floating> _host_h; //!< the vector of space grid increments is stored on the CPU separately, because it is needed there very often
+    mutable AlgebraicVector<floating> _host_h; //!< the vector of space grid increments is stored on the Cpu separately, because it is needed there very often
     mutable AlgebraicMatrix<floating> _buffer_1; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
     mutable AlgebraicMatrix<floating> _buffer_2; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
     mutable AlgebraicMatrix<floating> _buffer_3; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.

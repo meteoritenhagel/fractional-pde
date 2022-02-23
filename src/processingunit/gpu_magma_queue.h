@@ -1,33 +1,33 @@
-#ifndef GPU_MAGMA_QUEUE_H_
-#define GPU_MAGMA_QUEUE_H_
+#ifndef GpuMagma_QUEUE_H_
+#define GpuMagma_QUEUE_H_
 
 #include "magma_v2.h"
 
 #include <iostream>
 
 /**
- * The class GPU_MAGMA_Queue is a wrapper for magma_queue_t,
+ * The class GpuMagmaQueue is a wrapper for magma_queue_t,
  * which are needed for MAGMA use.
  * It ensures easy handling of the construction / destruction actions.
  */
-class GPU_MAGMA_Queue {
-public
+class GpuMagmaQueue {
+public:
 
     /**
      * Constructor
      */
-    GPU_MAGMA_Queue();
+    GpuMagmaQueue();
 
     /**
      * Destructor
      */
-    ~GPU_MAGMA_Queue();
+    ~GpuMagmaQueue();
 
     /**
      * Returns the MAGMA queue
      * @return the MAGMA queue
      */
-    magma_queue_t const& getMagmaQueue() const;
+    magma_queue_t const& get_magma_queue() const;
 
 private:
 
@@ -39,10 +39,10 @@ private:
 
     magma_queue_t _magmaQueue; //!< MAGMA queue
 
-    GPU_MAGMA_Queue(const GPU_MAGMA_Queue&) = delete;
-    GPU_MAGMA_Queue(GPU_MAGMA_Queue&&) = delete;
-    GPU_MAGMA_Queue& operator=(const GPU_MAGMA_Queue&) = delete;
-    GPU_MAGMA_Queue& operator=(GPU_MAGMA_Queue&&) = delete;
+    GpuMagmaQueue(const GpuMagmaQueue&) = delete;
+    GpuMagmaQueue(GpuMagmaQueue&&) = delete;
+    GpuMagmaQueue& operator=(const GpuMagmaQueue&) = delete;
+    GpuMagmaQueue& operator=(GpuMagmaQueue&&) = delete;
 };
 
-#endif /* GPU_MAGMA_QUEUE_H_ */
+#endif /* GpuMagma_QUEUE_H_ */

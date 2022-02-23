@@ -12,7 +12,7 @@
 
 /** Given a classical C-style array, this function initializes @param size elements starting
  * from @param data with value @param value. The @param memoryManager indicates in which memory
- * (e.g. CPU memory or GPU memory) the assignment is going to take place.
+ * (e.g. Cpu memory or Gpu memory) the assignment is going to take place.
  *
  * @tparam T data type
  * @param memoryManager determines where the memory assignment happens
@@ -92,7 +92,7 @@ public:
     virtual T const * data() const = 0;
 
     /**
-     * Move all the elements contained to another device, e.g. from CPU memory to GPU memory.
+     * Move all the elements contained to another device, e.g. from Cpu memory to Gpu memory.
      * @param targetDevice target device
      */
     virtual void moveTo(const MemoryManager& targetDevice) = 0;
@@ -111,7 +111,7 @@ public:
      * Returns the current instance's memory manager
      * @return current memory manager
      */
-    MemoryManager getMemoryManager() const;
+    MemoryManager get_memory_manager() const;
 
 protected:
     MemoryManager _memoryManager = std::make_shared<CPU_Manager>(); //!< The memory manager to determine on which device memory is ccessed
@@ -141,7 +141,7 @@ public:
     DeviceMatrix(const SizeType N, const SizeType M, const T value = T(), const MemoryManager& memoryManager = std::make_shared<CPU_Manager>());
 
     /**
-     * Constructor, constructs a DeviceMatrix from a std::vector on the CPU memory.
+     * Constructor, constructs a DeviceMatrix from a std::vector on the Cpu memory.
      * @param N number of matrix rows
      * @param u vector containing the column-wise stored matrix
      * @param memoryManager memory manager
@@ -472,7 +472,7 @@ public:
     T const * data() const override;
 
     /**
-     * Returns the value of the contained element on CPU memory.
+     * Returns the value of the contained element on Cpu memory.
      * @return value of contained element
      */
     T value() const;

@@ -2,13 +2,13 @@
 #define TR_HACK_INITIALIZEMEMORY_CUH
 
 /**
- * @warning This is a GPU kernel, so probably you would like to call the wrapper deviceInitializeMemory instead.
+ * @warning This is a Gpu kernel, so probably you would like to call the wrapper deviceInitializeMemory instead.
  *
- * Given a classical C-style array in the GPU memory, this function initializes @param size elements starting
+ * Given a classical C-style array in the Gpu memory, this function initializes @param size elements starting
  * from @param data with value @param value.
  *
  * @tparam T data type of array elements
- * @param deviceMemory[in/out] first element of array (in the GPU memory)
+ * @param deviceMemory[in/out] first element of array (in the Gpu memory)
  * @param size number of elements in the array
  * @param value value to initialize elements with
  */
@@ -16,14 +16,14 @@ template<class T>
 __global__ void initializeMemory(T* deviceMemory, const int size, const T value);
 
 /**
- * @warning This is a GPU kernel, so probably you would like to call the wrapper deviceInitializeIdentityMatrix instead.
+ * @warning This is a Gpu kernel, so probably you would like to call the wrapper deviceInitializeIdentityMatrix instead.
  * @warning Note that starting from @param data, at least N*M elements must be accessible
  *
- * Given a matrix in form of a classical C-style array in the GPU memory, this function sets it to be an
+ * Given a matrix in form of a classical C-style array in the Gpu memory, this function sets it to be an
  * identity matrix.
  *
  * @tparam T data type of matrix elements
- * @param deviceMemory[in/out] pointer to start of data (in the GPU memory)
+ * @param deviceMemory[in/out] pointer to start of data (in the Gpu memory)
  * @param N number of the matrix' rows
  * @param M number of the matrix' columns
  *
@@ -33,11 +33,11 @@ __global__ void initializeIdentityMatrix(T* deviceMemory, const int N, const int
 
 
 /**
- * Given a classical C-style array in the GPU memory, this function initializes @param size elements starting
+ * Given a classical C-style array in the Gpu memory, this function initializes @param size elements starting
  * from @param data with value @param value.
  *
  * @tparam T data type of array elements
- * @param deviceMemory[in/out] first element of array (in the GPU memory)
+ * @param deviceMemory[in/out] first element of array (in the Gpu memory)
  * @param size number of elements in the array
  * @param value value to initialize elements with
  *
@@ -48,11 +48,11 @@ template <typename T>
 extern void deviceInitializeMemory(T* deviceMemory, const size_t size, const T value);
 
 /**
- * Given a matrix in form of a classical C-style array in the GPU memory, this function sets it to be an
+ * Given a matrix in form of a classical C-style array in the Gpu memory, this function sets it to be an
  * identity matrix.
  *
  * @tparam T data type of matrix elements
- * @param deviceMemory[in/out] pointer to start of data (in the GPU memory)
+ * @param deviceMemory[in/out] pointer to start of data (in the Gpu memory)
  * @param N number of the matrix' rows
  * @param M number of the matrix' columns
  *

@@ -13,11 +13,11 @@
 #include <typeinfo>
 
 /**
- * Given a classical C-style array in the CPU memory, this function initializes @p size elements starting
+ * Given a classical C-style array in the Cpu memory, this function initializes @p size elements starting
  * from @p data with value @p value.
  *
  * @tparam T data type of array elements
- * @param hostMemory[in,out] first element of array (in the CPU memory)
+ * @param hostMemory[in,out] first element of array (in the Cpu memory)
  * @param size number of elements in the array
  * @param value value to initialize elements with
  */
@@ -25,11 +25,11 @@ template<class T>
 void hostInitializeMemory(T* hostMemory, const int size, const T value);
 
 /**
- * Given a matrix in form of a classical C-style array in the CPU memory, this function sets it to be an
+ * Given a matrix in form of a classical C-style array in the Cpu memory, this function sets it to be an
  * identity matrix.
  *
  * @tparam T data type of matrix elements
- * @param hostMemory[in,out] pointer to start of data (in the CPU memory)
+ * @param hostMemory[in,out] pointer to start of data (in the Cpu memory)
  * @param N number of the matrix' rows
  * @param M number of the matrix' columns
  *
@@ -44,7 +44,7 @@ using MemoryManager = std::shared_ptr<MemoryManagerDevice>;
 
 /**
  * Class MemoryManagerDevice is an abstract interface for allocating, freeing and copying
- * memory on a certain device or between devices (e.g. from GPU memory to CPU memory or vice versa).
+ * memory on a certain device or between devices (e.g. from Gpu memory to Cpu memory or vice versa).
  * For each device present, a separate child class should be implemented.
  */
 class MemoryManagerDevice {

@@ -84,7 +84,7 @@ set(CUDA_SOURCES
 )
 
 
-### CPU only mode ###
+### Cpu only mode ###
 add_executable(fractional_pde_cpu_only
         ${COMMON_SOURCES}
 )

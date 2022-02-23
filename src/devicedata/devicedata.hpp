@@ -37,7 +37,7 @@ typename DeviceDataDevice<T>::SizeType DeviceDataDevice<T>::byteSize() const
 }
 
 template<class T>
-MemoryManager DeviceDataDevice<T>::getMemoryManager() const
+MemoryManager DeviceDataDevice<T>::get_memory_manager() const
 {
     return _memoryManager;
 }

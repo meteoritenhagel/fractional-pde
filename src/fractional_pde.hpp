@@ -10,7 +10,7 @@ BlockVector<floating> solve_equidistant(const ProcessingUnit<floating> processin
                                         const size_t max_num_iterations, const size_t steps_per_iteration,
                                         const floating accuracy, const SolvingProcedure solving_procedure)
 {
-    ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
+    ProcessingUnit<floating> cpu = std::make_shared<Cpu<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
 
     floating dt = T / static_cast<floating>(N);
@@ -44,7 +44,7 @@ BlockVector<floating> solve_nonequidistant(const ProcessingUnit<floating> proces
                                            const size_t max_num_iterations, const size_t steps_per_iteration,
                                            const floating accuracy, const SolvingProcedure solving_procedure)
 {
-    ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
+    ProcessingUnit<floating> cpu = std::make_shared<Cpu<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
 
     const int M = grid.size();

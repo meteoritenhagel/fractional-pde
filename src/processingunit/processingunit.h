@@ -8,11 +8,11 @@
     #include "gpu_handle.h"
 
     #ifdef MAGMA
-        #include "gpu_magma_queue.h"
+        #include "GpuMagma_queue.h"
         #include "magma_v2.h"
     #endif
 #else
-    #pragma message("CPU only mode is activated. GPU suppport is disabled. If you wish to activate GPU support, remove compiler flag CPU_ONLY")
+    #pragma message("Cpu only mode is activated. Gpu suppport is disabled. If you wish to activate Gpu support, remove compiler flag CPU_ONLY")
 #endif
 
 #ifdef __INTEL_CLANG_COMPILER
@@ -49,7 +49,7 @@ enum class OperationType {
 /**
  * Class ProcessingUnitDevice is an abstract interface for easy calls to
  * BLAS/LAPACK/LAPACKE-like function calls on a certain device,
- * e.g. for CUDA/cuSOLVER on a GPU, or for MAGMA on a GPU.
+ * e.g. for CUDA/cuSOLVER on a Gpu, or for MAGMA on a Gpu.
  *
  * The floating point type is passed as a template parameter.
  *
@@ -72,13 +72,13 @@ public:
      * Creates a new instance of a Timer stopwatch on the current device.
      * @return new Timer instance
      */
-    virtual Timer createTimer() const = 0;
+    virtual Timer create_timer() const = 0;
 
     /**
      * Returns the MemoryManager associated with the current device.
      * @return MemoryManager
      */
-    virtual MemoryManager getMemoryManager() const = 0;
+    virtual MemoryManager get_memory_manager() const = 0;
 
     /**
      * Returns the subclass's name in a human-readable format as a string
@@ -285,14 +285,14 @@ public:
 
 
 /**
- * Class CPU provides linear algebra operations on the CPU using
+ * Class Cpu provides linear algebra operations on the Cpu using
  * BLAS/LAPACK/LAPACKE. All memory allocations also take place in
  * ordinary RAM.
  *
  * @tparam floating floating point type, either float or double
  */
 template<class floating>
-class CPU : public ProcessingUnitDevice<floating> {
+class Cpu : public ProcessingUnitDevice<floating> {
 public:
     using ProcessingUnitDevice<floating>::isFloat;
     using ProcessingUnitDevice<floating>::isDouble;
@@ -300,15 +300,15 @@ public:
     /**
      * Constructor
      */
-    CPU() = default;
+    Cpu() = default;
 
     /**
      * Destructor
      */
-    ~CPU() override = default;
+    ~Cpu() override = default;
 
-    Timer createTimer() const override;
-    MemoryManager getMemoryManager() const override;
+    Timer create_timer() const override;
+    MemoryManager get_memory_manager() const override;
     std::string display() const override;
 
     int ixamax(const int n, const floating * const x, const int incx) const override;
@@ -332,22 +332,22 @@ public:
 
 
 private:
-    static std::map<OperationType, CBLAS_TRANSPOSE> toInternalOperationBLAS; //!< Converts the OperationType to the corresponding CBLAS_TRANSPOSE type
-    static std::map<OperationType, const char * const> toInternalOperationLAPACK; //!< Converts the OperationType to the corresponding LAPACK transposition type
-    static MemoryManager _deviceManager; //!< Memory manager associated with CPU memory
+    static std::map<OperationType, CBLAS_TRANSPOSE> to_internal_operation_blas; //!< Converts the OperationType to the corresponding CBLAS_TRANSPOSE type
+    static std::map<OperationType, const char * const> to_internal_operation_lapack; //!< Converts the OperationType to the corresponding LAPACK transposition type
+    static MemoryManager _device_manager; //!< Memory manager associated with Cpu memory
 };
 
 #ifndef CPU_ONLY
 
 /**
- * Class GPU provides linear algebra operations on the GPU using
+ * Class Gpu provides linear algebra operations on the Gpu using
  * cuBLAS/cuSOLVER. All memory allocations also take place in
- * GPU RAM.
+ * Gpu RAM.
  *
  * @tparam floating floating point type, either float or double
  */
 template<class floating>
-class GPU : public ProcessingUnitDevice<floating> {
+class Gpu : public ProcessingUnitDevice<floating> {
 public:
     using ProcessingUnitDevice<floating>::isFloat;
     using ProcessingUnitDevice<floating>::isDouble;
@@ -355,28 +355,28 @@ public:
     /**
      * Constructor
      */
-    GPU() = default;
+    Gpu() = default;
 
     /**
      * Destructor
      */
-    ~GPU() override = default;
+    ~Gpu() override = default;
 
-    Timer createTimer() const override;
-    MemoryManager getMemoryManager() const override;
+    Timer create_timer() const override;
+    MemoryManager get_memory_manager() const override;
     std::string display() const override;
 
     /**
      * Returns the instance's cuBLAS handle.
      * @return cuBLAS handle
      */
-    auto getCublasHandle() const;
+    auto get_cublas_handle() const;
 
     /**
      * Returns the instance's cuSOLVER handle.
      * @return cuSOLVER handle
      */
-    auto getCusolverHandle() const;
+    auto get_cusolver_handle() const;
 
     int ixamax(const int n, const floating * const x, const int incx) const override;
     void xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const override;
@@ -399,21 +399,21 @@ public:
 
 
 private:
-    static std::map<OperationType, cublasOperation_t> toInternalOperation; //!< Converts the OperationType to the corresponding cuBLAS operation type
-    static GPU_Handle _handle; //!< GPU handle for cuBLAS/cuSOLVER operations
+    static std::map<OperationType, cublasOperation_t> to_internal_operation; //!< Converts the OperationType to the corresponding cuBLAS operation type
+    static GpuHandle _handle; //!< Gpu handle for cuBLAS/cuSOLVER operations
     static MemoryManager _deviceManager; //!< Memory manager associated with CUDA memory
 
 };
 
 #ifdef MAGMA
 /**
- * Class GPU_MAGMA provides linear algebra operations on the GPU using
- * MAGMA. All memory allocations also take place in GPU RAM.
+ * Class GpuMagma provides linear algebra operations on the Gpu using
+ * MAGMA. All memory allocations also take place in Gpu RAM.
  *
  * @tparam floating floating point type, either float or double
  */
 template<class floating>
-class GPU_MAGMA : public ProcessingUnitDevice<floating> {
+class GpuMagma : public ProcessingUnitDevice<floating> {
 public:
     using ProcessingUnitDevice<floating>::isFloat;
     using ProcessingUnitDevice<floating>::isDouble;
@@ -421,21 +421,21 @@ public:
     /**
      * Constructor
      */
-    GPU_MAGMA() = default;
+    GpuMagma() = default;
 
     /**
      * Destructor
      */
-    ~GPU_MAGMA() override = default;
+    ~GpuMagma() override = default;
 
-    Timer createTimer() const override;
-    MemoryManager getMemoryManager() const override;
+    Timer create_timer() const override;
+    MemoryManager get_memory_manager() const override;
     std::string display() const override;
 
     /**
      * Returns the instance's magma queue.
      */
-    auto getMagmaQueue() const;
+    auto get_magma_queue() const;
 
     int ixamax(const int n, const floating * const x, const int incx) const override;
     void xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const override;
@@ -458,14 +458,14 @@ public:
 
 
 private:
-    static std::map<OperationType, magma_trans_t> toInternalOperation; //!< Converts the OperationType to the corresponding MAGMA transposition type
-    static GPU_MAGMA_Queue _queue; //!< MAGMA queue for MAGMA operations
-    static MemoryManager _deviceManager; //!< Memory manager associated with CUDA memory
+    static std::map<OperationType, magma_trans_t> to_internal_operation; //!< Converts the OperationType to the corresponding MAGMA transposition type
+    static GpuMagmaQueue _queue; //!< MAGMA queue for MAGMA operations
+    static MemoryManager _device_manager; //!< Memory manager associated with CUDA memory
 };
 
 /**
- * Class ReplacementNumber is used for passing the operation to GPU_MIXED, which is then calculated via
- * GPU_MAGMA instead of ordinary GPU processing unit.
+ * Class ReplacementNumber is used for passing the operation to GpuMixed, which is then calculated via
+ * GpuMagma instead of ordinary Gpu processing unit.
  */
 enum class ReplacementNumber {
     IXAMAX,
@@ -480,29 +480,29 @@ enum class ReplacementNumber {
 };
 
 /**
- * Class GPU_MIXED provides linear algebra operations on the GPU using
+ * Class GpuMixed provides linear algebra operations on the Gpu using
  * cuBLAS/cuSOLVER, except for the one operation specified by replacementNumber,
  * which is calculated using MAGMA.
- * All memory allocations also take place in GPU RAM.
+ * All memory allocations also take place in Gpu RAM.
  *
  * @tparam floating floating point type, either float or double
  */
 template<class floating>
-class GPU_MIXED : public ProcessingUnitDevice<floating> {
+class GpuMixed : public ProcessingUnitDevice<floating> {
 public:
     /**
      * Constructor
      */
-    GPU_MIXED(const ReplacementNumber replacementNumber = ReplacementNumber::XGETRF);
+    GpuMixed(const ReplacementNumber replacementNumber = ReplacementNumber::XGETRF);
 
     /**
      * Destructor
      */
-    ~GPU_MIXED() override = default;
+    ~GpuMixed() override = default;
 
-    Timer createTimer() const override;
+    Timer create_timer() const override;
 
-    MemoryManager getMemoryManager() const override;
+    MemoryManager get_memory_manager() const override;
 
     std::string display() const override;
 
@@ -525,11 +525,11 @@ public:
                 floating * const b, const int * const ldb, int * const info) const override;
     void xscal(const int N, const floating alpha, floating * const X, const int incX) const override;
 
-    ReplacementNumber getReplacementNumber() const;
+    ReplacementNumber get_replacement_number() const;
 
 private:
-    static GPU<floating> _gpu; //!< GPU processing unit
-    static GPU_MAGMA<floating> _gpu_magma; //!< MAGMA processing unit
+    static Gpu<floating> _gpu; //!< Gpu processing unit
+    static GpuMagma<floating> _gpu_magma; //!< MAGMA processing unit
     ReplacementNumber _replacementNumber; //!< current instance's operation which should be exectued on MAGMA instead of cuBLAS/cuSOLVER
 };
 #endif

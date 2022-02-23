@@ -63,7 +63,7 @@ floating scalarProduct(const AlgebraicVector<floating> &A, const AlgebraicVector
 /**
  * The class AlgebraicMatrix provides an easy-to-use column-wise stored matrix type.
  * An instance of ProcessingUnit is passed to determine where the matrix operations
- * are calculated (i.e. for determining execution on CPU or GPU).
+ * are calculated (i.e. for determining execution on Cpu or Gpu).
  *
  * If compile variable PLU is set, the inverse is never calculated, but PLU factorization is used
  * for solving the according system of equations.
@@ -80,7 +80,7 @@ public:
 
     /** Default constructor, constructs element by passing the vector of arrays.
      *
-     *  @param[in] processingUnit   processingUnit (i.e. for determining CPU or GPU execution)
+     *  @param[in] processingUnit   processingUnit (i.e. for determining Cpu or Gpu execution)
      * 	@param[in] A                data of matrix to construct
      */
     AlgebraicMatrix(const ProcessingUnit<floating>& processingUnit, const MatrixDataType& A);
@@ -493,7 +493,7 @@ AlgebraicVector<floating> operator* (floating const alpha, const AlgebraicVector
 /**
  * The class AlgebraicVector provides an easy-to-use vector type.
  * An instance of ProcessingUnit is passed to determine where the linear algebra operations
- * are calculated (i.e. for determining execution on CPU or GPU).
+ * are calculated (i.e. for determining execution on Cpu or Gpu).
  *
  * @tparam floating Floating point type
  */

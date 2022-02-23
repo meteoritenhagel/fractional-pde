@@ -38,7 +38,7 @@ template<class floating>
 AlgebraicVector<floating>& AlgebraicVector<floating>::moveTo(const ProcessingUnit<floating> processingUnit)
 {
     _colMatrixFactory = ContainerFactory<floating>(processingUnit);
-    _Aptr->moveTo(processingUnit->getMemoryManager());
+    _Aptr->moveTo(processingUnit->get_memory_manager());
     return *this;
 }
 
@@ -86,7 +86,7 @@ template<class floating>
 floating& AlgebraicVector<floating>::operator[](const SizeType col)
 {
 #ifndef NDEBUG
-    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()) && "Must be on Cpu");
 #endif
     return accessArray()[col];
 }
@@ -95,7 +95,7 @@ template<class floating>
 floating const & AlgebraicVector<floating>::operator[](const SizeType col) const
 {
 #ifndef NDEBUG
-    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()) && "Must be on Cpu");
 #endif
     return accessArray()[col];
 }
@@ -131,7 +131,7 @@ template<class floating>
 floating AlgebraicVector<floating>::getMaximum() const
 {
     const auto index = get_processing_unit()->ixamax(size(), data(), 1);
-    DeviceScalar<floating> maximum(data()[index], get_processing_unit()->getMemoryManager());
+    DeviceScalar<floating> maximum(data()[index], get_processing_unit()->get_memory_manager());
     maximum.moveTo(std::make_shared<CPU_Manager>());
     return maximum.value();
 }

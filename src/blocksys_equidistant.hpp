@@ -49,7 +49,7 @@ AlgebraicMatrix<floating> EquidistantBlock1D<floating>::get_dense_representation
     const SizeType loc_rows = _B.getNrows();
     const SizeType glob_rows = get_dense_dim();
 
-    auto cpu = std::make_shared<CPU<floating>>();
+    auto cpu = std::make_shared<Cpu<floating>>();
 
     auto host_A(_A);
     auto host_B(_B);
@@ -240,10 +240,10 @@ AlgebraicMatrix<floating> EquidistantBlock1D<floating>::initialize_a(const Algeb
     const SizeType N = B.getNrows();
     auto A = static_cast<floating>(2) / space_grid_step_size / space_grid_step_size * M - get_system_coeff(alpha, time_grid_step_size) * D;
 
-    // operator() can only be invoked for CPU objects
+    // operator() can only be invoked for Cpu objects
     auto Mcopy(M);
-    A.moveTo(std::make_shared<CPU<floating>>());
-    Mcopy.moveTo(std::make_shared<CPU<floating>>());
+    A.moveTo(std::make_shared<Cpu<floating>>());
+    Mcopy.moveTo(std::make_shared<Cpu<floating>>());
 
     const SizeType colIndices[3] = {0, 1, N-1};
     for (SizeType col  : colIndices)
@@ -298,7 +298,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::cyclic_reduction(const Algeb
 template<class floating>
 BlockVector<floating> EquidistantBlock1D<floating>::cr_prolongation(const AlgebraicMatrix<floating> &scaled_b, const BlockVector<floating> &fine_rhs, const BlockVector<floating> &coarse_solution) const
 {
-    // TODO: write GPU kernel
+    // TODO: write Gpu kernel
     const SizeType fnr = get_block_dim();
     const SizeType cnr = (get_block_dim() + 1) / 2;
 
@@ -569,7 +569,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::calculate_residual(const Blo
 
 
     assert(beta.getNrows() == N && beta.getNcols() == M && "ERROR: Dimension mismatch.");
-    auto residual = *get_container_factory().createMatrix(N, M);  // GH: das dürfte bei Unfied memory langsam sein, diesen Speicher benötigen wir nur auf der GPU.
+    auto residual = *get_container_factory().createMatrix(N, M);  // GH: das dürfte bei Unfied memory langsam sein, diesen Speicher benötigen wir nur auf der Gpu.
 
     for (unsigned int i = 0; i < M; ++i)
     {

@@ -6,40 +6,40 @@
 #include <cassert>
 
 template<class floating>
-GPU_MIXED<floating>::GPU_MIXED(const ReplacementNumber replacementNumber)
+GpuMixed<floating>::GpuMixed(const ReplacementNumber replacementNumber)
 : _replacementNumber(replacementNumber) {}
 
 template<class floating>
-Timer GPU_MIXED<floating>::createTimer() const
+Timer GpuMixed<floating>::createTimer() const
 {
-    return _gpu.createTimer();
+    return _gpu.create_timer();
 }
 
 template<class floating>
-MemoryManager GPU_MIXED<floating>::getMemoryManager() const
+MemoryManager GpuMixed<floating>::get_memory_manager() const
 {
     return _gpu._memoryManager;
 }
 
 template<class floating>
-void GPU_MIXED<floating>::display() const
+void GpuMixed<floating>::display() const
 {
-    return "GPU_MIXED";
+    return "GpuMixed";
 }
 
 template<class floating>
-int GPU_MIXED<floating>::ixamax(const int n, const floating * const x, const int incx) const
+int GpuMixed<floating>::ixamax(const int n, const floating * const x, const int incx) const
 {
-    if (getReplacementNumber() == ReplacementNumber::IXAMAX)
+    if (get_replacement_number() == ReplacementNumber::IXAMAX)
         return _gpu_magma.ixamax(n, x, incx);
     else
         return _gpu.ixamax(n, x, incx);
 }
 
 template<class floating>
-void GPU_MIXED<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const
+void GpuMixed<floating>::xaxpy(const int n, const floating alpha, const floating * const x, const int incx, floating * const y, const int incy) const
 {
-    if (getReplacementNumber() == ReplacementNumber::XAXPY)
+    if (get_replacement_number() == ReplacementNumber::XAXPY)
         _gpu_magma.xaxpy(n, alpha, x, incx, y, incy);
     else
         _gpu.xaxpy(n, alpha, x, incx, y, incy);
@@ -47,9 +47,9 @@ void GPU_MIXED<floating>::xaxpy(const int n, const floating alpha, const floatin
 }
 
 template<class floating>
-void GPU_MIXED<floating>::xcopy(const int n, const floating * const source, const int incx, floating * const dest, const int incy) const
+void GpuMixed<floating>::xcopy(const int n, const floating * const source, const int incx, floating * const dest, const int incy) const
 {
-    if constexpr(getReplacementNumber() == ReplacementNumber::XCOPY)
+    if constexpr(get_replacement_number() == ReplacementNumber::XCOPY)
         _gpu_magma.xcopy(n, source, incx, dest, incy);
     else
         _gpu.xcopy(n, source, incx, dest, incy);
@@ -58,10 +58,10 @@ void GPU_MIXED<floating>::xcopy(const int n, const floating * const source, cons
 }
 
 template<class floating>
-floating GPU_MIXED<floating>::xdot(const int n, const floating * const x, const int incx, const floating * const y, const int incy) const
+floating GpuMixed<floating>::xdot(const int n, const floating * const x, const int incx, const floating * const y, const int incy) const
 {
     floating result = 0;
-    if (getReplacementNumber() == ReplacementNumber::XDOT)
+    if (get_replacement_number() == ReplacementNumber::XDOT)
         result = _gpu_magma.xdot(n, x, incx, y, incy);
     else
         result = _gpu.xdot(n, x, incx, y, incy);
@@ -70,11 +70,11 @@ floating GPU_MIXED<floating>::xdot(const int n, const floating * const x, const 
 }
 
 template<class floating>
-void GPU_MIXED<floating>::xgemm(const OperationType TransA, const OperationType TransB,
+void GpuMixed<floating>::xgemm(const OperationType TransA, const OperationType TransB,
         const int M, const int N, const int K, const floating alpha, const floating * const A,
         const int lda, const floating * const B, const int ldb, const floating beta, floating * const C, const int ldc) const
 {
-    if (getReplacementNumber() == ReplacementNumber::XGEMM)
+    if (get_replacement_number() == ReplacementNumber::XGEMM)
         _gpu_magma.xgemm(TransA, TransB, M, N, K, alpha, A,  lda, B, ldb, beta, C, ldc);
     else
         _gpu.xgemm(TransA, TransB, M, N, K, alpha, A,  lda, B, ldb, beta, C, ldc);
@@ -82,11 +82,11 @@ void GPU_MIXED<floating>::xgemm(const OperationType TransA, const OperationType 
 }
 
 template<class floating>
-void GPU_MIXED<floating>::xgemv(const OperationType trans, const int m, const int n,
+void GpuMixed<floating>::xgemv(const OperationType trans, const int m, const int n,
         const floating alpha, floating const * const a, const int lda, floating const * const x, const int incx,
         const floating beta, floating * const y, const int incy) const
 {
-    if (getReplacementNumber() == ReplacementNumber::XGEMV)
+    if (get_replacement_number() == ReplacementNumber::XGEMV)
         _gpu_magma.xgemv(trans, m, n, alpha, a, lda, x, incx, beta, y, incy);
     else
         _gpu.xgemv(trans, m, n, alpha, a, lda, x, incx, beta, y, incy);
@@ -95,10 +95,10 @@ void GPU_MIXED<floating>::xgemv(const OperationType trans, const int m, const in
 
 
 template<class floating>
-void GPU_MIXED<floating>::xgetrf(int * const m, int * const n, floating * const a, int * const lda,
+void GpuMixed<floating>::xgetrf(int * const m, int * const n, floating * const a, int * const lda,
         int * const ipiv, int * const info) const
 {
-    if (getReplacementNumber() == ReplacementNumber::XGETRF)
+    if (get_replacement_number() == ReplacementNumber::XGETRF)
         _gpu_magma.xgetrf(m, n, a, lda, ipiv, info);
     else
         _gpu.xgetrf(m, n, a, lda, ipiv, info);
@@ -106,7 +106,7 @@ void GPU_MIXED<floating>::xgetrf(int * const m, int * const n, floating * const 
 }
 
 template<class floating>
-void GPU_MIXED<floating>::xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
+void GpuMixed<floating>::xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
 						   floating * const work, const int * const lwork, int * const info) const
 {
 	// is always on MAGMA
@@ -115,11 +115,11 @@ void GPU_MIXED<floating>::xgetri(const int * const n, floating * const a, const 
 
 
 template<class floating>
-void GPU_MIXED<floating>::xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
+void GpuMixed<floating>::xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
         const floating * const a, const int * const lda, const int * const ipiv,
         floating * const b, const int * const ldb, int * const info) const
 {
-    if (getReplacementNumber() == ReplacementNumber::XGETRS)
+    if (get_replacement_number() == ReplacementNumber::XGETRS)
         _gpu_magma.xgetrs(trans, n, nrhs, a, lda, ipiv, b, ldb, info);
     else
         _gpu.xgetrs(trans, n, nrhs, a, lda, ipiv, b, ldb, info);
@@ -127,9 +127,9 @@ void GPU_MIXED<floating>::xgetrs(const OperationType trans, const int * const n,
 }
 
 template<class floating>
-void GPU_MIXED<floating>::xscal(const int N, const floating alpha, floating * const X, const int incX) const
+void GpuMixed<floating>::xscal(const int N, const floating alpha, floating * const X, const int incX) const
 {
-    if (getReplacementNumber() == ReplacementNumber::XSCAL)
+    if (get_replacement_number() == ReplacementNumber::XSCAL)
         _gpu_magma.xscal(N, alpha, X, incX);
     else
         _gpu.xscal(N, alpha, X, incX);
@@ -137,13 +137,13 @@ void GPU_MIXED<floating>::xscal(const int N, const floating alpha, floating * co
 }
 
 template<class floating>
-ReplacementNumber GPU_MIXED<floating>::getReplacementNumber() const
+ReplacementNumber GpuMixed<floating>::get_replacement_number() const
 {
     return _replacementNumber;
 }
 
 template<class floating>
-GPU<floating> GPU_MIXED<floating>::_gpu;
+Gpu<floating> GpuMixed<floating>::_gpu;
 
 template<class floating>
-GPU_MAGMA<floating> GPU_MIXED<floating>::_gpu_magma;
+GpuMagma<floating> GpuMixed<floating>::_gpu_magma;
