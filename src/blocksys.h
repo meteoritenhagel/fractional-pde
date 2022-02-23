@@ -243,7 +243,7 @@ private:
      * @param time_grid_step_size distance between the equidistant space points
      * @return matrix A which is located in the system's diagonals
      */
-    AlgebraicMatrix<floating> initialize_a(const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D,
+    AlgebraicMatrix<floating> initialize_A(const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D,
                                            const AlgebraicMatrix<floating> &M, const floating space_grid_step_size,
                                            const floating alpha, const floating time_grid_step_size) const;
 
@@ -255,11 +255,11 @@ private:
 
     /**
      * Solves the current system using cyclic reduction with RHS @p f.
-     * @param scaled_b scaled matrix B
+     * @param scaled_B scaled matrix B
      * @param f right-hand side BlockVector
      * @return the system's solution calculated with cyclic reduction
      */
-    BlockVector<floating> cyclic_reduction(const AlgebraicMatrix<floating> &scaled_b,
+    BlockVector<floating> cyclic_reduction(const AlgebraicMatrix<floating> &scaled_B,
                                            const BlockVector<floating> &f) const;
 
     /** (For use with Cyclic Reduction only.) Prolongates the coarse solution BlockVector @p coarse_solution to the fine vector.
@@ -268,13 +268,13 @@ private:
      * @f$ u_f[2*i-1] =  A^{-1}\cdot \left({ fine_rhs[2i-1] + B\cdot (coarse_solution[2i-2]+coarse_solution[2i])  }\right)\enspace,@f$
      * and the simple copy  @f$ u_f[2*i] = coarse_solution[2*i]@f$ for fine nodes with coarse indices.
      *
-     * @param[in] scaled_b scaled matrix B
+     * @param[in] scaled_B scaled matrix B
      * @param[in] fine_rhs rhs BlockVector on fine grid
      * @param[in] coarse_solution solution BlockVector on coarse grid
      *
      * @return fine BlockVector u_f.
      */
-    AlgebraicMatrix<floating> cr_prolongation(const AlgebraicMatrix<floating> &scaled_b,
+    AlgebraicMatrix<floating> cr_prolongation(const AlgebraicMatrix<floating> &scaled_B,
                                               const AlgebraicMatrix<floating> &fine_rhs,
                                               const AlgebraicMatrix<floating> &coarse_solution) const;
 
@@ -283,12 +283,12 @@ private:
      * The restriction uses the 1D formula
      * @f$ f_c[i] = fine_rhs[2i]+B\cdot A^{-1}\cdot (fine_rhs[2i-1]+fine_rhs[2i+1])@f$ and boundary condition.
      *
-     * @param[in] scaled_b scaled matrix B
+     * @param[in] scaled_B scaled matrix B
      * @param[in] fine_rhs rhs BlockVector on fine grid
      *
      * @return coarse rhs BlockVector f_c.
      */
-    AlgebraicMatrix<floating> cr_restriction(const AlgebraicMatrix<floating> &scaled_b,
+    AlgebraicMatrix<floating> cr_restriction(const AlgebraicMatrix<floating> &scaled_B,
                                              const AlgebraicMatrix<floating> &fine_rhs) const;
 
     /**
@@ -693,7 +693,7 @@ private:
      * Calculate matrix C, approximating the matrices A_i which occur in the system's diagonals.
      * @return matrix C
      */
-    AlgebraicMatrix<floating> initialize_c() const;
+    AlgebraicMatrix<floating> initialize_C() const;
 
     /**
      * Returns the current instance's underlying processing unit.

@@ -20,7 +20,7 @@ NonEquidistantBlock1D<floating>::NonEquidistantBlock1D(const SizeType block_dim,
                                                        const floating time_grid_step_size,
                                                        const ProcessingUnit<floating> processingUnit)
         : _block_dim(block_dim), _B(B), _D(D), _M(M), _alpha(alpha), _time_grid_step_size(time_grid_step_size), _grid(grid),
-          _C(initialize_c()), _container_factory(processingUnit), _coarse_system(std::move(initialize_coarse_system())),
+          _C(initialize_C()), _container_factory(processingUnit), _coarse_system(std::move(initialize_coarse_system())),
           _vector_buffer(*get_container_factory().create_matrix(get_num_blocks(), 10)),
           _host_h(*ContainerFactory(
                   static_cast<ProcessingUnit<floating>>(std::make_shared<Cpu<floating>>())).create_array(
@@ -806,7 +806,7 @@ floating NonEquidistantBlock1D<floating>::get_system_coeff() const
 }
 
 template<class floating>
-AlgebraicMatrix<floating> NonEquidistantBlock1D<floating>::initialize_c() const
+AlgebraicMatrix<floating> NonEquidistantBlock1D<floating>::initialize_C() const
 {
     const SizeType N = get_num_blocks();
 

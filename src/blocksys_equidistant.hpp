@@ -6,7 +6,7 @@ EquidistantBlock1D<floating>::EquidistantBlock1D(const SizeType block_dim, const
                                                  const floating time_grid_step_size,
                                                  const ProcessingUnit <floating> processing_unit)
         : EquidistantBlock1D(block_dim, B, D, M, space_grid_step_size, alpha, time_grid_step_size,
-                             initialize_a(B, D, M, space_grid_step_size, alpha, time_grid_step_size), processing_unit) {}
+                             initialize_A(B, D, M, space_grid_step_size, alpha, time_grid_step_size), processing_unit) {}
 
 template<class floating>
 EquidistantBlock1D<floating>::EquidistantBlock1D(const SizeType block_dim, const AlgebraicMatrix <floating> &B,
@@ -16,7 +16,7 @@ EquidistantBlock1D<floating>::EquidistantBlock1D(const SizeType block_dim, const
                                                  const floating time_grid_step_size,
                                                  const ProcessingUnit <floating> processing_unit)
         : EquidistantBlock1D(block_dim, B, D.get_dense_representation(), M, space_grid_step_size, alpha, time_grid_step_size,
-                             initialize_a(B, D.get_dense_representation(), M, space_grid_step_size, alpha,
+                             initialize_A(B, D.get_dense_representation(), M, space_grid_step_size, alpha,
                                           time_grid_step_size), processing_unit) {}
 
 template<class floating>
@@ -235,7 +235,7 @@ floating EquidistantBlock1D<floating>::get_system_coeff(const floating alpha, co
 }
 
 template<class floating>
-AlgebraicMatrix<floating> EquidistantBlock1D<floating>::initialize_a(const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating space_grid_step_size, const floating alpha, const floating time_grid_step_size) const
+AlgebraicMatrix<floating> EquidistantBlock1D<floating>::initialize_A(const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating space_grid_step_size, const floating alpha, const floating time_grid_step_size) const
 {
     const SizeType N = B.get_num_rows();
     auto A = static_cast<floating>(2) / space_grid_step_size / space_grid_step_size * M - get_system_coeff(alpha, time_grid_step_size) * D;
@@ -264,7 +264,7 @@ ProcessingUnit<floating> EquidistantBlock1D<floating>::get_processing_unit() con
 }
 
 template<class floating>
-BlockVector<floating> EquidistantBlock1D<floating>::cyclic_reduction(const AlgebraicMatrix<floating> &scaled_b, BlockVector<floating> const &f) const
+BlockVector<floating> EquidistantBlock1D<floating>::cyclic_reduction(const AlgebraicMatrix<floating> &scaled_B, BlockVector<floating> const &f) const
 {
     std::cout << "   cyclic_reduction:   " << this->get_block_dim() << "  " << this->get_block_dim() << '\n';
 
@@ -272,7 +272,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::cyclic_reduction(const Algeb
 
     if (get_block_dim() <= 3)
     {
-        EquidistantBlock1D<floating> const K0(3, scaled_b, _D, _M, _space_grid_step_size, _alpha, _time_grid_step_size, _A,
+        EquidistantBlock1D<floating> const K0(3, scaled_B, _D, _M, _space_grid_step_size, _alpha, _time_grid_step_size, _A,
                                               get_processing_unit());
         AlgebraicMatrix<floating> const K = K0.get_dense_representation();
 
@@ -284,19 +284,19 @@ BlockVector<floating> EquidistantBlock1D<floating>::cyclic_reduction(const Algeb
     else
     {
         SizeType const cnr = (get_block_dim() + 1) / 2;
-        BlockVector<floating> const _B0  = scaled_b * (_A / scaled_b);
+        BlockVector<floating> const _B0  = scaled_B * (_A / scaled_B);
 
         const EquidistantBlock1D<floating> Bs(cnr, _B0, _D, _M, _space_grid_step_size, _alpha, _time_grid_step_size,
                                                _A - static_cast<floating>(2) * _B0, get_processing_unit());
 
-        returnMatrix = cr_prolongation(scaled_b, f, Bs.cyclic_reduction(_B0, cr_restriction(scaled_b, f)));
+        returnMatrix = cr_prolongation(scaled_B, f, Bs.cyclic_reduction(_B0, cr_restriction(scaled_B, f)));
     }
 
     return returnMatrix;
 }
 
 template<class floating>
-BlockVector<floating> EquidistantBlock1D<floating>::cr_prolongation(const AlgebraicMatrix<floating> &scaled_b, const BlockVector<floating> &fine_rhs, const BlockVector<floating> &coarse_solution) const
+BlockVector<floating> EquidistantBlock1D<floating>::cr_prolongation(const AlgebraicMatrix<floating> &scaled_B, const BlockVector<floating> &fine_rhs, const BlockVector<floating> &coarse_solution) const
 {
     const SizeType fnr = get_block_dim();
     const SizeType cnr = (get_block_dim() + 1) / 2;
@@ -326,7 +326,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::cr_prolongation(const Algebr
             uf[2 * i] = coarse_solution[i];
         }
 
-        bmt = _A/(scaled_b * bmt + icv);
+        bmt = _A/(scaled_B * bmt + icv);
         jt = 0;
         for (SizeType i = ib; i < iend; ++i, ++jt) {
             uf[2 * i - 1] = bmt[jt];
@@ -336,7 +336,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::cr_prolongation(const Algebr
     return uf;
 }
 template<class floating>
-BlockVector<floating> EquidistantBlock1D<floating>::cr_restriction(const AlgebraicMatrix<floating> &scaled_b, const BlockVector<floating> &fine_rhs) const
+BlockVector<floating> EquidistantBlock1D<floating>::cr_restriction(const AlgebraicMatrix<floating> &scaled_B, const BlockVector<floating> &fine_rhs) const
 {
     const SizeType fnr = get_block_dim();
     assert(fnr % 2 == 1); // odd number of block rows required
@@ -360,7 +360,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::cr_restriction(const Algebra
             fc[i / 2] = fine_rhs[i];
             bmt[jt] = fine_rhs[i - 1] + fine_rhs[i + 1];
         }
-        bmt = scaled_b * (_A / bmt);
+        bmt = scaled_B * (_A / bmt);
 
         fc.updateAdd(ib / 2, iend / 2, bmt);
     }

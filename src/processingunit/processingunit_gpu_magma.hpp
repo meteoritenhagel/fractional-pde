@@ -50,12 +50,12 @@ void GpuMagma<floating>::xaxpy(const int n, const floating alpha, const floating
 }
 
 template<class floating>
-void GpuMagma<floating>::xcopy(const int n, const floating * const source, const int incx, floating * const dest, const int incy) const
+void GpuMagma<floating>::xcopy(const int n, const floating * const source, const int inc_source, floating * const dest, const int inc_dest) const
 {
     if constexpr(isFloat())
-        magma_scopy(n, source, incx, dest, incy, get_magma_queue());
+        magma_scopy(n, source, inc_source, dest, inc_dest, get_magma_queue());
     else if constexpr(isDouble())
-        magma_dcopy(n, source, incx, dest, incy, get_magma_queue());
+        magma_dcopy(n, source, inc_source, dest, inc_dest, get_magma_queue());
     cudaDeviceSynchronize();
     return;
 }
@@ -73,16 +73,16 @@ floating GpuMagma<floating>::xdot(const int n, const floating * const x, const i
 }
 
 template<class floating>
-void GpuMagma<floating>::xgemm(const OperationType TransA, const OperationType TransB,
-        const int M, const int N, const int K, const floating alpha, const floating * const A,
-        const int lda, const floating * const B, const int ldb, const floating beta, floating * const C, const int ldc) const
+void GpuMagma<floating>::xgemm(const OperationType trans_A, const OperationType trans_B,
+                               const int M, const int N, const int K, const floating alpha, const floating * const A,
+                               const int lda, const floating * const B, const int ldb, const floating beta, floating * const C, const int ldc) const
 {
     if constexpr(isFloat())
-        magma_sgemm(to_internal_operation.at(TransA), to_internal_operation.at(TransB),
+        magma_sgemm(to_internal_operation.at(trans_A), to_internal_operation.at(trans_B),
                     M, N, K, alpha, A,
                     lda, B, ldb, beta, C, ldc, get_magma_queue());
     else if constexpr(isDouble())
-        magma_dgemm(to_internal_operation.at(TransA), to_internal_operation.at(TransB),
+        magma_dgemm(to_internal_operation.at(trans_A), to_internal_operation.at(trans_B),
                     M, N, K, alpha, A,
                     lda, B, ldb, beta, C, ldc, get_magma_queue());
 
@@ -92,16 +92,16 @@ void GpuMagma<floating>::xgemm(const OperationType TransA, const OperationType T
 
 template<class floating>
 void GpuMagma<floating>::xgemv(const OperationType trans, const int m, const int n,
-        const floating alpha, floating const * const a, const int lda, floating const * const x, const int incx,
-        const floating beta, floating * const y, const int incy) const
+                               const floating alpha, floating const * const A, const int lda, floating const * const x, const int incx,
+                               const floating beta, floating * const y, const int incy) const
 {
     if constexpr(isFloat())
         magma_sgemv(to_internal_operation.at(trans), m, n,
-                    alpha, a, lda, x, incx,
+                    alpha, A, lda, x, incx,
                     beta, y, incy, get_magma_queue());
     else if constexpr(isDouble())
         magma_dgemv(to_internal_operation.at(trans), m, n,
-                    alpha, a, lda, x, incx,
+                    alpha, A, lda, x, incx,
                     beta, y, incy, get_magma_queue());
     cudaDeviceSynchronize();
     return;
@@ -109,49 +109,49 @@ void GpuMagma<floating>::xgemv(const OperationType trans, const int m, const int
 
 
 template<class floating>
-void GpuMagma<floating>::xgetrf(int * const m, int * const n, floating * const a, int * const lda,
-        int * const ipiv, int * const info) const
+void GpuMagma<floating>::xgetrf(int * const m, int * const n, floating * const A, int * const lda,
+                                int * const ipiv, int * const info) const
 {
     if constexpr(isFloat())
-        magma_sgetrf(*m, *n, a, *lda, ipiv, info);
+        magma_sgetrf(*m, *n, A, *lda, ipiv, info);
     else if constexpr(isDouble())
-        magma_dgetrf(*m, *n, a, *lda, ipiv, info);
+        magma_dgetrf(*m, *n, A, *lda, ipiv, info);
 
     cudaDeviceSynchronize();
     return;
 }
 
 template<class floating>
-void GpuMagma<floating>::xgetri(const int * const n, floating * const a, const int * const lda, const int * const ipiv,
-                           floating * const work, const int * const lwork, int * const info) const
+void GpuMagma<floating>::xgetri(const int * const n, floating * const A, const int * const lda, const int * const ipiv,
+                                floating * const work, const int * const lwork, int * const info) const
 {
     if constexpr(isFloat())
-        magma_sgetri_gpu(*n, a, *lda, const_cast<int*>(ipiv), work, *lwork, info);
+        magma_sgetri_gpu(*n, A, *lda, const_cast<int*>(ipiv), work, *lwork, info);
     else if constexpr(isDouble())
-        magma_dgetri_gpu(*n, a, *lda, const_cast<int*>(ipiv), work, *lwork, info);
+        magma_dgetri_gpu(*n, A, *lda, const_cast<int*>(ipiv), work, *lwork, info);
 }
 
 template<class floating>
 void GpuMagma<floating>::xgetrs(const OperationType trans, const int * const n, const int * const nrhs,
-        const floating * const a, const int * const lda, const int * const ipiv,
-        floating * const b, const int * const ldb, int * const info) const
+                                const floating * const A, const int * const lda, const int * const ipiv,
+                                floating * const B, const int * const ldb, int * const info) const
 {
     if constexpr(isFloat())
-        magma_sgetrs_gpu(to_internal_operation.at(trans), *n, *nrhs, const_cast<float*>(a), *lda, const_cast<int*>(ipiv), b, *ldb, info);
+        magma_sgetrs_gpu(to_internal_operation.at(trans), *n, *nrhs, const_cast<float*>(A), *lda, const_cast<int*>(ipiv), B, *ldb, info);
     else if constexpr(isDouble())
-        magma_dgetrs_gpu(to_internal_operation.at(trans), *n, *nrhs, const_cast<double*>(a), *lda, const_cast<int*>(ipiv), b, *ldb, info);
+        magma_dgetrs_gpu(to_internal_operation.at(trans), *n, *nrhs, const_cast<double*>(A), *lda, const_cast<int*>(ipiv), B, *ldb, info);
 
     cudaDeviceSynchronize();
     return;
 }
 
 template<class floating>
-void GpuMagma<floating>::xscal(const int N, const floating alpha, floating * const X, const int incX) const
+void GpuMagma<floating>::xscal(const int N, const floating alpha, floating * const x, const int incx) const
 {
     if constexpr(isFloat())
-        magma_sscal(N, alpha, X, incX, get_magma_queue());
+        magma_sscal(N, alpha, x, incx, get_magma_queue());
     else if constexpr(isDouble())
-        magma_dscal(N, alpha, X, incX, get_magma_queue());
+        magma_dscal(N, alpha, x, incx, get_magma_queue());
 
     cudaDeviceSynchronize();
     return;
