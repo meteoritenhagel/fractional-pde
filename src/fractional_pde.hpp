@@ -16,15 +16,15 @@ BlockVector<floating> solve_equidistant(const ProcessingUnit<floating> processin
     floating dt = T / static_cast<floating>(N);
     floating dx = T / static_cast<floating>(M);
 
-    const auto grid = *colMatrixFactory.createColumn(M, dx);
+    const auto grid = *colMatrixFactory.create_array(M, dx);
 
-    auto B = *colMatrixFactory.createMatrix(N+3, N+3);
-    auto D = *colMatrixFactory.createCoefficientMatrix(N, alpha);
-    auto MM = *colMatrixFactory.createMatrix(N+3, N+3);
+    auto B = *colMatrixFactory.create_matrix(N + 3, N + 3);
+    auto D = *colMatrixFactory.create_coefficient_matrix(N, alpha);
+    auto MM = *colMatrixFactory.create_matrix(N + 3, N + 3);
 
     initialize_matrices(N, T, B, MM);
 
-    auto rhs = *colMatrixFactory.createMatrix(N+3, M+1);
+    auto rhs = *colMatrixFactory.create_matrix(N + 3, M + 1);
 
     initialize_rhs<floating>(N, T, pde_function_tuple, grid, rhs);
 
@@ -51,13 +51,13 @@ BlockVector<floating> solve_nonequidistant(const ProcessingUnit<floating> proces
 
     floating dt = T / static_cast<floating>(N);
 
-    auto B = *colMatrixFactory.createMatrix(N+3, N+3);
-    auto D = *colMatrixFactory.createCoefficientMatrix(N, alpha);
-    auto MM = *colMatrixFactory.createMatrix(N+3, N+3);
+    auto B = *colMatrixFactory.create_matrix(N + 3, N + 3);
+    auto D = *colMatrixFactory.create_coefficient_matrix(N, alpha);
+    auto MM = *colMatrixFactory.create_matrix(N + 3, N + 3);
 
     initialize_matrices(N, T, B, MM);
 
-    auto rhs = *colMatrixFactory.createMatrix(N+3, M+1);
+    auto rhs = *colMatrixFactory.create_matrix(N + 3, M + 1);
 
     initialize_rhs<floating>(N, T, pde_function_tuple, grid, rhs);
 
@@ -142,11 +142,11 @@ std::vector<floating> linspace(const int N, const floating a, const floating b)
 template<class floating>
 void apply_tridiagonals(const floating a, const floating b, AlgebraicMatrix<floating> &B)
 {
-    assert(B.isSquare());
-    for (unsigned int i = 0; i < B.getNcols(); i++)
+    assert(B.is_square());
+    for (unsigned int i = 0; i < B.get_num_cols(); i++)
     {
         B(i,i) = b;
-        if (i != B.getNcols() - 1) B(i,i+1) = a;
+        if (i != B.get_num_cols() - 1) B(i, i + 1) = a;
         if (i != 0) B(i,i-1) = a;
     }
 

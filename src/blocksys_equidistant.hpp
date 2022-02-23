@@ -15,14 +15,14 @@ EquidistantBlock1D<floating>::EquidistantBlock1D(const SizeType block_dim, const
                                                  const floating alpha,
                                                  const floating time_grid_step_size,
                                                  const ProcessingUnit <floating> processing_unit)
-        : EquidistantBlock1D(block_dim, B, D.copyToDense(), M, space_grid_step_size, alpha, time_grid_step_size,
-                             initialize_a(B, D.copyToDense(), M, space_grid_step_size, alpha,
+        : EquidistantBlock1D(block_dim, B, D.get_dense_representation(), M, space_grid_step_size, alpha, time_grid_step_size,
+                             initialize_a(B, D.get_dense_representation(), M, space_grid_step_size, alpha,
                                           time_grid_step_size), processing_unit) {}
 
 template<class floating>
 typename EquidistantBlock1D<floating>::SizeType EquidistantBlock1D<floating>::get_num_blocks() const
 {
-    return _B.getNrows();
+    return _B.get_num_rows();
 }
 
 template<class floating>
@@ -46,7 +46,7 @@ ContainerFactory<floating> EquidistantBlock1D<floating>::get_container_factory()
 template<class floating>
 AlgebraicMatrix<floating> EquidistantBlock1D<floating>::get_dense_representation() const
 {
-    const SizeType loc_rows = _B.getNrows();
+    const SizeType loc_rows = _B.get_num_rows();
     const SizeType glob_rows = get_dense_dim();
 
     auto cpu = std::make_shared<Cpu<floating>>();
@@ -55,11 +55,11 @@ AlgebraicMatrix<floating> EquidistantBlock1D<floating>::get_dense_representation
     auto host_B(_B);
     auto host_M(_M);
 
-    host_A.moveTo(cpu);
-    host_B.moveTo(cpu);
-    host_M.moveTo(cpu);
+    host_A.move_to(cpu);
+    host_B.move_to(cpu);
+    host_M.move_to(cpu);
 
-    auto DD = *host_M.get_container_factory().createMatrix(glob_rows, glob_rows);
+    auto DD = *host_M.get_container_factory().create_matrix(glob_rows, glob_rows);
 
     const floating scale_factor = 1.0;
     const floating scale_b = 1.0;
@@ -95,7 +95,7 @@ AlgebraicMatrix<floating> EquidistantBlock1D<floating>::get_dense_representation
         for (SizeType i = glob_rows - loc_rows; i < glob_rows; i++)
             DD(i,j) = host_M(i - glob_rows + loc_rows, j - glob_rows + loc_rows);
 
-    DD.moveTo(get_processing_unit());
+    DD.move_to(get_processing_unit());
     return DD;
 }
 
@@ -111,8 +111,8 @@ BlockVector<floating> EquidistantBlock1D<floating>::solve_pde(const BlockVector<
                                                               const SolvingProcedure solving_procedure) const
 {
     auto pde_solution = solve(rhs, max_num_iterations, steps_per_iteration, accuracy, solving_procedure);
-    const auto M = pde_solution.getNrows();
-    const auto N = pde_solution.getNcols();
+    const auto M = pde_solution.get_num_rows();
+    const auto N = pde_solution.get_num_cols();
 
     for(size_t j = 0; j < N; ++j)
         pde_solution[j] = _M * pde_solution[j];
@@ -135,18 +135,18 @@ BlockVector<floating> EquidistantBlock1D<floating>::solve(const BlockVector<floa
     const SizeType M = get_block_dim();
 
     auto rhs_copy(rhs);
-    rhs_copy.moveTo(get_processing_unit());
+    rhs_copy.move_to(get_processing_unit());
     auto rs_rhs = rescale_rhs(rhs_copy);
 
-    BlockVector<floating> solution = *get_container_factory().createMatrix(N, M);
+    BlockVector<floating> solution = *get_container_factory().create_matrix(N, M);
     auto x = calculate_residual(solution, rs_rhs);
-    std::cout << "initial system error: " << x.getEuclidean() << std::endl;
+    std::cout << "initial system error: " << x.get_euclidean_norm() << std::endl;
 
     if (solving_procedure == SolvingProcedure::PCJacobi)
     {
         // calculate inverses for multigrid
-        _A.getInverse();
-        _M.getInverse();
+        _A.get_inverse();
+        _M.get_inverse();
     }
 
     floating euclideanError = 0;
@@ -215,16 +215,16 @@ EquidistantBlock1D<floating>::EquidistantBlock1D(const SizeType block_dim,
         : _block_dim(block_dim), _B(B), _D(D), _M(M), _alpha(alpha), _time_grid_step_size(time_grid_step_size), _space_grid_step_size(space_grid_step_size), _A(A),
           _container_factory(processing_unit), _coarse_system(initialize_coarse_system())
 {
-    assert(_A.isSquare() && _B.isSquare() && _M.isSquare());
-    assert(_A.getNrows() == _B.getNrows());
-    assert(_A.getNcols() == _B.getNcols());
-    assert(_A.getNrows() == _M.getNrows());
-    assert(_A.getNcols() == _M.getNcols());
+    assert(_A.is_square() && _B.is_square() && _M.is_square());
+    assert(_A.get_num_rows() == _B.get_num_rows());
+    assert(_A.get_num_cols() == _B.get_num_cols());
+    assert(_A.get_num_rows() == _M.get_num_rows());
+    assert(_A.get_num_cols() == _M.get_num_cols());
 
-    _A.moveTo(processing_unit);
-    _B.moveTo(processing_unit);
-    _D.moveTo(processing_unit);
-    _M.moveTo(processing_unit);
+    _A.move_to(processing_unit);
+    _B.move_to(processing_unit);
+    _D.move_to(processing_unit);
+    _M.move_to(processing_unit);
 }
 
 template<class floating>
@@ -237,13 +237,13 @@ floating EquidistantBlock1D<floating>::get_system_coeff(const floating alpha, co
 template<class floating>
 AlgebraicMatrix<floating> EquidistantBlock1D<floating>::initialize_a(const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating space_grid_step_size, const floating alpha, const floating time_grid_step_size) const
 {
-    const SizeType N = B.getNrows();
+    const SizeType N = B.get_num_rows();
     auto A = static_cast<floating>(2) / space_grid_step_size / space_grid_step_size * M - get_system_coeff(alpha, time_grid_step_size) * D;
 
     // operator() can only be invoked for Cpu objects
     auto Mcopy(M);
-    A.moveTo(std::make_shared<Cpu<floating>>());
-    Mcopy.moveTo(std::make_shared<Cpu<floating>>());
+    A.move_to(std::make_shared<Cpu<floating>>());
+    Mcopy.move_to(std::make_shared<Cpu<floating>>());
 
     const SizeType colIndices[3] = {0, 1, N-1};
     for (SizeType col  : colIndices)
@@ -260,7 +260,7 @@ AlgebraicMatrix<floating> EquidistantBlock1D<floating>::initialize_a(const Algeb
 template<class floating>
 ProcessingUnit<floating> EquidistantBlock1D<floating>::get_processing_unit() const
 {
-    return _container_factory.getProcessingUnit();
+    return _container_factory.get_processing_unit();
 }
 
 template<class floating>
@@ -268,7 +268,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::cyclic_reduction(const Algeb
 {
     std::cout << "   cyclic_reduction:   " << this->get_block_dim() << "  " << this->get_block_dim() << '\n';
 
-    auto returnMatrix = *get_container_factory().createMatrix();
+    auto returnMatrix = *get_container_factory().create_matrix();
 
     if (get_block_dim() <= 3)
     {
@@ -277,7 +277,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::cyclic_reduction(const Algeb
         AlgebraicMatrix<floating> const K = K0.get_dense_representation();
 
         auto returnMatrix = K / f.flat();
-        returnMatrix.resize(f.getNrows(), f.getNcols());
+        returnMatrix.resize(f.get_num_rows(), f.get_num_cols());
 
         return returnMatrix;
     }
@@ -298,16 +298,15 @@ BlockVector<floating> EquidistantBlock1D<floating>::cyclic_reduction(const Algeb
 template<class floating>
 BlockVector<floating> EquidistantBlock1D<floating>::cr_prolongation(const AlgebraicMatrix<floating> &scaled_b, const BlockVector<floating> &fine_rhs, const BlockVector<floating> &coarse_solution) const
 {
-    // TODO: write Gpu kernel
     const SizeType fnr = get_block_dim();
     const SizeType cnr = (get_block_dim() + 1) / 2;
 
-    assert(fine_rhs.getNrows() == _A.getNcols());
-    assert(coarse_solution.getNrows() == _A.getNcols());
+    assert(fine_rhs.get_num_rows() == _A.get_num_cols());
+    assert(coarse_solution.get_num_rows() == _A.get_num_cols());
 
-    const SizeType nrow = fine_rhs.getNrows();
+    const SizeType nrow = fine_rhs.get_num_rows();
 
-    BlockVector<floating> uf  = *get_container_factory().createMatrix(nrow, fnr);
+    BlockVector<floating> uf  = *get_container_factory().create_matrix(nrow, fnr);
 
     constexpr SizeType BLOCKSIZE = 64;
 
@@ -315,8 +314,8 @@ BlockVector<floating> EquidistantBlock1D<floating>::cr_prolongation(const Algebr
 
 #pragma omp parallel for
     for (SizeType ib = 1; ib < cnr; ib += BLOCKSIZE) {
-        BlockVector<floating> bmt = *get_container_factory().createMatrix(nrow, BLOCKSIZE);
-        BlockVector<floating> icv = *get_container_factory().createMatrix(nrow, BLOCKSIZE);
+        BlockVector<floating> bmt = *get_container_factory().create_matrix(nrow, BLOCKSIZE);
+        BlockVector<floating> icv = *get_container_factory().create_matrix(nrow, BLOCKSIZE);
         const SizeType iend  = std::min(ib + BLOCKSIZE, cnr);
 
         SizeType jt = 0;
@@ -342,10 +341,10 @@ BlockVector<floating> EquidistantBlock1D<floating>::cr_restriction(const Algebra
     const SizeType fnr = get_block_dim();
     assert(fnr % 2 == 1); // odd number of block rows required
     const SizeType cnr = (get_block_dim() + 1) / 2;
-    assert(fine_rhs.getNrows() == _A.getNcols());
+    assert(fine_rhs.get_num_rows() == _A.get_num_cols());
 
-    const SizeType nrow = fine_rhs.getNrows();
-    AlgebraicMatrix <floating> fc = *get_container_factory().createMatrix(nrow, cnr);
+    const SizeType nrow = fine_rhs.get_num_rows();
+    AlgebraicMatrix <floating> fc = *get_container_factory().create_matrix(nrow, cnr);
 
     fc[0] = fine_rhs[0];
 
@@ -353,7 +352,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::cr_restriction(const Algebra
 
 #pragma omp parallel for
     for (SizeType ib = 2; ib < fnr - 1; ib += 2 * BLOCKSIZE) {
-        AlgebraicMatrix <floating> bmt = *get_container_factory().createMatrix(nrow, BLOCKSIZE);
+        AlgebraicMatrix <floating> bmt = *get_container_factory().create_matrix(nrow, BLOCKSIZE);
         const SizeType iend = std::min(ib + 2 * BLOCKSIZE, fnr - 1);
         SizeType jt = 0;
 
@@ -379,11 +378,11 @@ floating EquidistantBlock1D<floating>::multigrid(const unsigned num_smoothing_st
 
     const SizeType coarseM = get_coarse_block_dim();
 
-    BlockVector<floating> coarseSolution = *get_container_factory().createMatrix(N, coarseM);
+    BlockVector<floating> coarseSolution = *get_container_factory().create_matrix(N, coarseM);
 
     const auto &coarseSystem = get_coarse_system();
 
-    assert(solution.getNrows() == N && solution.getNcols() == M && "ERROR: Dimension mismatch.");
+    assert(solution.get_num_rows() == N && solution.get_num_cols() == M && "ERROR: Dimension mismatch.");
 
     floating euclideanError = 1;
 
@@ -422,9 +421,9 @@ BlockVector<floating> EquidistantBlock1D<floating>::prolongation(const BlockVect
     const SizeType N = get_num_blocks();
     const SizeType M = get_block_dim();
 
-    assert(coarse_rhs.getNrows() == N && coarse_rhs.getNcols() == (M + 1) / 2 && "ERROR: Wrong dimensions.");
+    assert(coarse_rhs.get_num_rows() == N && coarse_rhs.get_num_cols() == (M + 1) / 2 && "ERROR: Wrong dimensions.");
 
-    auto ffOnFineGrid = *get_container_factory().createMatrix(N, M);
+    auto ffOnFineGrid = *get_container_factory().create_matrix(N, M);
 
     ffOnFineGrid[0] = coarse_rhs[0];
     for (SizeType i = 1; i < get_block_dim() - 1; i += 2)
@@ -445,7 +444,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::restriction(const BlockVecto
 
     const SizeType coarseGridSize = (get_block_dim() + 1) / 2;
 
-    auto ffOnCoarseGrid = *get_container_factory().createMatrix(N, coarseGridSize);
+    auto ffOnCoarseGrid = *get_container_factory().create_matrix(N, coarseGridSize);
 
 // Full restriction
 #pragma omp parallel for
@@ -491,11 +490,11 @@ const EquidistantBlock1D<floating>& EquidistantBlock1D<floating>::get_coarse_sys
 template<class floating>
 floating EquidistantBlock1D<floating>::jacobi_iteration(const floating omega, const BlockVector<floating> &rhs, const size_t max_num_iterations, const floating , BlockVector<floating> &solution) const
 {
-    const SizeType M = rhs.getNcols();
+    const SizeType M = rhs.get_num_cols();
 
     const floating inv_scale_factor = 1 / _space_grid_step_size / 2;
 
-    assert(solution.getNrows() == get_num_blocks() && solution.getNcols() == M && "ERROR: Dimension mismatch.");
+    assert(solution.get_num_rows() == get_num_blocks() && solution.get_num_cols() == M && "ERROR: Dimension mismatch.");
 
     floating euclideanNormResidual = 0;
 
@@ -536,11 +535,11 @@ floating EquidistantBlock1D<floating>::jacobi_iteration(const floating omega, co
 template<class floating>
 void EquidistantBlock1D<floating>::smooth(const floating omega, const BlockVector<floating> &rhs, const size_t max_num_iterations, BlockVector<floating> &solution) const
 {
-    const SizeType M = rhs.getNcols();
+    const SizeType M = rhs.get_num_cols();
 
     const floating inv_scale_factor = 1 / _space_grid_step_size / 2;
 
-    assert(solution.getNrows() == get_num_blocks() && solution.getNcols() == M && "ERROR: Dimension mismatch.");
+    assert(solution.get_num_rows() == get_num_blocks() && solution.get_num_cols() == M && "ERROR: Dimension mismatch.");
 
     size_t n = 0;
     do
@@ -565,11 +564,11 @@ template<class floating>
 BlockVector<floating> EquidistantBlock1D<floating>::calculate_residual(const BlockVector<floating> &beta, const BlockVector<floating> &rhs) const
 {
     const SizeType N = get_num_blocks();
-    const SizeType M = rhs.getNcols();
+    const SizeType M = rhs.get_num_cols();
 
 
-    assert(beta.getNrows() == N && beta.getNcols() == M && "ERROR: Dimension mismatch.");
-    auto residual = *get_container_factory().createMatrix(N, M);  // GH: das dürfte bei Unfied memory langsam sein, diesen Speicher benötigen wir nur auf der Gpu.
+    assert(beta.get_num_rows() == N && beta.get_num_cols() == M && "ERROR: Dimension mismatch.");
+    auto residual = *get_container_factory().create_matrix(N, M);  // GH: das dürfte bei Unfied memory langsam sein, diesen Speicher benötigen wir nur auf der Gpu.
 
     for (unsigned int i = 0; i < M; ++i)
     {
@@ -582,7 +581,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::calculate_residual(const Blo
 template<class floating>
 AlgebraicVector<floating> EquidistantBlock1D<floating>::calculate_row_residual(const SizeType i, const BlockVector<floating> &beta_i, const BlockVector<floating> &rhs) const
 {
-    const SizeType M = rhs.getNcols();
+    const SizeType M = rhs.get_num_cols();
 
     auto residual = rhs[i];
 

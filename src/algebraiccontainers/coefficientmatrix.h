@@ -17,16 +17,16 @@ template<class floating>
 class ContainerFactory;
 
 /**
- * Calculates the product of a scalar @param lambda and a CoefficientMatrix @param B.
+ * Calculates the product of a scalar @p scalar and a CoefficientMatrix @p B.
  * The result is stored in a newly allocated object.
  *
  * @tparam floating Floating point type
- * @param lambda scalar
+ * @param scalar scalar
  * @param B CoefficientMatrix
- * @return lambda * B allocated as a new object
+ * @return scalar * B allocated as a new object
  */
 template<class floating>
-CoefficientMatrix<floating> operator*(const floating lambda, const CoefficientMatrix<floating> &B);
+CoefficientMatrix<floating> operator*(const floating scalar, const CoefficientMatrix<floating> &B);
 
 /**
  * The class CoefficientMatrix is a matrix of special form, which emerges when discretizing Caputo fractional
@@ -53,11 +53,11 @@ public:
 
     /**
      * Constructor.
-     * @param processingUnit Target processingUnit
+     * @param processing_unit Target processing_unit
      * @param size Number of equidistant time steps N
      * @param alpha anomalous diffusion exponent
      */
-    CoefficientMatrix(const ProcessingUnit<floating> processingUnit, const SizeType size, const floating alpha);
+    CoefficientMatrix(const ProcessingUnit<floating> processing_unit, const SizeType size, const floating alpha);
 
     /**
      * Destructor
@@ -65,8 +65,8 @@ public:
     ~CoefficientMatrix() = default;
 
     /**
-     * Return number of equidistant time steps.
-     * @return number of equidistant time steps
+     * Return number of time intervals in equidistant time grid.
+     * @return number of equidistant time intervals
      */
     SizeType size() const;
 
@@ -79,8 +79,6 @@ public:
     /**
      * Return this instance's container factory.
      * @return current container factory
-     *
-     * TODO: rename to getContainerFactory()
      */
     ContainerFactory<floating> get_container_factory() const;
 
@@ -88,7 +86,7 @@ public:
      * Copies the abstract matrix type to a dense AlgebraicMatrix.
      * @return dense matrix containing the matrix's values
      */
-    AlgebraicMatrix<floating> copyToDense() const;
+    AlgebraicMatrix<floating> get_dense_representation() const;
 
     /**
      * Access element in row @param i and column @param j of the current abstract matrix.
@@ -98,17 +96,13 @@ public:
      */
     floating operator()(const SizeType i, const SizeType j) const;
 
-    /** Scales matrix with scalar @p lambda.
-    *
-    * @param[in] lambda scalar factor
-    *
+    /** Scales matrix with scalar @p scalar.
+    * @param[in] scalar scalar factor
     */
-    void scale(const floating lambda);
+    void scale(const floating scalar);
 
     /** Multiplies this matrix with an AlgebraicVector @p rhs.
-    *
     * @param[in] B AlgebraicVector
-    *
     * @return this * rhs in a newly allocated AlgebraicVector.
     */
     AlgebraicVector<floating> operator*(const AlgebraicVector<floating> &rhs);
@@ -118,12 +112,13 @@ private:
 
     /**
      * Initialize data member with the correct values.
-     * @param processingUnit target processing unit
+     * @param processing_unit target processing unit
      * @param size number of equidistant time steps
      * @param alpha anomalous diffusion coefficient
-     * @return the correct data member for initialization
+     * @return the correct AlgebraicVector for initialization
      */
-    static AlgebraicVector<floating> initializeD(const ProcessingUnit<floating> processingUnit, const SizeType size, const floating alpha);
+    static AlgebraicVector<floating> initialize_D(const ProcessingUnit<floating> processing_unit,
+                                                  const SizeType size, const floating alpha);
 
     /** Helper function for calculation of data member.
      *
@@ -147,14 +142,15 @@ private:
      * @param alpha anomalous diffusion coefficient
      * @return 0.5 * (3 - alpha) * (2- alpha) * m^(1 - alpha);
      */
-    static floating coef_bp(const int m, const floating alpha);
+    static floating coef_b_prime(const int m, const floating alpha);
 
     /** Helper function for calculation of data member.
+     * Chooses the right coef_* function according to @p m and @p k.
      *
      * @param m integer index
      * @param k maximum index (in this context, normally the number of equidistant time steps)
      * @param alpha anomalous diffusion coefficient
-     * @return the correct coef_* function according to @param m and @param k
+     * @return the correct coef_* function according to @p m and @p k
      */
     static floating coef_d(const int m, const int k, const floating alpha);
 };

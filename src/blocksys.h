@@ -500,7 +500,7 @@ public:
      * @param[in] beta solution
      * @param[out] result result of multiplication
      */
-    void mult(const BlockVector<floating> &beta, BlockVector<floating> &result) const;
+    void multiply(const BlockVector<floating> &beta, BlockVector<floating> &result) const;
 
     /**
      * Solves the auxiliary linear system using a SolvingProcedure with the given parameters,

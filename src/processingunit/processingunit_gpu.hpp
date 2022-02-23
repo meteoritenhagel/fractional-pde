@@ -196,7 +196,7 @@ void Gpu<floating>::xgetrf(int * const m, int * const n, floating * const a, int
     cudaDeviceSynchronize();
 
     // allocate Gpu Memory
-    const auto memoryManager = std::make_shared<GPU_Manager>();
+    const auto memoryManager = std::make_shared<GpuManager>();
     // buffer for cusolverDnSgetrf
     DeviceArray<floating> workingBuffer(workingBufferSize, 0, memoryManager);
 
@@ -236,7 +236,7 @@ void Gpu<floating>::xgetrs(const OperationType trans, const int * const n, const
 {
 
     // allocate Gpu Memory
-    const auto memoryManager = std::make_shared<GPU_Manager>();
+    const auto memoryManager = std::make_shared<GpuManager>();
     // int* devInfo in cusolverDn<t>getrf(..., devInfo) is expected to be on the device
     DeviceScalar<int> deviceInfo(0, memoryManager);
 
@@ -271,4 +271,4 @@ template<class floating>
 GpuHandle Gpu<floating>::_handle;
 
 template<class floating>
-MemoryManager Gpu<floating>::_deviceManager = std::make_shared<GPU_Manager>();
+MemoryManager Gpu<floating>::_deviceManager = std::make_shared<GpuManager>();

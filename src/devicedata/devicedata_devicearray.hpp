@@ -1,35 +1,35 @@
 #include <sstream>
 
 template<class T>
-DeviceArray<T>::DeviceArray(const MemoryManager& memoryManager)
-: DeviceDataDevice<T>(memoryManager), _size(0), _pointer(nullptr), _hasOwnMemoryManagement(false) {}
+DeviceArray<T>::DeviceArray(const MemoryManager& memory_manager)
+: DeviceDataDevice<T>(memory_manager), _size(0), _data(nullptr), _has_own_memory_management(false) {}
 
 template<class T>
-DeviceArray<T>::DeviceArray(const SizeType size, const T value, const MemoryManager& memoryManager)
-: DeviceDataDevice<T>(memoryManager), _size(size), _pointer(initializePointer()), _hasOwnMemoryManagement(true)
+DeviceArray<T>::DeviceArray(const SizeType size, const T value, const MemoryManager& memory_manager)
+: DeviceDataDevice<T>(memory_manager), _size(size), _data(initialize_data()), _has_own_memory_management(true)
 {
-    initializeMemory(memoryManager, data(), this->size(), value);
+    initialize_memory(memory_manager, data(), this->size(), value);
 }
 
 template<class T>
 DeviceArray<T>::DeviceArray(const DeviceArray &other)
-: DeviceDataDevice<T>(other), _size(other.size()), _pointer(initializePointer()), _hasOwnMemoryManagement(true)
+: DeviceDataDevice<T>(other), _size(other.size()), _data(initialize_data()), _has_own_memory_management(true)
 {
-    this->_memoryManager->copy(data(), other.data(), this->byteSize());
+    this->_memory_manager->copy(data(), other.data(), this->byte_size());
 }
 
 template<class T>
-void DeviceArray<T>::moveTo(const MemoryManager& targetDevice)
+void DeviceArray<T>::move_to(const MemoryManager& target_device)
 {
-    // only move if targetDevice is different to current device
-    if (typeid(*(this->_memoryManager)) != typeid(*targetDevice))
+    // only move if target_device is different to current device
+    if (typeid(*(this->_memory_manager)) != typeid(*target_device))
     {
-        T* newPtr = static_cast<T*>(this->_memoryManager->copyTo(_pointer.get(), this->byteSize(), targetDevice));
-        this->_memoryManager = targetDevice;
+        T* newPtr = static_cast<T*>(this->_memory_manager->copy_to(_data.get(), this->byte_size(), target_device));
+        this->_memory_manager = target_device;
 
-        _hasOwnMemoryManagement = true;
-        const auto currentManager = this->_memoryManager;
-        _pointer = PointerType(newPtr, [currentManager](T* ptrToMemory){ currentManager->free(ptrToMemory); });
+        _has_own_memory_management = true;
+        const auto currentManager = this->_memory_manager;
+        _data = PointerType(newPtr, [currentManager](T* ptrToMemory){ currentManager->free(ptrToMemory); });
     }
 }
 
@@ -39,7 +39,7 @@ DeviceArray<T>& DeviceArray<T>::operator= (const DeviceArray &other)
 {
     if (this != &other)
     {
-        if(hasOwnMemoryManagement())
+        if(has_own_memory_management())
         {
             resize(other.size());
         }
@@ -48,7 +48,7 @@ DeviceArray<T>& DeviceArray<T>::operator= (const DeviceArray &other)
             assert(this->size() == other.size()
                     && "ERROR: Dimension mismatch. Cannot overwrite dependent DeviceArray.");
         }
-        this->_memoryManager->copy(data(), other.data(), this->byteSize());
+        this->_memory_manager->copy(data(), other.data(), this->byte_size());
     }
     return *this;
 }
@@ -56,18 +56,18 @@ DeviceArray<T>& DeviceArray<T>::operator= (const DeviceArray &other)
 template<class T>
 DeviceArray<T>& DeviceArray<T>::operator=(DeviceArray&& other)
 {
-    if (isValid())
+    if (is_valid())
     {
         assert(this->size() == other.size()
                 && "ERROR: Dimension mismatch. Cannot move to dependent DeviceArray.");
-        this->_memoryManager->copy(data(), other.data(), this->byteSize());
-        other._pointer = nullptr;
+        this->_memory_manager->copy(data(), other.data(), this->byte_size());
+        other._data = nullptr;
     }
     else
     {
         this->_size = other._size;
-        this->_pointer = std::move(other._pointer);
-        this->_hasOwnMemoryManagement = other._hasOwnMemoryManagement;
+        this->_data = std::move(other._data);
+        this->_has_own_memory_management = other._has_own_memory_management;
     }
     return *this;
 }
@@ -76,13 +76,13 @@ DeviceArray<T>& DeviceArray<T>::operator=(DeviceArray&& other)
 template<class T>
 T* DeviceArray<T>::data()
 {
-    return _pointer.get();
+    return _data.get();
 }
 
 template<class T>
 T const * DeviceArray<T>::data() const
 {
-    return _pointer.get();
+    return _data.get();
 }
 
 template<class T>
@@ -100,12 +100,12 @@ T const & DeviceArray<T>::operator[](const SizeType index) const
 }
 
 template<class T>
-DeviceArray<T> DeviceArray<T>::resize(SizeType newSize)
+DeviceArray<T> DeviceArray<T>::resize(SizeType new_size)
 {
-    if (size() != newSize)
+    if (size() != new_size)
     {
-        _size = newSize;
-        _pointer = initializePointer();
+        _size = new_size;
+        _data = initialize_data();
     }
     return (*this);
 }
@@ -130,19 +130,19 @@ std::string DeviceArray<T>::display(const std::string& name) const
 // private:
 
 template<class T>
-bool DeviceArray<T>::isValid()
+bool DeviceArray<T>::is_valid()
 {
-    return (_pointer != nullptr);
+    return (_data != nullptr);
 }
 
 template<class T>
-typename DeviceArray<T>::PointerType DeviceArray<T>::initializePointer()
+typename DeviceArray<T>::PointerType DeviceArray<T>::initialize_data()
 {
-    if (this->byteSize() != 0)
+    if (this->byte_size() != 0)
     {
-        T* pointer = static_cast<T*>(this->_memoryManager->allocate(this->byteSize()));
-        _hasOwnMemoryManagement = true;
-        const auto currentManager = this->_memoryManager;
+        T* pointer = static_cast<T*>(this->_memory_manager->allocate(this->byte_size()));
+        _has_own_memory_management = true;
+        const auto currentManager = this->_memory_manager;
         return PointerType(pointer, [currentManager](T* ptrToMemory){ currentManager->free(ptrToMemory); });
     }
     else
@@ -152,16 +152,16 @@ typename DeviceArray<T>::PointerType DeviceArray<T>::initializePointer()
 }
 
 template<class T>
-bool DeviceArray<T>::hasOwnMemoryManagement() const
+bool DeviceArray<T>::has_own_memory_management() const
 {
-    return _hasOwnMemoryManagement;
+    return _has_own_memory_management;
 }
 
 template<class T>
-void DeviceArray<T>::makeDependentOn(const SizeType size, T * const pointer)
+void DeviceArray<T>::make_dependent_on(const SizeType size, T * const pointer)
 {
-    //_pointer = PointerType(pointer, [](T* ptrToUnifiedMemory){ return; });
-    _pointer = PointerType(pointer, [](T*){ return; }); // GH
+    //_data = PointerType(pointer, [](T* ptrToUnifiedMemory){ return; });
+    _data = PointerType(pointer, [](T*){ return; }); // GH
     _size = size;
-    _hasOwnMemoryManagement = false;
+    _has_own_memory_management = false;
 }

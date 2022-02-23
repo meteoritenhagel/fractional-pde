@@ -19,7 +19,7 @@ class AlgebraicVector;
  * right memory location.
  *
  * All containers are returned by std::unique_ptr, except when an instance of AlgebraicVector is
- * created using createColumn(...). In this case, a std::shared_ptr is returned.
+ * created using create_array(...). In this case, a std::shared_ptr is returned.
  *
  * @tparam floating Floating point type
  */
@@ -31,47 +31,48 @@ public:
     using CoefficientMatrixPointer = std::unique_ptr<CoefficientMatrix<floating>>;
     using SizeType = typename DeviceDataDevice<floating>::SizeType;
 
-    explicit ContainerFactory(const ProcessingUnit<floating> processingUnit);
+    explicit ContainerFactory(const ProcessingUnit<floating> processing_unit);
     ~ContainerFactory() = default;
 
     /** Default factory
      * @return returns a default AlgebraicMatrix with (0, 0) elements.
      */
-    ColMatrixPointer createMatrix() const;
+    ColMatrixPointer create_matrix() const;
 
     /** Factory, initializes elements with value @p val
-     *  @param[in] nrow  number of columns
-     *  @param[in] ncol  number of columns
+     *  @param[in] num_rows  number of columns
+     *  @param[in] num_cols  number of columns
      *  @param[in] val   initial value for all matrix elements
      */
-    ColMatrixPointer createMatrix(const SizeType nrow, const SizeType ncol, const floating val = 0) const;
+    ColMatrixPointer create_matrix(const SizeType num_rows, const SizeType num_cols, const floating val = 0) const;
 
-    /**  Factory, creates an AlgebraicMatrix from vector @p u.
-     * @param[in] u  vector
+    /**  Factory, creates an AlgebraicMatrix from vector @p vec.
+     *   The size of @p vec must be a multiple of @p num_rows.
+     * @param[in] vec vector
      */
-    ColMatrixPointer createMatrix(const SizeType nrow, std::vector<floating> const &u) const;
+    ColMatrixPointer create_matrix(const SizeType num_rows, std::vector<floating> const &vec) const;
 
-    /**  Factory, creates an individual column / AlgebraicVector with @param size elements,
-     * which are initialized with the value @param val.
+    /**  Factory, creates an individual column / AlgebraicVector with @p size elements,
+     * which are initialized with the value @p val.
      * @param size number of elements
      * @param val initial value vor all individual elements
      */
-    ColMatrixColumnPointer createColumn(const SizeType size, const floating val = 0) const;
+    ColMatrixColumnPointer create_array(const SizeType size, const floating val = 0) const;
 
-    /**  Factory, creates an individual column / AlgebraicVector with @param size elements,
-     * which are initialized with the value @param val.
-     * @param size number of elements
-     * @param val initial value vor all individual elements
+    /**  Factory, creates an individual column / AlgebraicVector for a fractional PDE
+     * with @p N time intervals, which are initialized with the value @p val.
+     * @param N number of time intervals in the equidistant time grid
+     * @param alpha anomalous diffusion coefficient
      */
-    CoefficientMatrixPointer createCoefficientMatrix(const SizeType size, const floating alpha) const;
+    CoefficientMatrixPointer create_coefficient_matrix(const SizeType N, const floating alpha) const;
 
     /**  Returns the current instance's processing unit.
      * @return current processing unit
      */
-    ProcessingUnit<floating> getProcessingUnit() const;
+    ProcessingUnit<floating> get_processing_unit() const;
 
 private:
-    ProcessingUnit<floating> _processingUnit; //!< Target processing unit defining memory allocation location and linear algebra calls for the containers
+    ProcessingUnit<floating> _processing_unit; //!< Target processing unit defining memory allocation location and linear algebra calls for the containers
 };
 
 #include "containerfactory.hpp"

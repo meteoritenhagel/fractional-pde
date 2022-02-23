@@ -10,33 +10,33 @@
 #include <string>
 #include <vector>
 
-/** Given a classical C-style array, this function initializes @param size elements starting
- * from @param data with value @param value. The @param memoryManager indicates in which memory
+/** Given a classical C-style array, this function initializes @p size elements starting
+ * from @p data with value @p value. The @p memory_manager indicates in which memory
  * (e.g. Cpu memory or Gpu memory) the assignment is going to take place.
  *
  * @tparam T data type
- * @param memoryManager determines where the memory assignment happens
+ * @param memory_manager determines where the memory assignment happens
  * @param data pointer to start of data
  * @param size number of elements to assign to
  * @param value the value with which the memory is overwritten
  */
 template<class T>
-void initializeMemory(const MemoryManager& memoryManager, T* data, const int size, const T value);
+void initialize_memory(const MemoryManager& memory_manager, T* data, const int size, const T value);
 
 /**
  * Given a matrix in form of a classical C-style array, this function sets it to be an
  * identity matrix.
  *
  * @tparam T data type
- * @param memoryManager determines where the memory assignment happens
+ * @param memory_manager determines where the memory assignment happens
  * @param data pointer to start of data
- * @param N number of the matrix' rows
- * @param M number of the matrix' columns
+ * @param num_rows number of the matrix' rows
+ * @param num_cols number of the matrix' columns
  *
- * @warning Note that starting from @param data, at least N*M elements must be accessible
+ * @warning Note that starting from @p data, at least num_rows*num_cols elements must be accessible
  */
 template<class T>
-void initializeIdentityMatrix(const MemoryManager& memoryManager, T* data, const int N, const int M);
+void initialize_identity_matrix(const MemoryManager& memory_manager, T* data, const int num_rows, const int num_cols);
 
 template<class T>
 class DeviceMatrix;
@@ -77,7 +77,7 @@ public:
      * Returns the number of bytes the contained elements occupy in memory.
      * @return number of bytes the contained elements occupy in memory.
      */
-    SizeType byteSize() const;
+    SizeType byte_size() const;
 
     /**
      * Pointer to the first memory position of the contained elements.
@@ -93,14 +93,14 @@ public:
 
     /**
      * Move all the elements contained to another device, e.g. from Cpu memory to Gpu memory.
-     * @param targetDevice target device
+     * @param target_device target device
      */
-    virtual void moveTo(const MemoryManager& targetDevice) = 0;
+    virtual void move_to(const MemoryManager& target_device) = 0;
 
     /**
      * Displays the contents in a human-readable format as a string.
      *
-     * Display is roughly the following: "@param name = (<contents>)"
+     * Display is roughly the following: "@p name = (<contents>)"
      * @param name Name to display
      *
      * @return string representation of current instance
@@ -114,7 +114,7 @@ public:
     MemoryManager get_memory_manager() const;
 
 protected:
-    MemoryManager _memoryManager = std::make_shared<CPU_Manager>(); //!< The memory manager to determine on which device memory is ccessed
+    MemoryManager _memory_manager = std::make_shared<CpuManager>(); //!< The memory manager to determine on which device memory is ccessed
 };
 
 /**
@@ -133,32 +133,31 @@ public:
 
     /**
      * Constructor, allocates a DeviceMatrix
-     * @param N Number of matrix rows
-     * @param M Number of matric columns
+     * @param num_rows Number of matrix rows
+     * @param num_cols Number of matric columns
      * @param value value to initialize matrix elements
-     * @param memoryManager memory manager
+     * @param memory_manager memory manager
      */
-    DeviceMatrix(const SizeType N, const SizeType M, const T value = T(), const MemoryManager& memoryManager = std::make_shared<CPU_Manager>());
+    DeviceMatrix(const SizeType num_rows, const SizeType num_cols, const T value = T(),
+                 const MemoryManager& memory_manager = std::make_shared<CpuManager>());
 
     /**
      * Constructor, constructs a DeviceMatrix from a std::vector on the Cpu memory.
-     * @param N number of matrix rows
-     * @param u vector containing the column-wise stored matrix
+     * @param num_rows number of matrix rows
+     * @param vec vector containing the column-wise stored matrix
      * @param memoryManager memory manager
      *
-     * @warning the size of @param u must be a multiple of @param N
+     * @warning the size of @p vec must be a multiple of @p num_rows
      */
-    DeviceMatrix(const SizeType N, std::vector<T> const &u);
+    DeviceMatrix(const SizeType num_rows, std::vector<T> const &vec);
 
     /**
      * Copy constructor
-     * @param other
      */
     DeviceMatrix(const DeviceMatrix &other);
 
     /**
      * Move constructor
-     * @param rhs
      */
     DeviceMatrix(DeviceMatrix&& rhs);
 
@@ -167,56 +166,52 @@ public:
      */
     ~DeviceMatrix() override = default;
 
-    void moveTo(const MemoryManager& targetDevice) override;
+    void move_to(const MemoryManager& target_device) override;
 
     /**
      * Copy assignment operator
-     * @param other
-     * @return
      */
     DeviceMatrix& operator= (const DeviceMatrix &other);
 
     /**
      * Move assignment operator
-     * @param rhs
-     * @return
      */
     DeviceMatrix& operator=(DeviceMatrix&& rhs);
 
     /**
      * Resize the matrix to new shape.
-     * @param nrows number of rows
-     * @param ncols number of columns
+     * @param num_rows number of rows
+     * @param num_cols number of columns
      * @return reference to current instance
      *
-     * @warning nrows*ncols must still stay the original size
+     * @warning num_rows*num_cols must still stay the original size
      */
-    DeviceMatrix<T>& resize(const SizeType nrows, const SizeType ncols);
+    DeviceMatrix<T>& resize(const SizeType num_rows, const SizeType num_cols);
 
     T* data() override;
     T const * data() const override;
 
     /**
-     * Returns a pointer to the DeviceArray forming the @param m-th column of the matrix.
+     * Returns a pointer to the DeviceArray forming the @p m-th column of the matrix.
      * Changing the underlying elements results in the matrix also being changed.
      * @param m index of column to return
-     * @return pointer to m-th column
+     * @return pointer to @p m-th column
      */
-    PointerToColumn getPointerToColumn(const SizeType m) const;
+    PointerToColumn get_pointer_to_column(const SizeType m) const;
 
     /**
-     * Returns a reference to the @param m-th column of the matrix as a mutable object,
+     * Returns a reference to the @p m-th column of the matrix as a mutable object,
      * e.g. changes to the underlying elements result in changes to the matrix itself.
-     * @param m index of column to return
-     * @return reference to @param m-th column
+     * @p m index of column to return
+     * @return reference to @p m-th column
      */
     DeviceArray<T>& operator[](const SizeType m);
 
     /**
-     * Returns a const reference to the @param m-th column of the matrix as a mutable object,
+     * Returns a const reference to the @p m-th column of the matrix as a mutable object,
      * e.g. changes to the underlying elements result in changes to the matrix itself.
-     * @param m index of column to return
-     * @return const reference to @param m-th column
+     * @p m index of column to return
+     * @return const reference to @p m-th column
      */
     DeviceArray<T> const & operator[](const SizeType m) const;
 
@@ -238,55 +233,56 @@ public:
 
     SizeType size() const override;
 
-    // TODO: here, the functions are called getN() and getM(), but for AlgebraicMatrix it is getNrows() and getNcols()
     /**
      * Get number of rows.
      * @return number of rows
      */
-    SizeType getN() const;
+    SizeType get_num_rows() const;
 
     /**
      * Get number of columns.
      * @return number of columns
      */
-    SizeType getM() const;
+    SizeType get_num_cols() const;
 
     /**
      * Checks whether the current matrix is square.
      * @return true if the matrix is square.
      */
-    bool isSquare() const;
+    bool is_square() const;
 
     std::string display(const std::string& name) const override;
 
 private:
-    SizeType _N; //!< number of the matrix's rows
-    SizeType _M; //!< number of the matrix's columns
-    PointerType _pointer; //!< pointer to the first element
-    ArrayOfPointers _arrayOfPointers; //!< array of pointers to the individual columns of the matrix
+    SizeType _num_rows; //!< number of the matrix's rows
+    SizeType _num_cols; //!< number of the matrix's columns
+    PointerType _data; //!< pointer to the first element
+    ArrayOfPointers _array_of_columns; //!< array of pointers to the individual columns of the matrix
 
     /**
      * Allocates the correct amount of memory on the correct device.
      * @return pointer to the first element
      */
-    PointerType initializePointer();
+    PointerType initialize_data();
 
     /**
      * Initializes the array of pointers to the matrix's individual columns.
      * This is needed to provide mutable access of the columns via reference.
      * @return correctly initialized array of such pointers
      */
-    ArrayOfPointers initializeArray();
+    ArrayOfPointers initialize_array_of_columns();
 
     /**
-     * Has the same effect as initializeArray and then updating the corresponding member variable accordingly.
+     * @copydoc initialize_array_of_columns()
+     * Has the same effect as initialize_array_of_columns and then updating the corresponding member variable accordingly.
      */
-    void resetArray();
+    void reset_array_of_columns();
 
     /**
-     * Has the same effect as initializePointer and then updating the corresponding member variable accordingly.
+     * @copydoc reset_data()
+     * Has the same effect as initialize_data and then updating the corresponding member variable accordingly.
      */
-    void resetPointer();
+    void reset_data();
 };
 
 /**
@@ -302,49 +298,44 @@ public:
     using PointerType = std::shared_ptr<T>;
 
     /**
-     * Constructor, constructs empty array with given memoryManager
-     * @param memoryManager memory manager
+     * Constructor, constructs empty array with given @p memory_manager
+     * @param memory_manager memory manager
      */
-    DeviceArray(const MemoryManager& memoryManager = std::make_shared<CPU_Manager>());
+    DeviceArray(const MemoryManager& memory_manager = std::make_shared<CpuManager>());
 
     /**
-     * Constructor, constructs an array of given size, where each element is initialized with @param value.
+     * Constructor, constructs an array of given size, where each element is initialized with @p value.
      * @param size number of elements
      * @param value value to initialize the individual elements
-     * @param memoryManager memory manager
+     * @param memory_manager memory manager
      */
-    explicit DeviceArray(const SizeType size, const T value = T(), const MemoryManager& memoryManager = std::make_shared<CPU_Manager>());
+    explicit DeviceArray(const SizeType size, const T value = T(),
+                         const MemoryManager& memory_manager = std::make_shared<CpuManager>());
 
     /**
      * Copy constructor
-     * @param other
      */
     DeviceArray(const DeviceArray &other);
 
     /**
      * Move constructor
-     * @param rhs
      */
-    DeviceArray(DeviceArray&& rhs) = default;
+    DeviceArray(DeviceArray&&) = default;
 
     /**
      * Destructor
      */
     ~DeviceArray() override = default;
 
-    void moveTo(const MemoryManager& targetDevice) override;
+    void move_to(const MemoryManager& target_device) override;
 
     /**
      * Copy assignment operator.
-     * @param other
-     * @return
      */
     DeviceArray& operator= (const DeviceArray &other);
 
     /**
      * Move assignment operator.
-     * @param other
-     * @return
      */
     DeviceArray& operator=(DeviceArray&& other);
 
@@ -352,57 +343,57 @@ public:
     T const * data() const override;
 
     /**
-     * Returns a reference to the @param index-th element of the array as a mutable object,
+     * Returns a reference to the @p index-th element of the array as a mutable object,
      * e.g. changes to this element result in changes to the array itself.
      * @param index index of element to return
-     * @return reference to @param index-th element
+     * @return reference to @p index-th element
      */
     T& operator[](const SizeType index);
 
     /**
-     * Returns a const reference to the @param index-th element of the array as a mutable object,
+     * Returns a const reference to the @p index-th element of the array as a mutable object,
      * e.g. changes to this element result in changes to the array itself.
      * @param index index of element to return
-     * @return const reference to @param index-th element
+     * @return const reference to @p index-th element
      */
     T const & operator[](const SizeType index) const;
 
     /**
     * Resize the array to new length.
-    * @param newSize new length of array
+    * @param new_size new length of array
     * @return reference to current instance
     *
     * @warning the elements previously contained get lost
     */
-    DeviceArray<T> resize(SizeType newSize);
+    DeviceArray<T> resize(SizeType new_size);
 
     SizeType size() const override;
     std::string display(const std::string& name) const override;
 
 private:
     SizeType _size; //!< length of array
-    PointerType _pointer; //!< pointer to start of array
-    bool _hasOwnMemoryManagement = true; //!< determines whether the array is stand-alone or a column of an existing DeviceMatrix
+    PointerType _data; //!< pointer to start of array
+    bool _has_own_memory_management = true; //!< determines whether the array is stand-alone or a column of an existing DeviceMatrix
 
     /**
      * Checks whether the array is valid.
      * @return true if the array is valid
      */
-    bool isValid();
+    bool is_valid();
 
     /**
      * In case the array's length is >0, allocates the right amount of memory on the right device.
      * Otherwise, a nullptr is returned.
      * @return Pointer to start of array
      */
-    PointerType initializePointer();
+    PointerType initialize_data();
 
     /**
      * Checks whether the array is stand-alone and manages its own memory,
      * or if its contents are the column of a DeviceMatrix.
-     * @return
+     * @return true if the current instance manages memory on its own
      */
-    bool hasOwnMemoryManagement() const;
+    bool has_own_memory_management() const;
 
     /**
      * Sets the array to not allocate or delete memory on its own,
@@ -412,9 +403,9 @@ private:
      * @param size Number of elements
      * @param pointer Pointer to start of memory.
      */
-    void makeDependentOn(const SizeType size, T * const pointer);
+    void make_dependent_on(const SizeType size, T * const pointer);
 
-    friend class DeviceMatrix<T>; // DeviceMatrix needs to be a friend to access the makeDependentOn private member function.
+    friend class DeviceMatrix<T>; // DeviceMatrix needs to be a friend to access the make_dependent_on private member function.
 };
 
 /**
@@ -429,21 +420,19 @@ public:
     using PointerType = std::shared_ptr<T>;
 
     /**
-     * Constructor, constructs scalar value using the @param memoryManager
+     * Constructor, constructs scalar value using the @p memory_manager
      * @param value value of the scalar value
-     * @param memoryManager memory manager
+     * @param memory_manager memory manager
      */
-    explicit DeviceScalar(const T &value, const MemoryManager& memoryManager = std::make_shared<CPU_Manager>());
+    explicit DeviceScalar(const T &value, const MemoryManager& memory_manager = std::make_shared<CpuManager>());
 
     /**
      * Copy constructor.
-     * @param other
      */
     DeviceScalar(DeviceScalar const &other);
 
     /**
      * Move constructor.
-     * @param rhs
      */
     DeviceScalar(DeviceScalar&& rhs);
 
@@ -452,19 +441,15 @@ public:
      */
     ~DeviceScalar() override = default;
 
-    void moveTo(const MemoryManager& targetDevice) override;
+    void move_to(const MemoryManager& target_device) override;
 
     /**
      * Copy assignment operator.
-     * @param other
-     * @return
      */
-    DeviceScalar& operator= (DeviceScalar const &other);
+    DeviceScalar& operator=(DeviceScalar const &other);
 
     /**
      * Move assignment operator.
-     * @param other
-     * @return
      */
     DeviceScalar& operator=(DeviceScalar&& other);
 
@@ -472,7 +457,7 @@ public:
     T const * data() const override;
 
     /**
-     * Returns the value of the contained element on Cpu memory.
+     * Returns the value of the contained element in RAM.
      * @return value of contained element
      */
     T value() const;
@@ -481,14 +466,14 @@ public:
     std::string display(const std::string& name) const override;
 
 private:
-    PointerType _pointer; //<! Pointer to contained element
+    PointerType _data; //<! Pointer to contained element
 
     /**
      * Allocates the right amount of memory for one instance of type T
-     * and initializes it with value @param value.
-     * @return Pointer to element
+     * and initializes it with value @p value.
+     * @return Pointer to freshly initialized element
      */
-    PointerType initializePointer(const T &value);
+    PointerType initialize_data(const T &value);
 };
 
 #include "devicedata.hpp"

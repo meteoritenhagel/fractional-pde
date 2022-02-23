@@ -156,4 +156,4 @@ std::map<OperationType, const char * const> Cpu<floating>::to_internal_operation
 };
 
 template<class floating>
-MemoryManager Cpu<floating>::_device_manager = std::make_shared<CPU_Manager>();
+MemoryManager Cpu<floating>::_device_manager = std::make_shared<CpuManager>();

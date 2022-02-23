@@ -40,14 +40,14 @@ floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<flo
                                            maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
 
     // only take latest time point solution, but for every space point
-    full_solution.moveTo(cpu);
+    full_solution.move_to(cpu);
     auto xx = full_solution.getRow(N+1);
 
-    const auto grid = *colMatrixFactory.createColumn(M,  T / static_cast<floating>(M));
+    const auto grid = *colMatrixFactory.create_array(M, T / static_cast<floating>(M));
 
     const auto ue = get_exact_solution_vector(T, alpha, exact_solution, grid);
 
-    floating error_max = std::abs((ue-xx).getMaximum());
+    floating error_max = std::abs((ue - xx).get_maximum_norm());
     return error_max;
 }
 
@@ -67,7 +67,7 @@ floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit
 
     floating dt = T / static_cast<floating>(N);
 
-    auto grid = *colMatrixFactory.createColumn(M);
+    auto grid = *colMatrixFactory.create_array(M);
     get_general_grid(grid);
 
     auto full_solution = solve_nonequidistant(processing_unit, N, T, alpha, grid,
@@ -75,12 +75,12 @@ floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit
                                               max_num_iterations, steps_per_iteration, accuracy, solving_procedure);
 
     // only take latest time point solution, but for every space point
-    full_solution.moveTo(cpu);
+    full_solution.move_to(cpu);
     auto xx = full_solution.getRow(N+1);
 
     const auto ue = get_exact_solution_vector(T, alpha, exact_solution, grid);
 
-    floating error_max = std::abs((ue-xx).getMaximum());
+    floating error_max = std::abs((ue - xx).get_maximum_norm());
     return error_max;
 }
 
@@ -91,7 +91,7 @@ AlgebraicVector<floating> get_exact_solution_vector(const floating T, const floa
 {
     assert(typeid(*grid.get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()) && "Must be on Cpu");
     const auto M = grid.size();
-    auto solution = *grid.get_container_factory().createColumn(M + 1);
+    auto solution = *grid.get_container_factory().create_array(M + 1);
 
     floating spacePoint = 0;
     for (int i = 0; i < M; i++)

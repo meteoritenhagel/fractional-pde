@@ -4,37 +4,37 @@
 #include <iostream>
 
 template<class T>
-__global__ void initializeMemory(T* deviceMemory, const int size, const T value)
+__global__ void initialize_memory_kernel(T* device_memory, const int size, const T value)
 {
     const int idx = threadIdx.x + blockDim.x * blockIdx.x;
     if (idx < size)
     {
-        deviceMemory[idx] = value;
+        device_memory[idx] = value;
     }
 }
 
 template<class T>
-__global__ void initializeIdentityMatrix(T* deviceMemory, const int N, const int M)
+__global__ void initialize_identity_matrix_kernel(T* device_memory, const int num_rows, const int num_cols)
 {
     const int idx = threadIdx.x + blockDim.x * blockIdx.x;
-    if (idx < N*M)
+    if (idx < num_rows * num_cols)
     {
-        if (idx % (1+N) == 0) // is diagonal element
-            deviceMemory[idx] = static_cast<T>(1.0);
+        if (idx % (1 + num_rows) == 0) // is diagonal element
+            device_memory[idx] = static_cast<T>(1.0);
         else
-            deviceMemory[idx] = static_cast<T>(0.0);
+            device_memory[idx] = static_cast<T>(0.0);
     }
 }
 
 template <typename T>
-void deviceInitializeMemory(T* deviceMemory, const size_t size, const T value)
+void device_initialize_memory(T* device_memory, const size_t size, const T value)
 {
     const int block_size = 1024;
     const int number_of_blocks = size / block_size + 1;
     //std::cout << block_size << " / " << number_of_blocks << std::endl;
     dim3 gridDim(number_of_blocks, 1);
     dim3 blockDim(block_size, 1);
-    initializeMemory<T> <<<gridDim, blockDim>>>(deviceMemory, size, value);
+    initialize_memory_kernel<T> <<<gridDim, blockDim>>>(device_memory, size, value);
 
     cudaError_t cudaerr = cudaDeviceSynchronize();
     if (cudaerr != cudaSuccess)
@@ -43,14 +43,14 @@ void deviceInitializeMemory(T* deviceMemory, const size_t size, const T value)
 }
 
 template <typename T>
-void deviceInitializeIdentityMatrix(T* deviceMemory, const size_t N, const size_t M)
+void device_initialize_identity_matrix(T* device_memory, const size_t num_rows, const size_t num_cols)
 {
     const int block_size = 1024;
-    const int number_of_blocks = N*M / block_size + 1;
+    const int number_of_blocks = num_rows * num_cols / block_size + 1;
     //std::cout << block_size << " / " << number_of_blocks << std::endl;
     dim3 gridDim(number_of_blocks, 1);
     dim3 blockDim(block_size, 1);
-    initializeIdentityMatrix<T> <<<gridDim, blockDim>>>(deviceMemory, N, M);
+    initialize_identity_matrix_kernel<T> <<<gridDim, blockDim>>>(device_memory, num_rows, num_cols);
 
     cudaError_t cudaerr = cudaDeviceSynchronize();
     if (cudaerr != cudaSuccess)
@@ -60,9 +60,9 @@ void deviceInitializeIdentityMatrix(T* deviceMemory, const size_t N, const size_
 
 // Since nvcc is going to compile this and has no information about which instantiations
 // g++ needs, the necessary instantiations have to be listed here.
-template void deviceInitializeMemory<int>(int*, const size_t, const int);
-template void deviceInitializeMemory<float>(float*, const size_t, const float);
-template void deviceInitializeMemory<double>(double*, const size_t, const double);
-template void deviceInitializeIdentityMatrix<int>(int*, const size_t, const size_t);
-template void deviceInitializeIdentityMatrix<float>(float*, const size_t, const size_t);
-template void deviceInitializeIdentityMatrix<double>(double*, const size_t, const size_t);
+template void device_initialize_memory<int>(int*, const size_t, const int);
+template void device_initialize_memory<float>(float*, const size_t, const float);
+template void device_initialize_memory<double>(double*, const size_t, const double);
+template void device_initialize_identity_matrix<int>(int*, const size_t, const size_t);
+template void device_initialize_identity_matrix<float>(float*, const size_t, const size_t);
+template void device_initialize_identity_matrix<double>(double*, const size_t, const size_t);

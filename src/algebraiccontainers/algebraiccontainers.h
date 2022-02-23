@@ -25,7 +25,7 @@ template<class T>
 using BlockVector = AlgebraicMatrix<T>;
 
 /**
- * Calculates the product of a scalar @param alpha and an AlgebraicMatrix @param B.
+ * Calculates the product of a scalar @p alpha and an AlgebraicMatrix @p B.
  * The result is stored in a newly allocated object.
  *
  * @tparam floating Floating point type
@@ -38,11 +38,11 @@ AlgebraicMatrix<floating> operator*(const floating alpha, const AlgebraicMatrix<
 
 /**
  * Calculates the scalar (or "inner") product <A, B>
- * of BlockVectors @param A and @param B.
+ * of BlockVectors @p A and @p B.
  *
  * @tparam floating Floating point type
- * @param A
- * @param B
+ * @param A first vector (or matrix)
+ * @param B second vector (or matrix)
  * @return the scalar product <A, B>
  */
 template<class floating>
@@ -50,11 +50,11 @@ floating scalarProduct(const BlockVector<floating> &A, const BlockVector<floatin
 
 /**
  * Calculates the scalar (or "inner") product <A, B>
- * of AlgebraicVectors @param A and @param B.
+ * of AlgebraicVectors @p A and @p B.
  *
  * @tparam floating Floating point type
- * @param A
- * @param B
+ * @param A first vector
+ * @param B second vector
  * @return the scalar product <A, B>
  */
 template<class floating>
@@ -80,15 +80,14 @@ public:
 
     /** Default constructor, constructs element by passing the vector of arrays.
      *
-     *  @param[in] processingUnit   processingUnit (i.e. for determining Cpu or Gpu execution)
+     *  @param[in] processing_unit  processing_unit (i.e. for determining Cpu or Gpu execution)
      * 	@param[in] A                data of matrix to construct
      */
-    AlgebraicMatrix(const ProcessingUnit<floating>& processingUnit, const MatrixDataType& A);
+    AlgebraicMatrix(const ProcessingUnit<floating>& processing_unit, const MatrixDataType& A);
 
 
     /**
      * Copy constructor
-     * @param other
      */
     AlgebraicMatrix(const AlgebraicMatrix &other);
 
@@ -104,31 +103,28 @@ public:
 
     /**
      * This function moves the members of the current instance
-     * to the data location associated with @param processingUnit.
-     * @param processingUnit Target ProcessingUnit
+     * to the data location associated with @param processing_unit.
+     * @param processing_unit Target ProcessingUnit
      */
-    void moveTo(const ProcessingUnit<floating> processingUnit);
+    void move_to(const ProcessingUnit<floating> processing_unit);
 
     /**
      * Copy assignment operator.
-     * @param other
-     * @return copy of other
      */
     AlgebraicMatrix& operator=(const AlgebraicMatrix &other);
 
     /**
      * Move assignment operator.
-     * @return move of other
      */
-    AlgebraicMatrix& operator=(AlgebraicMatrix &&) = default;
+    AlgebraicMatrix& operator=(AlgebraicMatrix&&) = default;
 
     /**
-     * Resizes member _A to be of dimensions (@param nrows, @param ncols)
-     * @param nrows
-     * @param ncols
+     * Resizes member _A to be of dimensions (@param num_rows, @param num_cols)
+     * @param num_rows new number of rows
+     * @param num_cols new number of columns
      * @return reference to current instance
      */
-    AlgebraicMatrix<floating>& resize(const SizeType nrows, const SizeType ncols);
+    AlgebraicMatrix<floating>& resize(const SizeType num_rows, const SizeType num_cols);
 
     /** Returns pointer to 0th element of 0th column if it exists.
      *
@@ -209,31 +205,29 @@ public:
      * Return the number of rows of the current instance.
      * @return number of rows
      */
-    SizeType getNrows() const;
+    SizeType get_num_rows() const;
 
     /**
      * Return the number of columns of the current instance.
      * @return number of columns
      */
-    SizeType getNcols() const;
+    SizeType get_num_cols() const;
 
     /** Get number of all elements contained in the AlgebraicMatrix.
      *
      * @return number of elements.
      */
-    SizeType getNelems() const;
+    SizeType get_num_elements() const;
 
     /** Checks whether the current matrix is a square matrix.
      * @return true if the matrix is square.
      */
-    bool isSquare() const;
+    bool is_square() const;
 
     /**
      * Returns the container factory which can be used to create new containers
      * on the same device with the same processing unit.
      * @return container factory
-     *
-     * TODO: RENAME TO getContainerFactory
      */
     ContainerFactory<floating> get_container_factory() const;
 
@@ -246,112 +240,100 @@ public:
     /** Returns const reference to the inverse, which is calculated, if needed.
      * @return const reference to the inverse
      */
-    AlgebraicMatrix const & getInverse() const;
+    AlgebraicMatrix const & get_inverse() const;
 
     /**
      * Calculates the Euclidean norm of the current matrix's data
      * interpreted as a vector.
      * @return Euclidean norm
      */
-    floating getEuclidean() const;
+    floating get_euclidean_norm() const;
 
     /**
      * Calculates the element with maximum absolute value.
      * @return element with maximum absolute value
      */
-    floating getMaximum() const;
+    floating get_maximum_norm() const;
 
     /**
     * Returns the contents in a human-readable format as a string.
-    *
     * Display is roughly the following: "@param name = (<contents>)"
     * @param name Name to display
-    *
     * @return string representation of current instance
     */
     std::string display(std::string name) const;
 
-    /** Adds alpha times matrix @p B to this matrix.
-     *
+    /**
+     * Adds scalar times matrix @p B to this matrix.
      * @param[in] B matrix
-     * @param[in] alpha = 1.0 by default, scalar
-     *
-     * @return A = A + alpha * B.
+     * @param[in] scalar = 1.0 by default, scalar
+     * @return A = A + scalar * B.
      */
-    AlgebraicMatrix<floating>& add(const AlgebraicMatrix &B, const floating alpha = 1.0);
+    AlgebraicMatrix<floating>& add(const AlgebraicMatrix &B, const floating scalar = 1.0);
 
-    /** Adds matrix @p B to this matrix from column @p col_begin to inclusively @p col_end-1.
-     *
+    /**
+     * Adds matrix @p B to this matrix from column @p col_begin to inclusively @p col_end-1.
      * @param[in] col_begin column start
      * @param[in] col_end   column end
      * @param[in] B         matrix to add
-     *
      * @warning the number of rows must be equal
      */
     void updateAdd(const SizeType col_begin, const SizeType col_end, const AlgebraicMatrix &B);
 
-    /** Adds this matrix to matrix @p B and returns the result.
-     *
+    /**
+     * Adds this matrix to matrix @p B and returns the result.
      * @param[in] B matrix
-     *
      * @return A + B in a newly allocated AlgebraicMatrix
      */
     AlgebraicMatrix operator+(const AlgebraicMatrix &B) const;
 
-    /** Adds matrix @p B to this matrix.
-    *
-    * @param[in] B matrix
-    *
-    * @return A = A + B.
-    */
+    /**
+     * Adds matrix @p B to this matrix.
+     * @param[in] B matrix
+     * @return A = A + B.
+     */
     AlgebraicMatrix& operator+=(const AlgebraicMatrix &B);
 
-    /** Subtracts matrix @p B from this matrix.
-     *
+    /**
+     * Subtracts matrix @p B from this matrix.
      * @param[in] B matrix
-     *
      * @return A - B in a newly allocated AlgebraicMatrix
      */
     AlgebraicMatrix operator-(const AlgebraicMatrix &B) const;
 
-    /** Scales matrix with scalar @p alpha.
-     *
+    /**
+     * cales matrix with scalar @p alpha.
      * @param[in] alpha scalar factor
-     *
      */
     void scale(const floating alpha);
 
-    /** Multiplies this matrix with matrix @p B.
-     *
+    /**
+     * Multiplies this matrix with matrix @p B.
      * @param[in] B matrix
-     *
      * @return the matrix product A * B in a newly allocated AlgebraicMatrix.
      */
     AlgebraicMatrix<floating> mult(const AlgebraicMatrix &B) const;
 
-    /** Multiplies this matrix with vector @p u.
-     *
-     * @param[in] u vector
-     *
-     * @return A * u as newly allocated std::vector.
+    /**
+     * Multiplies this matrix with vector @p vec.
+     * @param[in] vec vector
+     * @return A * vec as newly allocated std::vector.
      */
-    AlgebraicVector<floating> mult(const AlgebraicVector<floating> &u) const;
+    AlgebraicVector<floating> mult(const AlgebraicVector<floating> &vec) const;
 
-    /** Multiplies this matrix with AlgebraicMatrix @p B.
-     *
+    /**
+     * Multiplies this matrix with AlgebraicMatrix @p B.
      * @param[in] B AlgebraicMatrix
-     *
      * @return A * B in a newly allocated AlgebraicMatrix.
      */
     AlgebraicMatrix operator*(const AlgebraicMatrix &B) const;
 
-    /** Multiplies this matrix with vector @p u.
-     *
-     * @param[in] u vector
-     *
-     * @return A * u in a newly allocated AlgebraicVector.
+    /**
+     * Multiplies this matrix with vector @p vec.
+     * @param[in] vec vector
+     * @return A * vec in a newly allocated AlgebraicVector.
      */
-    AlgebraicVector<floating> operator*(const AlgebraicVector<floating> &u) const;
+    AlgebraicVector<floating> operator*(const AlgebraicVector<floating> &vec) const;
 
     /** Multiplies the inverse of this square matrix with matrix @p B.
      *  This operator is the equivalent to the operator\ in Matlab.
@@ -367,7 +349,8 @@ public:
      */
     AlgebraicMatrix operator/(const AlgebraicMatrix<floating> &B) const;
 
-    /** Multiplies the inverse of this square matrix with matrix @p B.
+    /**
+     * Multiplies the inverse of this square matrix with matrix @p B.
      *  This operator is the equivalent to the operator\ in Matlab.
      *  A has to be square.
      *
@@ -377,118 +360,117 @@ public:
      *
      *  B is overwritten with the result A\\B = A^(-1) * B.
      *
-     * @param[in/out] B matrix
+     * @param[in,out] B matrix
      */
     void invTimes(AlgebraicMatrix<floating> &B) const;
 
-    /** Multiplies the inverse of this square matrix with std::vector @p x.
-      *  This operator is the equivalent to the operator\ in Matlab.
-      *  A has to be square.
-      *
-      *  The inverse of this matrix is never calculated directly,
-      *  if compile variable PLU is set. Then, a system of equations is solved with rhs @p x.
-      *  Otherwise, the inverse is calculated and then cached internally.
-      *
-      *  The return type is AlgebraicMatrix instead of AlgebraicVector,
-      *  since internally the std::vector is then converted to an
-      *  AlgebraicMatrix.
-      *
-      * @param[in] x std::vector
-      *
-      * @return A\\x = A^(-1) * x in a newly allocated AlgebraicMatrix.
-      *
-      */
-    AlgebraicMatrix operator/(const std::vector<floating> x) const;
-
-    /** Multiplies the inverse of this square matrix with AlgebraicVector @p x.
+    /**
+     * Multiplies the inverse of this square matrix with std::vector @p vec.
      *  This operator is the equivalent to the operator\ in Matlab.
      *  A has to be square.
      *
      *  The inverse of this matrix is never calculated directly,
-     *  if compile variable PLU is set. Then, a system of equations is solved with rhs @p x.
+     *  if compile variable PLU is set. Then, a system of equations is solved with rhs @p vec.
      *  Otherwise, the inverse is calculated and then cached internally.
      *
-     * @param[in] x AlgebraicVector
+     *  The return type is AlgebraicMatrix instead of AlgebraicVector,
+     *  since internally the std::vector is then converted to an
+     *  AlgebraicMatrix.
      *
-     * @return A\\x = A^(-1) * x in a newly allocated AlgebraicVector.
+     * @param[in] vec std::vector
+     *
+     * @return A\\vec = A^(-1) * vec in a newly allocated AlgebraicMatrix.
+     *
      */
-    AlgebraicVector<floating> operator/(const AlgebraicVector<floating> &x) const;
+    AlgebraicMatrix operator/(const std::vector<floating>& vec) const;
 
-    /** Multiplies the inverse of this square matrix with AlgebraicVector @p x.
+    /**
+     * Multiplies the inverse of this square matrix with AlgebraicVector @p vec.
      *  This operator is the equivalent to the operator\ in Matlab.
      *  A has to be square.
      *
      *  The inverse of this matrix is never calculated directly,
-     *  if compile variable PLU is set. Then, a system of equations is solved with rhs @p x.
+     *  if compile variable PLU is set. Then, a system of equations is solved with rhs @p vec.
+     *  Otherwise, the inverse is calculated and then cached internally.
+     *
+     * @param[in] vec AlgebraicVector
+     *
+     * @return A\\vec = A^(-1) * vec in a newly allocated AlgebraicVector.
+     */
+    AlgebraicVector<floating> operator/(const AlgebraicVector<floating> &vec) const;
+
+    /**
+     * Multiplies the inverse of this square matrix with AlgebraicVector @p vec.
+     *  This operator is the equivalent to the operator\ in Matlab.
+     *  A has to be square.
+     *
+     *  The inverse of this matrix is never calculated directly,
+     *  if compile variable PLU is set. Then, a system of equations is solved with rhs @p vec.
      *  Otherwise, the inverse is calculated and then cached internally.
      *
      * @param[in] B vector
-     * @param[out] output is overwritten with the result A\\x = A^(-1) * x.
+     * @param[out] result is overwritten with the result A\\vec = A^(-1) * vec.
      */
-    void invTimes(const AlgebraicVector<floating> &x, AlgebraicVector<floating> &output) const;
+    void inverse_times(const AlgebraicVector<floating> &vec, AlgebraicVector<floating> &result) const;
 
-    /**   Accesses the inverse, which is calculated, if needed, passed by reference.
+    /**
+     * Accesses the inverse (which is calculated, if needed) by reference.
      */
-    const AlgebraicMatrix& accessInverse() const;
+    const AlgebraicMatrix& access_inverse() const;
 
 private:
-    ContainerFactory<floating> _colMatrixFactory; //!< Container factory used for the creation of new matrices with the right memory location and processing unit.
+    ContainerFactory<floating> _container_factory; //!< Container factory used for the creation of new matrices with the right memory location and processing unit.
     MatrixDataType _A;    //!< matrix values
-    mutable std::unique_ptr<AlgebraicMatrix<floating>> _Ainv; //!< If compile variable PLU is set, this is the factorized matrix for inversion. Otherwise this contains the actual inverse. Only stored and computed if needed.
+    mutable std::unique_ptr<AlgebraicMatrix<floating>> _inverse; //!< If compile variable PLU is set, this is the factorized matrix for inversion. Otherwise this contains the actual inverse. Only stored and computed if needed.
 
 #ifdef PLU //TODO: CHECK IF THIS IS REALLY NECESSARY
 public:
 #endif
-    mutable DeviceArray<int> _ipiv; //!< permutation vector from matrix factorization.
+    mutable DeviceArray<int> _permutation; //!< permutation vector from matrix factorization.
 
-    ArrayOfColumns _arrayOfColumns;
+    ArrayOfColumns _array_of_columns;
 
-    ArrayOfColumns initializeArrayOfColumns() const;
-    void resetArrayOfColumns();
+    ArrayOfColumns initialize_array_of_columns() const;
+    void reset_array_of_columns();
 
-    /**   Accesses the inverse, which is calculated, if needed, passed by reference and hence modifyable.
+    /**
+     *    Accesses the inverse, which is calculated, if needed, passed by reference and hence modifyable.
      *
-     *    WARNING: This method should only be used to modify the inverse such that it remains the inverse of
-     *    the current AlgebraicMatrix! Otherwise, unexpected behaviour when using operator/ will occur.
-     *    For getting the inverse, use getInverse() instead.
+     *    @warning This method should only be used to modify the inverse such that it remains the inverse of
+     *    @warning the current AlgebraicMatrix! Otherwise, unexpected behaviour when using operator/ will occur.
+     *    @warning For getting the inverse, use get_inverse() instead.
      */
-    AlgebraicMatrix& accessInverse();
+    AlgebraicMatrix& access_inverse();
 
     /**
      * Returns whether the inverse matrix is valid
      * @return true if the inverse matrix is valid
      */
-    bool isInverseSet() const;
+    bool is_inverse_set() const;
 
     /**
      * Calculates the inverse (resp. the PLU factorization)
      */
-    void recalculateInverse() const;
+    void recalculate_inverse() const;
 
     /**   Resets the inverse.
      *
-     *    WARNING: This method should be used in any method changing the matrix
+     *    @warning This method should be used in any method changing the matrix
      *    if the inverse gets invalid and is not currently needed.
      */
-    void resetInverse() const;
+    void reset_inverse() const;
 };
 
 /**
- * Calculates the product of a scalar @param alpha and an AlgebraicVector @param B.
+ * Calculates the product of a scalar @p scalar and an AlgebraicVector @p B.
  *
  * @tparam floating Floating point type
- * @param alpha Scalar
+ * @param scalar Scalar
  * @param B AlgebraicMatrix
- * @return alpha * B stored in a newly allocated object
+ * @return scalar * B stored in a newly allocated object
  */
 template<class floating>
-AlgebraicVector<floating> operator* (floating const alpha, const AlgebraicVector<floating> &B);
-
-// TODO: MAYBE REMOVE THIS?
-// GH
-//template<class floating>
-//AlgebraicVector<floating>&& operator* (floating const alpha, AlgebraicVector<floating> &&B);
-
+AlgebraicVector<floating> operator* (floating const scalar, const AlgebraicVector<floating> &B);
 
 /**
  * The class AlgebraicVector provides an easy-to-use vector type.
@@ -506,20 +488,18 @@ public:
 
     /**
      * Constructor
-     * @param processingUnit processing unit
-     * @param A pointer to vector data
+     * @param processing_unit processing unit
+     * @param data pointer to vector data
      */
-    explicit AlgebraicVector(const ProcessingUnit<floating> processingUnit = nullptr, ArrayPointerType A = nullptr);
+    explicit AlgebraicVector(const ProcessingUnit<floating> processing_unit = nullptr, ArrayPointerType data = nullptr);
 
     /**
      * Copy constructor
-     * @param other
      */
     AlgebraicVector(const AlgebraicVector &other);
 
     /**
      * Move constructor
-     * @param other
      */
     AlgebraicVector(AlgebraicVector &&other) = default;
 
@@ -530,57 +510,49 @@ public:
 
     /**
      * This function moves the members of the current instance
-     * to the data location associated with @param processingUnit.
-     * @param processingUnit Target ProcessingUnit
+     * to the data location associated with @param processing_unit.
+     * @param processing_unit Target ProcessingUnit
      */
-    AlgebraicVector<floating>& moveTo(const ProcessingUnit<floating> processingUnit);
+    AlgebraicVector<floating>& move_to(const ProcessingUnit<floating> processing_unit);
 
     /**
      * Copy assignment operator.
-     * @param other
-     * @return
      */
     AlgebraicVector& operator=(const AlgebraicVector &other);
 
     /**
      * Move assignment operator
-     * @param other
-     * @return
      */
     AlgebraicVector& operator=(AlgebraicVector &&other);
 
-    /** Returns pointer to 0th element of 0th column.
-     *
+    /**
+     * Returns pointer to 0th element of 0th column.
      * @return pointer to begin of vector data.
      */
     floating* data();
 
-    /** Returns const pointer to 0th element of 0th.
-     *
+    /**
+     * Returns const pointer to 0th element of 0th.
      * @return const pointer to begin of vector data.
      */
     const floating* data() const;
 
-    /** Access to element with index @p col of this vector.
-     *
-     * @param[in] col element index
-     *
-     * @return col-th element.
-     *
-     * TODO: RENAME col to something different
+    /**
+     * Access to element with index @p index of this vector.
+     * @param[in] index element index
+     * @return @p index-th element.
      */
-    floating& operator[](const SizeType col);
+    floating& operator[](const SizeType index);
 
-    /** Access to const element with index @p col of this vector.
-     *
-     * @param[in] col element index
-     *
-     * @return col-th element.
+    /**
+     * Access to const element with index @p index of this vector.
+     * @param[in] index element index
+     * @return @p index-th element.
      */
-    floating const & operator[](const SizeType col) const;
+    floating const & operator[](const SizeType index) const;
 
-    /** Get number of elements contained in the AlgebraicMatrix.
-     *
+    /**
+     * Get number of elements contained in the AlgebraicMatrix.
      * @return number of elements.
      */
     SizeType size() const;
@@ -589,8 +561,6 @@ public:
      * Returns the container factory which can be used to create new containers
      * on the same device with the same processing unit.
      * @return container factory
-     *
-     * TODO: RENAME TO getContainerFactory
      */
     ContainerFactory<floating> get_container_factory() const;
 
@@ -604,13 +574,13 @@ public:
     * Calculates the Euclidean norm of the current vector.
     * @return Euclidean norm
     */
-    floating getEuclidean() const;
+    floating get_euclidean_norm() const;
 
     /**
      * Calculates the element with maximum absolute value.
      * @return element with maximum absolute value
      */
-    floating getMaximum() const;
+    floating get_maximum_norm() const;
 
     /**
     * Returns the contents in a human-readable format as a string.
@@ -622,82 +592,76 @@ public:
     */
     std::string display(std::string name) const;
 
-    /** Adds alpha times vector @p B to this matrix.
-     *
+    /**
+     * Adds scalar times vector @p B to this matrix.
      * @param[in] B AlgebraicVector
-     * @param[in] alpha = 1.0 by default, scalar
-     *
-     * @return A = A + alpha * B.
+     * @param[in] scalar = 1.0 by default, scalar
+     * @return A = A + scalar * B.
      */
-    AlgebraicVector& add(const AlgebraicVector &B, const floating alpha = 1.0);
+    AlgebraicVector& add(const AlgebraicVector &B, const floating scalar = 1.0);
 
-    /** Adds this vector to vector @p B and returns the result.
-     *
+    /**
+     * Adds this vector to vector @p B and returns the result.
      * @param[in] B vector
-     *
      * @return A + B in a newly allocated AlgebraicVector
      */
     AlgebraicVector operator+(const AlgebraicVector &B) const;
 
-    /** Adds vector @p B to this vector.
-     *
+    /**
+     * Adds vector @p B to this vector.
      * @param[in] B vector
-     *
      * @return A = A + B.
      */
     AlgebraicVector& operator+=(const AlgebraicVector &B);
 
-    /** Subtracts vector @p B from this vector.
-     *
+    /**
+     * Subtracts vector @p B from this vector.
      * @param[in] B vector
-     *
      * @return A - B in a newly allocated AlgebraicVector
      */
     AlgebraicVector operator-(const AlgebraicVector &B) const;
 
-    /** Calculates the transpose of this vector times the matrix @p A.
-     *
+    /**
+     * Calculates the transpose of this vector times the matrix @p A.
      * @param[in] A matrix
-     *
      * @return (*this)^T * A in a newly allocated AlgebraicVector
      */
     AlgebraicVector operator*(const AlgebraicMatrix<floating> &A) const;
 
-    /** Scales current vector with scalar @p alpha.
-    *
-    * @param[in] alpha scalar factor
-    *
-    */
-    void scale(const floating alpha);
+    /**
+     * Scales current vector with scalar @p scalar.
+     * @param[in] scalar scalar factor
+     */
+    void scale(const floating scalar);
 
 private:
-    ContainerFactory<floating> _colMatrixFactory; //!< container factory used for creating new containers with the same ProcessingUnit and memory location
-    ArrayPointerType _Aptr;    //!< vector values
+    ContainerFactory<floating> _container_factory; //!< container factory used for creating new containers with the same ProcessingUnit and memory location
+    ArrayPointerType _data;    //!< vector values
 
     /**
      * Checks whether the vector defined by the member variable is valid
      * @return true if the vector are valid
      */
-    bool isValid() const;
+    bool is_valid() const;
 
     /**
      * Returns the reference to the array contained in the member data type.
      * @return reference to array
      */
-    ArrayDataType& accessArray();
+    ArrayDataType& access_array();
 
     /**
      * Returns the const reference to the array contained in the member data type.
      * @return const reference to array
      */
-    ArrayDataType const & accessArray() const;
+    ArrayDataType const & access_array() const;
 
     /**
      * Initialize the current vector member data type by copying it from another instance @param other
      * @param other other vector
      * @return ArrayPointerType for initialization
      */
-    ArrayPointerType initializePointerCopying(const AlgebraicVector &other) const;
+    ArrayPointerType initialize_pointer_by_copying(const AlgebraicVector &other) const;
 };
 
 #include "algebraiccontainers_algebraicmatrix.hpp"

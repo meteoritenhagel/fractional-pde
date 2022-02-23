@@ -5,32 +5,35 @@
 #include <sstream>
 
 template<class T>
-DeviceMatrix<T>::DeviceMatrix(const SizeType N, const SizeType M, const T value, const MemoryManager& memoryManager)
-: DeviceDataDevice<T>(memoryManager), _N(N), _M(M), _pointer(initializePointer()), _arrayOfPointers(initializeArray())
+DeviceMatrix<T>::DeviceMatrix(const SizeType num_rows, const SizeType num_cols, const T value, const MemoryManager& memory_manager)
+: DeviceDataDevice<T>(memory_manager), _num_rows(num_rows), _num_cols(num_cols), _data(initialize_data()), _array_of_columns(
+        initialize_array_of_columns())
 {
-    initializeMemory(memoryManager, data(), this->size(), value);
+    initialize_memory(memory_manager, data(), this->size(), value);
 }
 
 template<class T>
-DeviceMatrix<T>::DeviceMatrix(const SizeType N, std::vector<T> const &u)
-: DeviceDataDevice<T>(std::make_shared<CPU_Manager>()), _N(N), _M(u.size() / N), _pointer(initializePointer()), _arrayOfPointers(initializeArray())
+DeviceMatrix<T>::DeviceMatrix(const SizeType num_rows, std::vector<T> const &vec)
+: DeviceDataDevice<T>(std::make_shared<CpuManager>()), _num_rows(num_rows), _num_cols(vec.size() / num_rows), _data(
+        initialize_data()), _array_of_columns(initialize_array_of_columns())
 {
-    assert(u.size() % N == 0);
-    this->_memoryManager->copy(data(), u.data(), this->byteSize());
+    assert(vec.size() % num_rows == 0);
+    this->_memory_manager->copy(data(), vec.data(), this->byte_size());
 }
 
 template<class T>
 DeviceMatrix<T>::DeviceMatrix(const DeviceMatrix &other)
-:  DeviceDataDevice<T>(other), _N(other._N), _M(other._M), _pointer(initializePointer()), _arrayOfPointers(initializeArray())
+:  DeviceDataDevice<T>(other), _num_rows(other._num_rows), _num_cols(other._num_cols), _data(initialize_data()), _array_of_columns(
+        initialize_array_of_columns())
 {
-    this->_memoryManager->copy(data(), other.data(), this->byteSize());
+    this->_memory_manager->copy(data(), other.data(), this->byte_size());
 }
 
 template<class T>
 DeviceMatrix<T>::DeviceMatrix(DeviceMatrix&& rhs)
-: DeviceDataDevice<T>(rhs), _N(rhs._N), _M(rhs._M), _pointer(std::move(rhs._pointer)), _arrayOfPointers(std::move(rhs._arrayOfPointers))
+: DeviceDataDevice<T>(rhs), _num_rows(rhs._num_rows), _num_cols(rhs._num_cols), _data(std::move(rhs._data)), _array_of_columns(std::move(rhs._array_of_columns))
 {
-    rhs._pointer = nullptr;
+    rhs._data = nullptr;
 }
 
 template<class T>
@@ -40,43 +43,43 @@ DeviceMatrix<T>& DeviceMatrix<T>::operator= (const DeviceMatrix &other)
     {
         if(this->size() != other.size())
         {
-            this->_N = other._N;
-            this->_M = other._M;
-            resetPointer();
+            this->_num_rows = other._num_rows;
+            this->_num_cols = other._num_cols;
+            reset_data();
         }
         this->DeviceDataDevice<T>::operator=(other);
-        resetArray();
-        this->_memoryManager->copy(data(), other.data(), this->byteSize());
+        reset_array_of_columns();
+        this->_memory_manager->copy(data(), other.data(), this->byte_size());
     }
     return *this;
 }
 
 template<class T>
-void DeviceMatrix<T>::moveTo(const MemoryManager& targetDevice)
+void DeviceMatrix<T>::move_to(const MemoryManager& target_device)
 {
-    // only move if targetDevice is different to current device
-    if (typeid(*(this->_memoryManager)) != typeid(*targetDevice))
+    // only move if target_device is different to current device
+    if (typeid(*(this->_memory_manager)) != typeid(*target_device))
     {
-        T* newPtr = static_cast<T*>(this->_memoryManager->copyTo(_pointer.get(), this->byteSize(), targetDevice));
+        T* newPtr = static_cast<T*>(this->_memory_manager->copy_to(_data.get(), this->byte_size(), target_device));
 
-        this->_memoryManager = targetDevice;
+        this->_memory_manager = target_device;
 
-        const auto currentManager = this->_memoryManager;
-        _pointer = PointerType(newPtr, [currentManager](T* ptrToMemory){ currentManager->free(ptrToMemory); });
-        resetArray();
+        const auto currentManager = this->_memory_manager;
+        _data = PointerType(newPtr, [currentManager](T* ptrToMemory){ currentManager->free(ptrToMemory); });
+        reset_array_of_columns();
     }
 }
 
 template<class T>
 DeviceMatrix<T>& DeviceMatrix<T>::operator=(DeviceMatrix&& rhs)
 {
-    this->_N = rhs._N;
-    this->_M = rhs._M;
+    this->_num_rows = rhs._num_rows;
+    this->_num_cols = rhs._num_cols;
 
     if (this != &rhs)
     {
-        _pointer = std::move(rhs._pointer);
-        rhs._pointer = nullptr;
+        _data = std::move(rhs._data);
+        rhs._data = nullptr;
     }
 
     this->DeviceDataDevice<T>::operator=(std::move(rhs));
@@ -84,19 +87,19 @@ DeviceMatrix<T>& DeviceMatrix<T>::operator=(DeviceMatrix&& rhs)
     // We have to initialize array again,
     // because trying to move rhs._arrayOfArrays to
     // this->_arrayOfArrays results results in deep copying!
-    resetArray();
+    reset_array_of_columns();
     return *this;
 }
 
 template<class T>
-DeviceMatrix<T>& DeviceMatrix<T>::resize(const SizeType nrows, const SizeType ncols)
+DeviceMatrix<T>& DeviceMatrix<T>::resize(const SizeType num_rows, const SizeType num_cols)
 {
     // TODO: THIS IS POSSIBLY WRONG
-    assert(nrows*ncols == getN() * getM() && "ERROR: Cannot resize. Dimension mismatch.");
-    _N = nrows;
-    _M = ncols;
+    assert(num_rows * num_cols == get_num_rows() * get_num_cols() && "ERROR: Cannot resize. Dimension mismatch.");
+    _num_rows = num_rows;
+    _num_cols = num_cols;
 
-    resetArray();
+    reset_array_of_columns();
     
     return *this;
 }
@@ -104,34 +107,34 @@ DeviceMatrix<T>& DeviceMatrix<T>::resize(const SizeType nrows, const SizeType nc
 template<class T>
 T* DeviceMatrix<T>::data()
 {
-    return _pointer.get();
+    return _data.get();
 }
 
 template<class T>
 T const * DeviceMatrix<T>::data() const
 {
-    return _pointer.get();
+    return _data.get();
 }
 
 template<class T>
-typename DeviceMatrix<T>::PointerToColumn DeviceMatrix<T>::getPointerToColumn(const SizeType m) const
+typename DeviceMatrix<T>::PointerToColumn DeviceMatrix<T>::get_pointer_to_column(const SizeType m) const
 {
-    assert(m < getM() && "ERROR: Index out of bounds.");
-    return _arrayOfPointers[m];
+    assert(m < get_num_cols() && "ERROR: Index out of bounds.");
+    return _array_of_columns[m];
 }
 
 template<class T>
 DeviceArray<T>& DeviceMatrix<T>::operator[](const SizeType m)
 {
-    //assert(m < getM() && "ERROR: Index out of bounds.");
-    return *getPointerToColumn(m);
+    //assert(m < get_num_cols() && "ERROR: Index out of bounds.");
+    return *get_pointer_to_column(m);
 }
 
 template<class T>
 DeviceArray<T> const & DeviceMatrix<T>::operator[](const SizeType m) const
 {
-    //assert(m < getM() && "ERROR: Index out of bounds.");
-    return *getPointerToColumn(m);
+    //assert(m < get_num_cols() && "ERROR: Index out of bounds.");
+    return *get_pointer_to_column(m);
 }
 
 template<class T>
@@ -149,25 +152,25 @@ T const & DeviceMatrix<T>::operator()(const SizeType i, const SizeType j) const
 template<class T>
 typename DeviceMatrix<T>::SizeType DeviceMatrix<T>::size() const
 {
-    return _N * _M;
+    return _num_rows * _num_cols;
 }
 
 template<class T>
-typename DeviceMatrix<T>::SizeType DeviceMatrix<T>::getN() const
+typename DeviceMatrix<T>::SizeType DeviceMatrix<T>::get_num_rows() const
 {
-    return _N;
+    return _num_rows;
 }
 
 template<class T>
-typename DeviceMatrix<T>::SizeType DeviceMatrix<T>::getM() const
+typename DeviceMatrix<T>::SizeType DeviceMatrix<T>::get_num_cols() const
 {
-    return _M;
+    return _num_cols;
 }
 
 template<class T>
-bool DeviceMatrix<T>::isSquare() const
+bool DeviceMatrix<T>::is_square() const
 {
-    return (getN() == getM());
+    return (get_num_rows() == get_num_cols());
 }
 
 template<class T>
@@ -175,9 +178,9 @@ std::string DeviceMatrix<T>::display(const std::string& name) const
 {
     std::stringstream ss;
     ss << name << " = (" << std::endl;
-    for (SizeType i = 0; i < getN(); ++i)
+    for (SizeType i = 0; i < get_num_rows(); ++i)
     {
-        for (SizeType j = 0; j < getM(); ++j)
+        for (SizeType j = 0; j < get_num_cols(); ++j)
             ss << std::setprecision(5) << (*this)(i,j) << "  ";
         ss<< std::endl;
     }
@@ -186,12 +189,12 @@ std::string DeviceMatrix<T>::display(const std::string& name) const
 }
 
 template<class T>
-typename DeviceMatrix<T>::PointerType DeviceMatrix<T>::initializePointer()
+typename DeviceMatrix<T>::PointerType DeviceMatrix<T>::initialize_data()
 {
-    if (this->byteSize() != 0)
+    if (this->byte_size() != 0)
     {
-        T* pointerToUnifiedMemory = static_cast<T*>(this->_memoryManager->allocate(this->byteSize()));
-        const auto currentManager = this->_memoryManager;
+        T* pointerToUnifiedMemory = static_cast<T*>(this->_memory_manager->allocate(this->byte_size()));
+        const auto currentManager = this->_memory_manager;
         return PointerType(pointerToUnifiedMemory, [currentManager](T* ptrToUnifiedMemory){ currentManager->free(ptrToUnifiedMemory); });
     }
    else
@@ -201,25 +204,25 @@ typename DeviceMatrix<T>::PointerType DeviceMatrix<T>::initializePointer()
 }
 
 template<class T>
-typename DeviceMatrix<T>::ArrayOfPointers DeviceMatrix<T>::initializeArray()
+typename DeviceMatrix<T>::ArrayOfPointers DeviceMatrix<T>::initialize_array_of_columns()
 {
-    ArrayOfPointers arrayOfPointers(getM());
-    for (SizeType i = 0; i < getM(); ++i)
+    ArrayOfPointers arrayOfPointers(get_num_cols());
+    for (SizeType i = 0; i < get_num_cols(); ++i)
     {
-        arrayOfPointers[i] = std::make_shared<DeviceArray<T>>(this->_memoryManager);
-        arrayOfPointers[i]->makeDependentOn(getN(), data()+i*getN());
+        arrayOfPointers[i] = std::make_shared<DeviceArray<T>>(this->_memory_manager);
+        arrayOfPointers[i]->make_dependent_on(get_num_rows(), data() + i * get_num_rows());
     }
     return arrayOfPointers;
 }
 
 template<class T>
-void DeviceMatrix<T>::resetArray()
+void DeviceMatrix<T>::reset_array_of_columns()
 {
-    _arrayOfPointers = initializeArray();
+    _array_of_columns = initialize_array_of_columns();
 }
 
 template<class T>
-void DeviceMatrix<T>::resetPointer()
+void DeviceMatrix<T>::reset_data()
 {
-    _pointer = initializePointer();
+    _data = initialize_data();
 }

@@ -17,26 +17,26 @@
  * from @p data with value @p value.
  *
  * @tparam T data type of array elements
- * @param hostMemory[in,out] first element of array (in the Cpu memory)
+ * @param host_memory[in,out] first element of array (in the Cpu memory)
  * @param size number of elements in the array
  * @param value value to initialize elements with
  */
 template<class T>
-void hostInitializeMemory(T* hostMemory, const int size, const T value);
+void host_initialize_memory(T* host_memory, const int size, const T value);
 
 /**
  * Given a matrix in form of a classical C-style array in the Cpu memory, this function sets it to be an
- * identity matrix.
+ * identity matrix, where the storage is assumed to be column-wise.
  *
  * @tparam T data type of matrix elements
- * @param hostMemory[in,out] pointer to start of data (in the Cpu memory)
- * @param N number of the matrix' rows
- * @param M number of the matrix' columns
+ * @param host_memory[in,out] pointer to start of data (in the Cpu memory)
+ * @param num_rows number of the matrix' rows
+ * @param num_cols number of the matrix' columns
  *
- * @warning Note that starting from @param data, at least N*M elements must be accessible
+ * @warning Note that starting from @p data, at least num_rows*num_cols elements must be accessible
  */
 template<class T>
-void hostInitializeIdentityMatrix(T* hostMemory, const int N, const int M);
+void host_initialize_identity_matrix(T* host_memory, const int num_rows, const int num_cols);
 
 class MemoryManagerDevice;
 
@@ -60,28 +60,28 @@ public:
     virtual ~MemoryManagerDevice() = default;
 
     /**
-     * Allocates @param byteSize bytes on the corresponding device.
-     * @param byteSize number of bytes to allocate
+     * Allocates @p byte_size bytes on the corresponding device.
+     * @param byte_size number of bytes to allocate
      * @return pointer to start of allocated memory
      */
-    virtual void * allocate(const size_t byteSize) const = 0;
+    virtual void * allocate(const size_t byte_size) const = 0;
 
     /**
-     * Frees the memory allocated on position @p pointerToMemory.
-     * @param pointerToMemory Pointer to memory block which should be freed.
+     * Frees the memory allocated on position @p pointer_to_memory.
+     * @param pointer_to_memory Pointer to memory block which should be freed.
      */
-    virtual void free(void* pointerToMemory) const = 0;
+    virtual void free(void* pointer_to_memory) const = 0;
 
     /**
-     * Copies @param byteSize bytes from the @p source to the @p destination pointer.
+     * Copies @param byte_size bytes from the @p source to the @p destination pointer.
      *
-     * @warning after the destination pointer, @p byteSize bytes have to be allocated
+     * @warning after the destination pointer, @p byte_size bytes have to be allocated
      * @param destination destination of copy process
      * @param source source of copy process
-     * @param byteSize number of bytes being copied
+     * @param byte_size number of bytes being copied
      * @return destination pointer
      */
-    virtual void* copy(void* destination, void const * source, const size_t byteSize) const = 0;
+    virtual void* copy(void* destination, void const * source, const size_t byte_size) const = 0;
 
     /**
     * Returns the memory manager's name as a string.
@@ -90,34 +90,34 @@ public:
     virtual std::string display() const = 0;
 
     /**
-     * Allocates @p byteSize memory on the device corresponding the other MemoryManager @p manager,
-     * and copies @p byteSize bytes from @p pointerToMemory to new newly allocated
+     * Allocates @p byte_size memory on the device corresponding the other MemoryManager @p manager,
+     * and copies @p byte_size bytes from @p source to new newly allocated
      * space.
      *
-     * @param pointerToMemory pointer to source memory (must have been allocated on the device corresponding to the current instance)
+     * @param source pointer to source memory (must have been allocated on the device corresponding to the current instance)
      * @param byteSize number of bytes being copied
      * @param manager other manager defining the target of the copy process
      * @return destination pointer, start of the newly allocated memory
      */
-    void* copyTo(void* pointerToMemory, const size_t byteSize, const MemoryManager manager) const;
+    void* copy_to(void* source, const size_t byteSize, const MemoryManager manager) const;
 };
 
-class CPU_Manager : public MemoryManagerDevice {
+class CpuManager : public MemoryManagerDevice {
 
     /**
      * @copydoc MemoryManagerDevice::allocate(const size_t) const
      */
-    void* allocate(const size_t byteSize) const override;
+    void* allocate(const size_t byte_size) const override;
 
     /**
      * @copydoc MemoryManagerDevice::free(void*) const
      */
-    void free(void* pointerToMemory) const override;
+    void free(void* ptr) const override;
 
     /**
      * @copydoc MemoryManagerDevice::copy(void*, void const *, const size_t) const
      */
-    void* copy(void * destination, void const * source, const size_t byteSize) const override;
+    void* copy(void * destination, void const * source, const size_t byte_size) const override;
 
     /**
      * @copydoc MemoryManagerDevice::display() const
@@ -127,21 +127,21 @@ class CPU_Manager : public MemoryManagerDevice {
 
 #ifndef CPU_ONLY
 
-class GPU_Manager : public MemoryManagerDevice {
+class GpuManager : public MemoryManagerDevice {
     /**
     * @copydoc MemoryManagerDevice::allocate(const size_t) const
     */
-    void* allocate(const size_t byteSize) const override;
+    void* allocate(const size_t byte_size) const override;
 
     /**
      * @copydoc MemoryManagerDevice::free(void*) const
      */
-    void free(void* pointerToMemory) const override;
+    void free(void* ptr) const override;
 
     /**
      * @copydoc MemoryManagerDevice::copy(void*, void const *, const size_t) const
      */
-    void* copy(void* destination, void const * source, const size_t byteSize) const override;
+    void* copy(void* destination, void const * source, const size_t byte_size) const override;
 
     /**
      * @copydoc MemoryManagerDevice::display() const
@@ -153,17 +153,17 @@ class UnifiedManager : public MemoryManagerDevice {
     /**
     * @copydoc MemoryManagerDevice::allocate(const size_t) const
     */
-    void* allocate(const size_t byteSize) const override;
+    void* allocate(const size_t byte_size) const override;
 
     /**
      * @copydoc MemoryManagerDevice::free(void*) const
      */
-    void free(void* pointerToMemory) const override;
+    void free(void* ptr) const override;
 
     /**
      * @copydoc MemoryManagerDevice::copy(void*, void const *, const size_t) const
      */
-    void* copy(void* destination, void const * source, const size_t byteSize) const override;
+    void* copy(void* destination, void const * source, const size_t byte_size) const override;
 
     /**
      * @copydoc MemoryManagerDevice::display() const

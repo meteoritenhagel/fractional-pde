@@ -1,51 +1,51 @@
 #include <iostream>
 #include "memorymanager.h"
 
-void *MemoryManagerDevice::copyTo(void *pointerToMemory, const size_t byteSize, const MemoryManager manager) const {
-    void *newPtr = pointerToMemory;
+void *MemoryManagerDevice::copy_to(void *source, const size_t byteSize, const MemoryManager manager) const {
+    void *newPtr = source;
 
     // Only move to other device if the device is not the same
     if (typeid(*this) != typeid(*manager)) {
         newPtr = manager->allocate(byteSize);
-        manager->copy(newPtr, pointerToMemory, byteSize);
+        manager->copy(newPtr, source, byteSize);
     }
 
     return newPtr;
 }
 
-void *CPU_Manager::allocate(const size_t byteSize) const {
-    if (byteSize != 0) {
-        return malloc(byteSize);
+void *CpuManager::allocate(const size_t byte_size) const {
+    if (byte_size != 0) {
+        return malloc(byte_size);
     } else
         return nullptr;
 }
 
-void CPU_Manager::free(void *pointerToMemory) const {
-    if (pointerToMemory)
-        ::free(pointerToMemory);
+void CpuManager::free(void *ptr) const {
+    if (ptr)
+        ::free(ptr);
 }
 
-void *CPU_Manager::copy(void *destination, void const *source, const size_t byteSize) const {
+void *CpuManager::copy(void *destination, void const *source, const size_t byte_size) const {
 #ifdef CPU_ONLY
-    return memcpy(destination, source, byteSize);
+    return memcpy(destination, source, byte_size);
 #else
-    cudaMemcpy(destination, source, byteSize, cudaMemcpyDefault);
+    cudaMemcpy(destination, source, byte_size, cudaMemcpyDefault);
     return destination;
 #endif
 }
 
-std::string CPU_Manager::display() const {
+std::string CpuManager::display() const {
     return "Cpu MANAGER";
 }
 
 #ifndef CPU_ONLY
 
-void* GPU_Manager::allocate(const size_t byteSize) const {
+void* GpuManager::allocate(const size_t byte_size) const {
     void *pointer = nullptr;
     cudaError_t cudaerr;
 
-    if (byteSize != 0) {
-        cudaerr = cudaMalloc(&pointer, byteSize);
+    if (byte_size != 0) {
+        cudaerr = cudaMalloc(&pointer, byte_size);
         cudaerr = cudaDeviceSynchronize();
 
         if (cudaerr != cudaSuccess)
@@ -56,35 +56,35 @@ void* GPU_Manager::allocate(const size_t byteSize) const {
     return pointer;
 }
 
-void GPU_Manager::free(void *pointerToMemory) const {
-    if (pointerToMemory)
-        cudaFree(pointerToMemory);
+void GpuManager::free(void *ptr) const {
+    if (ptr)
+        cudaFree(ptr);
 }
 
-void* GPU_Manager::copy(void *destination, void const *source, const size_t byteSize) const {
-    cudaMemcpy(destination, source, byteSize, cudaMemcpyDefault);
+void* GpuManager::copy(void *destination, void const *source, const size_t byte_size) const {
+    cudaMemcpy(destination, source, byte_size, cudaMemcpyDefault);
     return destination;
 }
 
-std::string GPU_Manager::display() const {
+std::string GpuManager::display() const {
     return "Gpu MANAGER";
 }
 
-void* UnifiedManager::allocate(const size_t byteSize) const {
+void* UnifiedManager::allocate(const size_t byte_size) const {
     void *pointer = nullptr;
-    if (byteSize != 0) {
-        cudaMallocManaged(&pointer, byteSize);
+    if (byte_size != 0) {
+        cudaMallocManaged(&pointer, byte_size);
     }
     return pointer;
 }
 
-void UnifiedManager::free(void *pointerToMemory) const {
-    if (pointerToMemory)
-        cudaFree(pointerToMemory);
+void UnifiedManager::free(void *ptr) const {
+    if (ptr)
+        cudaFree(ptr);
 }
 
-void *UnifiedManager::copy(void *destination, void const *source, const size_t byteSize) const {
-    cudaMemcpy(destination, source, byteSize, cudaMemcpyDefault);
+void *UnifiedManager::copy(void *destination, void const *source, const size_t byte_size) const {
+    cudaMemcpy(destination, source, byte_size, cudaMemcpyDefault);
     return destination;
 }
 

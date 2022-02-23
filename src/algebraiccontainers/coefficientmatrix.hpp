@@ -3,10 +3,10 @@
 #include <cmath>
 
 template<class floating>
-CoefficientMatrix<floating> operator*(const floating lambda, const CoefficientMatrix<floating> &B)
+CoefficientMatrix<floating> operator*(const floating scalar, const CoefficientMatrix<floating> &B)
 {
     CoefficientMatrix<floating> tmp(B);
-    tmp.scale(lambda);
+    tmp.scale(scalar);
 
     return tmp;
 }
@@ -14,8 +14,8 @@ CoefficientMatrix<floating> operator*(const floating lambda, const CoefficientMa
 // public:
 
 template<class floating>
-CoefficientMatrix<floating>::CoefficientMatrix(const ProcessingUnit<floating> processingUnit, const SizeType size, const floating alpha)
-: _D(initializeD(processingUnit, size, alpha))
+CoefficientMatrix<floating>::CoefficientMatrix(const ProcessingUnit<floating> processing_unit, const SizeType size, const floating alpha)
+: _D(initialize_D(processing_unit, size, alpha))
 {}
 
 template<class floating>
@@ -37,9 +37,9 @@ ContainerFactory<floating> CoefficientMatrix<floating>::get_container_factory() 
 }
 
 template<class floating>
-AlgebraicMatrix<floating> CoefficientMatrix<floating>::copyToDense() const
+AlgebraicMatrix<floating> CoefficientMatrix<floating>::get_dense_representation() const
 {
-    auto denseMatrix = *get_container_factory().createMatrix(size(), size());
+    auto denseMatrix = *get_container_factory().create_matrix(size(), size());
 
     for (SizeType i = size()-2; i >= 2; --i)
     {
@@ -66,9 +66,9 @@ floating CoefficientMatrix<floating>::operator()(const SizeType i, const SizeTyp
 }
 
 template<class floating>
-void CoefficientMatrix<floating>::scale(const floating lambda)
+void CoefficientMatrix<floating>::scale(const floating scalar)
 {
-    _D.scale(lambda);
+    _D.scale(scalar);
     return;
 }
 
@@ -77,7 +77,7 @@ AlgebraicVector<floating> CoefficientMatrix<floating>::operator*(const Algebraic
 {
     assert(this->size() == rhs.size() && "ERROR: Dimension mismatch. Cannot perform multiplication.");
     const auto N = size()-3;
-    auto result = *get_container_factory().createColumn(size());
+    auto result = *get_container_factory().create_column(size());
 
     for (SizeType i = N+1; i >= 2; --i)
     {
@@ -95,10 +95,10 @@ AlgebraicVector<floating> CoefficientMatrix<floating>::operator*(const Algebraic
 // private:
 
 template<class floating>
-AlgebraicVector<floating> CoefficientMatrix<floating>::initializeD(const ProcessingUnit<floating> processingUnit, const SizeType size, const floating alpha)
+AlgebraicVector<floating> CoefficientMatrix<floating>::initialize_D(const ProcessingUnit<floating> processing_unit, const SizeType size, const floating alpha)
 {
-    ContainerFactory<floating> factory(processingUnit);
-    auto D = *factory.createColumn(size+3);
+    ContainerFactory<floating> factory(processing_unit);
+    auto D = *factory.create_array(size+3);
 
     for (unsigned j = 0; j < size + 2; j++)
     {
@@ -120,7 +120,7 @@ floating CoefficientMatrix<floating>::coef_b(const int m, const floating alpha)
     return (3 - alpha) * pow(m, static_cast<double>(2 - alpha));
 }
 template<class floating>
-floating CoefficientMatrix<floating>::coef_bp(const int m, const floating alpha)
+floating CoefficientMatrix<floating>::coef_b_prime(const int m, const floating alpha)
 {
     return 0.5 * (3 - alpha) * (2 - alpha) * pow(m, 1 - alpha);
 }
@@ -132,15 +132,16 @@ floating CoefficientMatrix<floating>::coef_d(const int m, const int k, const flo
     if (m == 1)
         rv = 3 * coef_a(0, alpha) - (coef_a(1, alpha) + 2 * coef_b(0, alpha));
     else if (m == 2)
-        rv = 3 * coef_a(1, alpha) + coef_b(0, alpha) - (3 * coef_a(0, alpha) + coef_a(2, alpha) + coef_bp(0, alpha));
+        rv = 3 * coef_a(1, alpha) + coef_b(0, alpha) - (3 * coef_a(0, alpha) + coef_a(2, alpha) + coef_b_prime(0, alpha));
     else if (m >= 3 && m <= k - 1)
         rv = 3 * coef_a(m - 1, alpha) + coef_a(m - 3, alpha) - (3 * coef_a(m - 2, alpha) + coef_a(m, alpha));
     else if (m == k)
-        rv = 3 * coef_a(k - 1, alpha) + coef_a(k - 3, alpha) - (3 * coef_a(k - 2, alpha) + coef_b(k, alpha) + coef_bp(k, alpha));
+        rv = 3 * coef_a(k - 1, alpha) + coef_a(k - 3, alpha) - (3 * coef_a(k - 2, alpha) + coef_b(k, alpha) +
+                coef_b_prime(k, alpha));
     else if (m == k + 1)
         rv = coef_a(k - 2, alpha) + 2 * coef_b(k, alpha) - 3 * coef_a(k - 1, alpha);
     else if (m == k + 2)
-        rv = coef_a(k - 1, alpha) + coef_bp(k, alpha) - coef_b(k, alpha);
+        rv = coef_a(k - 1, alpha) + coef_b_prime(k, alpha) - coef_b(k, alpha);
 
     return rv;
 }
