@@ -10,6 +10,61 @@
 #pragma message("CPU_ONLY mode activated. GPU features are not available.")
 #endif
 
+/**
+ * The solution of the PDE, only used for comparing the solver's result
+ * with the known exact result.
+ *
+ * @tparam floating floating point type
+ * @param x space value
+ * @param t time value
+ * @param alpha anomalous diffusion coefficient
+ * @return The exact solution u(x, t) to the PDE as input.
+ */
+template<class floating>
+floating u_exact_f(const floating x, const floating t, const floating alpha)
+{
+    return pow(t, 4+alpha) * sin(M_PI*x);
+}
+
+/**
+ * The time derivative of the solution u(x, t), i.e. d/dt u(x, t).
+ * It is used as some kind of boundary condition in the PDE's discretization.
+ * Refer to the calculation of rhs_f in equation (3) of
+ * https://unipub.uni-graz.at/obvugrhs/download/pdf/6408510
+ *
+ * Note that up_exact_f does not need to be dependent on @p alpha.
+ *
+ * @tparam floating floating point type
+ * @param x space value
+ * @param t time value
+ * @param alpha anomalous diffusion coefficient
+ * @return d/dt u(x, t)
+ */
+template<class floating>
+floating up_exact_f(floating const x, floating const t, floating const alpha)
+{
+    return (4+alpha) * pow(t, 3 + alpha) * sin(M_PI*x);
+}
+
+/** The right hand side function rhs_f(x, t) used in the differential equation.
+ *  See also https://unipub.uni-graz.at/obvugrhs/download/pdf/6408510 in the
+ *  formulation of the fractional PDE.
+ *
+ *  Note that rhs_f does not need to be dependent on @p alpha.
+ *
+ * @tparam floating floating point type
+ * @param x space value
+ * @param t time value
+ * @param alpha anomalous diffusion coefficient
+ * @return rhs_f(x, t)
+ */
+template<class floating>
+floating rhs_f(const floating x, const floating t, const floating alpha)
+{
+    return sin(M_PI*x) * (pow(t, 4) * tgamma(5+alpha) / 24.0 + M_PI*M_PI*pow(t, 4+alpha));
+}
+
+
 int main()
 {
     using floating = float;
@@ -33,6 +88,9 @@ int main()
               << "Equidistant grid:" << std::endl;
 
     const auto error_equi = equidistant_test_solver_against_exact_solution(pu, N, M, T, alpha,
+                                                                           u_exact_f<floating>,
+                                                                           up_exact_f<floating>,
+                                                                           rhs_f<floating>,
                                                                            maxNumberOfIterations, stepsPerIteration,
                                                                            accuracy,
                                                                            SolvingProcedure::CyclicReduction);
@@ -45,6 +103,9 @@ int main()
               << "    target system absolute accuracy: " << accuracy << std::endl << std::endl;
 
     const auto error_nonequi = non_equidistant_test_solver_against_exact_solution(pu, N, M, T, alpha,
+                                                                                  u_exact_f<floating>,
+                                                                                  up_exact_f<floating>,
+                                                                                  rhs_f<floating>,
                                                                                   maxNumberOfIterations,
                                                                                   stepsPerIteration, accuracy,
                                                        SolvingProcedure::PCBiCGStab);

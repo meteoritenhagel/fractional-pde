@@ -118,7 +118,7 @@ BlockVector<floating> EquidistantBlock_1D<floating>::solve(const BlockVector<flo
 
     BlockVector<floating> solution = *getMatrixFactory().createMatrix(N, M);
     auto x = calculateResidual(solution, rs_rhs);
-    std::cout << "initial error: " << x.getEuclidean() << std::endl;
+    std::cout << "initial system error: " << x.getEuclidean() << std::endl;
 
     if (solvingProcedure == SolvingProcedure::PCRichardson)
     {

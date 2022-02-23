@@ -1,4 +1,4 @@
-#include "../auxiliary.h"
+#include "../fractional_pde.h"
 
 #include <cmath>
 

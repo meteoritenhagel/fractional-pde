@@ -95,7 +95,7 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(BlockVector<floati
     auto residual{solution};
     calculateResidual(solution, rhs, residual);
 
-    std::cout << "initial error: " << residual.getEuclidean() << std::endl;
+    std::cout << "initial system error: " << residual.getEuclidean() << std::endl;
 
     solution[0] = _M / rhs[0];
     solution[M-1] = _M / rhs[M-1];
@@ -601,8 +601,8 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
     size_t n = 0;
     // Since these two lines are invariants of the algortithm, we assume that they already
     // have been computed!
-    //solution[0] = _M / f[0];
-    //solution[M - 1] = _M / f[M-1];
+    //solution[0] = _M / rhs_f[0];
+    //solution[M - 1] = _M / rhs_f[M-1];
 
     // #################### GAUSS SEIDEL ##################
 #ifdef GAUSS_SEIDEL
@@ -613,7 +613,7 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
 
 // Gauss-Seidel cannot be parallelized
         for (unsigned int i = 1; i < M - 1; ++i) {
-            calculateRowResidual(i, solution, f, residual);
+            calculateRowResidual(i, solution, rhs_f, residual);
 
             // scale residual: omega * (D * C)^-1 * r_i = omega * C^-1 * (D^-1 * r_i)
             if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
@@ -727,7 +727,7 @@ void NonEquidistantBlock_1D<floating>::calculateRowResidual(const SizeType i, co
         const floating coeff_middle = 2*(_host_h[i-1] + _host_h[i])/_host_h[i-1]/_host_h[i];
         const floating coeff_right =  2/_host_h[i];
         const floating scale_factor = (_host_h[i-1] + _host_h[i]);
-        // WE WANT: f[i] - (scaled -_B * u[i-1] + _A * u[i] + -_B * u[i+1])
+        // WE WANT: rhs_f[i] - (scaled -_B * u[i-1] + _A * u[i] + -_B * u[i+1])
         // Note that _A = (c1 * _M - c2 * _D) except for rows 1, 2, N, where it is _M
 
         // result[i] <- scaled _M * u[i]

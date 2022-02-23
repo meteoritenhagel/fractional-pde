@@ -35,8 +35,8 @@ endif()
 
 set(COMMON_SOURCES
         src/main.cpp
-        src/auxiliary.h
-        src/auxiliary.hpp
+        src/fractional_pde.h
+        src/fractional_pde.hpp
         src/blocksys.h
         src/blocksys_equidistant.hpp
         src/blocksys_nonequidistant.hpp

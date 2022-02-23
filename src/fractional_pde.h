@@ -2,13 +2,20 @@
 #define FILE_MYLIB
 
 #include "algebraiccontainers/algebraiccontainers.h"
+#include "fractional_pde.h"
+#include "blocksys.h"
 #include "devicedata/devicedata.h"
+#include "processingunit/processingunit.h"
 
 #include <functional>
 #include <vector>
 
+// SFINAE helper to ensure that T is integral type
+template<typename T>
+using enable_if_is_integral = std::enable_if_t<std::is_integral_v<T>, bool>;
+
 /**
- * SpaceTimeFunction is a shortcut for functions f(x, t),
+ * SpaceTimeFunction is a shortcut for functions rhs_f(x, t),
  * with the first variable x being the space value
  * and the second variable t being the time value.
  *
@@ -19,7 +26,7 @@ template<class floating>
 using SpaceTimeFunction = std::function<floating(floating, floating)>;
 
 /**
- * SpaceFunction is a shortcut for functions f(x),
+ * SpaceFunction is a shortcut for functions rhs_f(x),
  * with the variable x being the space value.
  *
  * The return value is the value of this function in x
@@ -28,19 +35,12 @@ using SpaceTimeFunction = std::function<floating(floating, floating)>;
 template<class floating>
 using SpaceFunction = std::function<floating(floating)>;
 
-/**
- * TimeFunction is a shortcut for functions f(t),
- * with the variable t being the time value.
- *
- * The return value is the value of this function in t
- * must be a floating point number.
- */
 template<class floating>
-using TimeFunction = std::function<floating(floating)>;
-
-// SFINAE helper to ensure that T is integral type
-template<typename T>
-using enable_if_is_integral = std::enable_if_t<std::is_integral_v<T>, bool>;
+using PDEFunctionTuple = std::tuple<SpaceTimeFunction<floating>,
+                                    SpaceTimeFunction<floating>,
+                                    SpaceTimeFunction<floating>,
+                                    SpaceFunction<floating>,
+                                    SpaceTimeFunction<floating>>;
 
 /**
  * Calculates 2 to the power of @p x.
@@ -77,51 +77,6 @@ std::vector<floating> linspace(const int N, const floating a, const floating b);
 template<class floating>
 void applyTriDiagonals(const floating a, const floating b, AlgebraicMatrix<floating> &B);
 
-/** The right hand side function f(x, t) used in the differential equation.
- *  See also https://unipub.uni-graz.at/obvugrhs/download/pdf/6408510 in the
- *  formulation of the fractional PDE.
- *
- *  Note that f does not need to be dependent on @p alpha.
- *
- * @tparam floating floating point type
- * @param x space value
- * @param t time value
- * @param alpha anomalous diffusion coefficient
- * @return f(x, t)
- */
-template<class floating>
-floating f(const floating x, const floating t, const floating alpha);
-
-/**
- * The solution of the PDE, only used for comparing the solver's result
- * with the known exact result.
- *
- * @tparam floating floating point type
- * @param x space value
- * @param t time value
- * @param alpha anomalous diffusion coefficient
- * @return The exact solution u(x, t) to the PDE as input.
- */
-template<class floating>
-floating u_exact_f(const floating x, const floating t, const floating alpha);
-
-/**
- * The time derivative of the solution u(x, t), i.e. d/dt u(x, t).
- * It is used as some kind of boundary condition in the PDE's discretization.
- * Refer to the calculation of f in equation (3) of
- * https://unipub.uni-graz.at/obvugrhs/download/pdf/6408510
- *
- * Note that up_exact_f does not need to be dependent on @p alpha.
- *
- * @tparam floating floating point type
- * @param x space value
- * @param t time value
- * @param alpha anomalous diffusion coefficient
- * @return d/dt u(x, t)
- */
-template<class floating>
-floating up_exact_f(floating const x, floating const t, floating const alpha);
-
 /**
  * Calculates the vectors f_0 and f_M as in in equation (3) of
  * https://unipub.uni-graz.at/obvugrhs/download/pdf/6408510
@@ -142,6 +97,34 @@ void rhs_helper(const floating x, const floating T,
                 const SpaceTimeFunction<floating> &inner_function,
                 AlgebraicVector<floating>& rhs_entry);
 
-#include "auxiliary.hpp"
+template<class floating>
+AlgebraicVector<floating> solve_equidistant(const ProcessingUnit<floating> processingUnit,
+                                            const int N, const int M, const floating T, const floating alpha,
+                                            const PDEFunctionTuple<floating>& pde_function_tuple,
+                                            const size_t maxNumberOfIterations, const size_t stepsPerIteration,
+                                            const floating accuracy, const SolvingProcedure solvingProcedure);
+
+template<class floating>
+AlgebraicVector<floating> solve_nonequidistant(const ProcessingUnit<floating> processingUnit,
+                                               const int N, const int M, const floating T, const floating alpha,
+                                               const AlgebraicVector<floating>& grid,
+                                               const PDEFunctionTuple<floating>& pde_function_tuple,
+                                               const size_t maxNumberOfIterations, const size_t stepsPerIteration,
+                                               const floating accuracy, const SolvingProcedure solvingProcedure);
+
+template<class floating>
+void initializeMatricesEquidistant(const int N, const floating T,
+                                   AlgebraicMatrix<floating> &B, AlgebraicMatrix<floating> &MM);
+
+template<class floating>
+void initializeMatricesNonEquidistant(const int N, const floating T,
+                                      AlgebraicMatrix<floating> &B, AlgebraicMatrix<floating> &MM);
+
+template<class floating>
+void initializeRhs(const int N, const int M, const floating T, const PDEFunctionTuple<floating> &pde_function_tuple,
+                   const AlgebraicVector<floating> &grid, AlgebraicMatrix<floating> &rhs);
+
+
+#include "fractional_pde.hpp"
 
 #endif

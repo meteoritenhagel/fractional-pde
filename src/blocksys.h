@@ -7,7 +7,7 @@
 #include <cassert>
 #include <vector>
 
-#include "auxiliary.h"
+#include "fractional_pde.h"
 #include "algebraiccontainers/containerfactory.h"
 
 /*+
@@ -261,7 +261,7 @@ private:
      * @param[in] maxNumberOfIterations maximal number of multigrid iterations
      * @param[in] accuracy absolute accuracy used for termination of the smoothing steps
      * @param[in/out] solution solution to the system which is being updated
-     * @return euclidean error of the residual K * beta - f
+     * @return euclidean error of the residual K * beta - rhs_f
      */
     floating multigrid(const unsigned numberOfSmoothingSteps, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const;
 
@@ -312,13 +312,13 @@ private:
      * @param[in] maxNumberOfIterations maximal number of iterations performed
      * @param[in] accuracy desired absolute accuracy
      * @param[in,out] solution initial solution which is being updated
-     * @return Euclidean norm of residual K*beta - f, where beta is corresponding to @param solution
+     * @return Euclidean norm of residual K*beta - rhs_f, where beta is corresponding to @param solution
      */
     floating jacobiIteration(const floating omega, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const;
 
     /**
      * Performs smoothing steps (similar to jacobiIteration, but without calculation of accuracy due to performance)
-     * to the system K*beta = f, where beta is corresponding to @param solution.
+     * to the system K*beta = rhs_f, where beta is corresponding to @param solution.
      *
      * @param[in] omega relaxation parameter
      * @param[in] f right-hand side
@@ -329,21 +329,21 @@ private:
 
     // TODO: Rename u to beta
     /**
-     * Calculate total residual K*beta - f.
+     * Calculate total residual K*beta - rhs_f.
      *
      * @param[in] u solution
      * @param[in] f right-hand side
-     * @return residual K*beta - f
+     * @return residual K*beta - rhs_f
      */
     BlockVector<floating> calculateResidual(const BlockVector<floating> &u, const BlockVector<floating> &f) const;
 
     // TODO: Rename u to beta
     /**
-     * Calculate block row @param i of residual K*beta - f
+     * Calculate block row @param i of residual K*beta - rhs_f
      * @param[in] i block row index
      * @param[in] u solution
      * @param[in] f right-hand side
-     * @return @param i-th block row of residual K*beta - f
+     * @return @param i-th block row of residual K*beta - rhs_f
      */
     AlgebraicVector<floating> calculateRowResidual(const SizeType i, const BlockVector<floating> &u, const BlockVector<floating> &f) const;
 
@@ -498,26 +498,26 @@ private:
     mutable AlgebraicMatrix<floating> _coarseBuffer2; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of coarse residuals etc.
 
     /**
-     * Applies steps of BiCGStab to the system K*beta = f, where beta is corresponding to @param solution,
+     * Applies steps of BiCGStab to the system K*beta = rhs_f, where beta is corresponding to @param solution,
      * until either the maximal number of iterations or the desired absolute accuracy is reached.
      *
      * @param[in] f right-hand side
      * @param[in] maxNumberOfIterations maximal number of iterations performed
      * @param[in] accuracy desired absolute accuracy
      * @param[in,out] solution solution initial solution which is being updated
-     * @return Euclidean norm of residual K*beta - f, where beta is corresponding to @param solution
+     * @return Euclidean norm of residual K*beta - rhs_f, where beta is corresponding to @param solution
      */
     floating biCGStab(const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const;
 
     /**
-     * Applies steps of multigrid-preconditioned BiCGStab to the system K*beta = f, where beta is corresponding
+     * Applies steps of multigrid-preconditioned BiCGStab to the system K*beta = rhs_f, where beta is corresponding
      * to @param solution, until either the maximal number of iterations or the desired absolute accuracy is reached.
      *
      * @param[in] f right-hand side
      * @param[in] maxNumberOfIterations maximal number of iterations performed
      * @param[in] accuracy desired absolute accuracy
      * @param[in,out] solution solution initial solution which is being updated
-     * @return Euclidean norm of residual K*beta - f, where beta is corresponding to @param solution
+     * @return Euclidean norm of residual K*beta - rhs_f, where beta is corresponding to @param solution
      */
     floating PCbiCGStab(const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const;
 
@@ -572,7 +572,7 @@ private:
 
     /**
      * Performs smoothing steps (weighted block Jacobi iteration)
-     * to the system K*beta = f, where beta is corresponding to @param solution,
+     * to the system K*beta = rhs_f, where beta is corresponding to @param solution,
      * until the maximal number of iterations is reached
      *
      * @param[in] omega relaxation parameter
@@ -584,21 +584,21 @@ private:
 
     // TODO: Rename u to beta
     /**
-     * Calculate total residual K*beta - f.
+     * Calculate total residual K*beta - rhs_f.
      *
      * @param[in] u solution
      * @param[in] f right-hand side
-     * @return residual K*beta - f
+     * @return residual K*beta - rhs_f
      */
     void calculateResidual(const BlockVector<floating> &u, const BlockVector<floating> &f, BlockVector<floating> &residual) const;
 
     // TODO: Rename u to beta
     /**
-     * Calculate block row @param i of residual K*beta - f
+     * Calculate block row @param i of residual K*beta - rhs_f
      * @param[in] i block row index
      * @param[in] u solution
      * @param[in] f right-hand side
-     * @return @param i-th block row of residual K*beta - f
+     * @return @param i-th block row of residual K*beta - rhs_f
      */
     void calculateRowResidual(const SizeType i, const BlockVector<floating> &u, const BlockVector<floating> &f, AlgebraicVector<floating> &residual) const;
 

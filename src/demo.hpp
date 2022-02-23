@@ -1,15 +1,15 @@
-#include "demo.h"
-
 #include "blocksys.h"
 #include "algebraiccontainers/algebraiccontainers.h"
 #include "processingunit/processingunit.h"
 
-#include "auxiliary.h"
+#include "fractional_pde.h"
 #include "algebraiccontainers/containerfactory.h"
+
 
 template<class floating>
 PDEFunctionTuple<floating> exact_solution_to_pde_condition_functions(const SpaceTimeCoeffFunction<floating>& exact_solution,
                                                                      const SpaceTimeCoeffFunction<floating>& exact_solution_dt,
+                                                                     const SpaceTimeCoeffFunction<floating>& rhs_function,
                                                                      const floating alpha)
 {
     // Define the boundary and initial value conditions based on the given exact solution and its symbolic derivative
@@ -20,94 +20,24 @@ PDEFunctionTuple<floating> exact_solution_to_pde_condition_functions(const Space
     const SpaceTimeFunction<floating> varphi = [exact_solution, alpha](floating x, floating t){ return exact_solution(1., t, alpha); };
     const SpaceTimeFunction<floating> up_exact = [exact_solution_dt, alpha](floating x, floating t){ return exact_solution_dt(x, t, alpha); };
     const SpaceFunction<floating> u_zero = [exact_solution, alpha](floating x){ return exact_solution(x, 0., alpha); };
-    const SpaceTimeFunction<floating> rhs_function = [alpha](floating x, floating t){ return f(x, t, alpha); };
+    const SpaceTimeFunction<floating> rhs = [rhs_function, alpha](floating x, floating t){ return rhs_function(x, t, alpha); };
 
-    return std::make_tuple(phi, varphi, up_exact, u_zero, rhs_function);
+    return std::make_tuple(phi, varphi, up_exact, u_zero, rhs);
 }
 
 template<class floating>
-AlgebraicVector<floating> solve_equidistant(const ProcessingUnit<floating> processingUnit,
-                                            const int N, const int M, const floating T, const floating alpha,
-                                            const PDEFunctionTuple<floating>& pde_function_tuple,
-                                            const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                            const floating accuracy, const SolvingProcedure solvingProcedure)
-{
-    ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
-    ContainerFactory<floating> colMatrixFactory(cpu);
-
-    floating dt = T / static_cast<floating>(N);
-    floating dx = T / static_cast<floating>(M);
-
-    const auto grid = *colMatrixFactory.createColumn(M, dx);
-
-    auto B = *colMatrixFactory.createMatrix(N+3, N+3);
-    auto D = *colMatrixFactory.createCoefficientMatrix(N, alpha);
-    auto MM = *colMatrixFactory.createMatrix(N+3, N+3);
-
-    initializeMatricesEquidistant(N, T, B, MM);
-
-    auto rhs = *colMatrixFactory.createMatrix(N+3, M+1);
-
-    initializeRhs<floating>(N, M, T, pde_function_tuple, grid, rhs);
-
-    const int block_dim = M + 1;
-    EquidistantBlock_1D<floating> C(block_dim, B, D, MM, dx, alpha, dt, processingUnit);
-
-    BlockVector<floating> CC = C.solve(rhs, maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
-
-    auto B_row = *colMatrixFactory.createColumn(N+3);
-    for (int i = 0; i < N+3; i++)  B_row[i] = MM(N+1, i);
-    B_row.moveTo(processingUnit);
-
-    return B_row * CC;
-}
-
-template<class floating>
-AlgebraicVector<floating> solve_nonequidistant(const ProcessingUnit<floating> processingUnit,
-                                               const int N, const int M, const floating T, const floating alpha,
-                                               const AlgebraicVector<floating>& grid,
-                                               const PDEFunctionTuple<floating>& pde_function_tuple,
-                                               const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                               const floating accuracy, const SolvingProcedure solvingProcedure)
-{
-    ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
-    ContainerFactory<floating> colMatrixFactory(cpu);
-
-    floating dt = T / static_cast<floating>(N);
-
-    auto B = *colMatrixFactory.createMatrix(N+3, N+3);
-    auto D = *colMatrixFactory.createCoefficientMatrix(N, alpha);
-    auto MM = *colMatrixFactory.createMatrix(N+3, N+3);
-
-    initializeMatricesNonEquidistant(N, T, B, MM);
-
-    auto rhs = *colMatrixFactory.createMatrix(N+3, M+1);
-
-    initializeRhs<floating>(N, M, T, pde_function_tuple, grid, rhs);
-
-    const int block_dim = M + 1;
-    NonEquidistantBlock_1D<floating> C(block_dim, B, D, MM, grid, alpha, dt, processingUnit);
-
-    BlockVector<floating> CC = C.solve(rhs, maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
-
-    auto B_row = *colMatrixFactory.createColumn(N+3);
-    for (int i = 0; i < N+3; i++)  B_row[i] = MM(N+1, i);
-    B_row.moveTo(processingUnit);
-
-    return B_row * CC;
-}
-
-
-template<class floating>
-floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<floating> processingUnit,
-                                                        const int N, const int M, const floating T, const floating alpha,
+floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<floating> processingUnit, const int N, const int M,
+                                                        const floating T, const floating alpha,
+                                                        const SpaceTimeCoeffFunction<floating>& exact_solution,
+                                                        const SpaceTimeCoeffFunction<floating>& exact_solution_dt,
+                                                        const SpaceTimeCoeffFunction<floating>& rhs_function,
                                                         const size_t maxNumberOfIterations, const size_t stepsPerIteration,
                                                         const floating accuracy, const SolvingProcedure solvingProcedure)
 {
     ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
 
-    const auto pde_function_tuple = exact_solution_to_pde_condition_functions(u_exact_f<floating>,up_exact_f<floating>, alpha);
+    const auto pde_function_tuple = exact_solution_to_pde_condition_functions(exact_solution, exact_solution_dt, rhs_function, alpha);
     const auto xx = solve_equidistant(processingUnit, N, M, T, alpha,
                                       pde_function_tuple,
                                       maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
@@ -115,7 +45,7 @@ floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<flo
     const auto grid = *colMatrixFactory.createColumn(M,  T / static_cast<floating>(M));
 
     std::vector<floating> ue(M+1);
-    ue = exactSolution(M, T, alpha, grid);
+    ue = get_exact_solution_vector(M, T, alpha, exact_solution, grid);
     auto ue_device = *colMatrixFactory.createColumn(ue.size());
     memcpy(ue_device.data(), ue.data(), ue.size()*sizeof(floating));
     ue_device.moveTo(processingUnit);
@@ -127,10 +57,13 @@ floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<flo
 template<class floating>
 floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit<floating> processingUnit, const int N, const int M,
                                                             const floating T, const floating alpha,
+                                                            const SpaceTimeCoeffFunction<floating>& exact_solution,
+                                                            const SpaceTimeCoeffFunction<floating>& exact_solution_dt,
+                                                            const SpaceTimeCoeffFunction<floating>& rhs_function,
                                                             const size_t maxNumberOfIterations, const size_t stepsPerIteration,
                                                             const floating accuracy, const SolvingProcedure solvingProcedure)
 {
-    const auto pde_function_tuple = exact_solution_to_pde_condition_functions(u_exact_f<floating>,up_exact_f<floating>, alpha);
+    const auto pde_function_tuple = exact_solution_to_pde_condition_functions(exact_solution, exact_solution_dt, rhs_function, alpha);
 
     ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
@@ -144,7 +77,7 @@ floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit
                                          pde_function_tuple,
                                          maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
     std::vector<floating> ue(M+1);
-    ue = exactSolution(M, T, alpha, grid);
+    ue = get_exact_solution_vector(M, T, alpha, exact_solution, grid);
     auto ue_device = *colMatrixFactory.createColumn(ue.size());
     memcpy(ue_device.data(), ue.data(), ue.size()*sizeof(floating));
     ue_device.moveTo(processingUnit);
@@ -154,71 +87,19 @@ floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit
 }
 
 template<class floating>
-void initializeMatricesEquidistant(const int N, const floating T,
-                                   AlgebraicMatrix<floating> &B, AlgebraicMatrix<floating> &MM)
-{
-    initializeMatricesNonEquidistant(N, T, B, MM);
-    return;
-}
-
-template<class floating>
-void initializeMatricesNonEquidistant(const int N, const floating T,
-                                      AlgebraicMatrix<floating> &B, AlgebraicMatrix<floating> &MM)
-{
-    floating dt = T / static_cast<floating>(N);
-
-    // constructing Matrix MM
-    applyTriDiagonals<floating>(1 / static_cast<floating>(6), 4 / static_cast<floating>(6), MM);
-
-    MM(0,0) = -1 / (2 * dt);
-    MM(0,1) = 0.0;
-    MM(0,2) = 1 / (2 * dt);
-    MM(N+2, N) = -1 / (2 * dt);
-    MM(N+2, N+1) = 0.0;
-    MM(N+2, N+2) = 1 / (2 * dt);
-
-    // constructing Matrix B
-    B = MM;
-
-    for (int i = 0; i < 2 ; i++ ) for (int j = 0; j < 3; j++ ) B(i,j) = 0.0;
-    for (int j = N; j < N + 3; j++ )B(N+2, j) = 0.0;
-}
-
-template<class floating>
-void initializeRhs(const int N, const int M, const floating T, const PDEFunctionTuple<floating> &pde_function_tuple,
-                   const AlgebraicVector<floating> &grid, AlgebraicMatrix<floating> &rhs)
-{
-    const auto [phi, varphi, up_exact, u_zero, rhs_function] = pde_function_tuple;
-    floating spacePoint = 0;
-    rhs_helper<floating>(spacePoint, T, up_exact, u_zero, phi, rhs[0]);
-
-    spacePoint += grid[0];
-
-    std::vector<floating> gg(N+3);
-    for (int i = 1; i < M; i++)
-    {
-        rhs_helper<floating>(spacePoint, T, up_exact, u_zero, rhs_function, rhs[i]);
-        spacePoint += grid[i];
-    }
-
-    rhs_helper<floating>(spacePoint, T, up_exact, u_zero, varphi, rhs[M]);
-
-    return;
-}
-
-template<class floating>
-std::vector<floating> exactSolution(const int M, const floating T, const floating alpha,
-                                    const AlgebraicVector<floating> &grid)
+std::vector<floating> get_exact_solution_vector(const int M, const floating T, const floating alpha,
+                                                const SpaceTimeCoeffFunction<floating>& exact_solution,
+                                                const AlgebraicVector<floating> &grid)
 {
     std::vector<floating> solution(M+1);
 
     floating spacePoint = 0;
     for (int i = 0; i < M; i++)
     {
-        solution.at(i) = u_exact_f(spacePoint, T, alpha);
+        solution.at(i) = exact_solution(spacePoint, T, alpha);
         spacePoint += grid[i];
     }
-    solution.at(M) = u_exact_f(spacePoint, T, alpha);
+    solution.at(M) = exact_solution(spacePoint, T, alpha);
 
     return solution;
 }
