@@ -20,14 +20,14 @@
  */
 enum class SolvingProcedure
 {
-    CyclicReduction,
-    PCBiCGStab,
-    BiCGStab,
-    Richardson,
-    PCRichardson
+    CyclicReduction, //!< Cyclic Reduction (only possible for space and time grids both equidistant)
+    PCBiCGStab, //!< multigrid preconditioned BiCGStab
+    BiCGStab, //!< BiCGStab
+    Jacobi, //!< Jacobi iterations (or Gauss-Seidel, if preprocessor definition GAUSS_SEIDEL is active)
+    PCJacobi //!< Multigrid preconditioned Jacobi iterations (or Gauss-Seidel,if preprocessor definition GAUSS_SEIDEL is active)
 };
 
-/**     Class EquidistantBlock_1D is used for storing the large system matrix occurring when
+/**     Class EquidistantBlock1D is used for storing the large system matrix occurring when
  *      discretizing fractional PDEs with both equidistant time and space grids using the so-called
  *      S3 formula. Also, it provides methods for efficiently calculating its solution.
  *
@@ -48,77 +48,77 @@ enum class SolvingProcedure
  *      is equal to M.
  */
 template<class floating>
-class EquidistantBlock_1D
+class EquidistantBlock1D
 {
 public:
     using SizeType = typename AlgebraicMatrix<floating>::SizeType;
 
-    /** Constructor. @param B, @param M and @param D have to be square AlgebraicMatrix, and they must have the same dimensions.
+    /** Constructor. @p B, @p M and @p D have to be square AlgebraicMatrix, and they must have the same dimensions.
      *
-     * @param[in] bdim number of row respectively column blocks
+     * @param[in] block_dim number of row respectively column blocks
      * @param[in] B matrix for off diagonal blocks
      * @param[in] D used for calculation of A, the diagonal blocks
      * @param[in] M matrix containing Dirichlet conditions
-     * @param[in] h distance between the equidistant space points
+     * @param[in] space_grid_step_size distance between the equidistant space points
      * @param[in] alpha anomalous diffusion coefficient
-     * @param[in] timeGridStepSize distance between the equidistant space points
-     * @param[in] processingUnit processingUnit with which the calculations should be performed
+     * @param[in] time_grid_step_size distance between the equidistant space points
+     * @param[in] processing_unit processing_unit with which the calculations should be performed
      */
-    EquidistantBlock_1D(const SizeType bdim,
-                        const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating h,
-                        const floating alpha, const floating timeGridStepSize, const ProcessingUnit<floating> processingUnit);
+    EquidistantBlock1D(const SizeType block_dim,
+                       const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D,
+                       const AlgebraicMatrix<floating> &M, const floating space_grid_step_size,
+                       const floating alpha, const floating time_grid_step_size,
+                       const ProcessingUnit<floating> processing_unit);
 
-
-
-    /** Constructor. @param B and @param M have to be square, and they must all have the same dimension as CoefficientMatrix @param D.
+    /** Constructor. @p B and @p M have to be square, and they must all have the same dimension as CoefficientMatrix @p D.
       *
-      * @param[in] bdim number of row respectively column blocks
+      * @param[in] block_dim number of row respectively column blocks
       * @param[in] B matrix for off diagonal blocks
       * @param[in] D used for calculation of A, the diagonal blocks
       * @param[in] M matrix containing Dirichlet conditions
-      * @param[in] h distance between the equidistant space points
+      * @param[in] space_grid_step_size distance between the equidistant space points
       * @param[in] alpha anomalous diffusion coefficient
-      * @param[in] timeGridStepSize distance between the equidistant space points
-      * @param[in] processingUnit processingUnit with which the calculations should be performed
+      * @param[in] time_grid_step_size distance between the equidistant space points
+      * @param[in] processing_unit processing_unit with which the calculations should be performed
       */
-    EquidistantBlock_1D(const SizeType bdim,
-                        const AlgebraicMatrix<floating> &B, const CoefficientMatrix<floating> &D, const AlgebraicMatrix<floating> &M, const floating h,
-                        const floating alpha, const floating timeGridStepSize, const ProcessingUnit<floating> processingUnit);
+    EquidistantBlock1D(const SizeType block_dim,
+                       const AlgebraicMatrix<floating> &B, const CoefficientMatrix<floating> &D,
+                       const AlgebraicMatrix<floating> &M, const floating space_grid_step_size,
+                       const floating alpha, const floating time_grid_step_size,
+                       const ProcessingUnit<floating> processing_unit);
 
     /**
      * Destructor
      */
-    ~EquidistantBlock_1D() = default;
+    ~EquidistantBlock1D() = default;
 
     /** Returns the order of a single (square) block.
      * @return Order of a single block.
      */
-    SizeType getNdim() const;
+    SizeType get_num_blocks() const;
 
     /** Returns block row dimension. (Equal to block column dimension, since the system is square.)
      * @return Number of blocks in a row.
      */
-    SizeType getBlockDim() const;
+    SizeType get_block_dim() const;
 
     /** Order of the square system when interpreted as a large dense matrix.
      * @return Dense system dimension.
      */
-    SizeType getDenseDim() const;
+    SizeType get_dense_dim() const;
 
-    // TODO: Rename to ContainerFactory
     /**
      * Returns the container factory which can be used to create new containers
      * on the same device with the same processing unit.
      * @return container factory
      */
-    ContainerFactory<floating> getMatrixFactory() const;
+    ContainerFactory<floating> get_container_factory() const;
 
-    // TODO: Find a better name
     /**
      * Returns the system as a dense matrix.
-     * @return Dense matrix representation stored columnwise.
+     * @return Dense matrix representation stored column-wise.
      */
-    AlgebraicMatrix<floating> copyToDense() const;
+    AlgebraicMatrix<floating> get_dense_representation() const;
 
     /**
      * Solves the auxiliary linear system using CyclicReduction, which is the recommended
@@ -156,14 +156,15 @@ public:
      * Note that BiCGStab and PCBiCGStab are not available.
      *
      * @param[in] rhs right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
-     * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
+     * @param[in] max_num_iterations maximal number of iterations (not used for CyclicReduction)
+     * @param[in] steps_per_iteration number of steps in each iteration (not used for CyclicReduction)
      * @param[in] accuracy desired absolute accuracy
-     * @param[in] solvingProcedure the solver used to solve the system
+     * @param[in] solving_procedure the solver used to solve the system
      * @return the numerical solution to the PDE as BlockVector
      */
-    BlockVector<floating> solve_pde(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const;
-
+    BlockVector<floating> solve_pde(const BlockVector<floating> &rhs, const size_t max_num_iterations,
+                                    const size_t steps_per_iteration, const floating accuracy,
+                                    const SolvingProcedure solving_procedure) const;
 
     /**
      * Solves the auxiliary linear system using CyclicReduction, which is the recommended
@@ -179,54 +180,57 @@ public:
      * Note that BiCGStab and PCBiCGStab are not available.
      *
      * @param[in] rhs right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
-     * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
+     * @param[in] max_num_iterations maximal number of iterations (not used for CyclicReduction)
+     * @param[in] steps_per_iteration number of steps in each iteration (not used for CyclicReduction)
      * @param[in] accuracy desired absolute accuracy
-     * @param[in] solvingProcedure the solver used to solve the system
+     * @param[in] solving_procedure the solver used to solve the system
      * @return the solution beta
      */
-    BlockVector<floating> solve(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const;
+    BlockVector<floating> solve(const BlockVector<floating> &rhs, const size_t max_num_iterations,
+                                const size_t steps_per_iteration, const floating accuracy,
+                                const SolvingProcedure solving_procedure) const;
 
 
 private:
-    SizeType _bdim; //!< number of block rows and block columns
+    SizeType _block_dim; //!< number of block rows and block columns
     AlgebraicMatrix<floating> _B; //!< matrix contained in the system's subdiagonal blocks
     AlgebraicMatrix<floating> _D; //!< matrix used for calculation of matrix A contained in the diagonal blocks
     AlgebraicMatrix<floating> _M; //!< Dirichlet boundary condition matrix
     floating _alpha; //!< anomalous diffusion coefficient
-    floating _timeGridStepSize; //!< step size between points of the equidistant time grid
-    floating _h; //!< step size between points of the equidistant space grid
+    floating _time_grid_step_size; //!< step size between points of the equidistant time grid
+    floating _space_grid_step_size; //!< step size between points of the equidistant space grid
     AlgebraicMatrix<floating> _A; //!< matrix contained in the system's diagonal blocks
-    ContainerFactory<floating> _colMatrixFactory; //!< factory for creating algebraic containers using suitable processing unit (e.g. CPU or GPU)
-    std::unique_ptr<EquidistantBlock_1D<floating>> _coarseSystemPtr; //!< for optimization purposes, the coarse systems for Cyclic Reduction or Multigrid are allocated at construction
+    ContainerFactory<floating> _container_factory; //!< factory for creating algebraic containers using suitable processing unit (e.g. CPU or GPU)
+    std::unique_ptr<EquidistantBlock1D<floating>> _coarse_system; //!< for optimization purposes, the coarse systems for Cyclic Reduction or Multigrid are allocated at construction
 
     /**
      * Constructor exclusively used for the cyclic reduction routine, where the matrix A is substituted by
      * a modified version in each step.
      *
-     * @param[in] bdim number of row respectively column blocks
+     * @param[in] block_dim number of row respectively column blocks
      * @param[in] B matrix for off diagonal blocks
      * @param[in] D used for calculation of A, the diagonal blocks
      * @param[in] M matrix containing Dirichlet conditions
-     * @param[in] h distance between the equidistant space points
+     * @param[in] space_grid_step_size distance between the equidistant space points
      * @param[in] alpha anomalous diffusion coefficient
-     * @param[in] timeGridStepSize distance between the equidistant space points
+     * @param[in] time_grid_step_size distance between the equidistant space points
      * @param[in] A matrix contained in the system's diagonal blocks
-     * @param[in] processingUnit processingUnit with which the calculations should be performed
+     * @param[in] processing_unit processing_unit with which the calculations should be performed
      */
-    EquidistantBlock_1D(const SizeType bdim,
-                        const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D, const AlgebraicMatrix<floating> &M,
-                        const floating h, const floating alpha, const floating timeGridStepSize,
-                        const AlgebraicMatrix<floating> &A, const ProcessingUnit<floating> processingUnit);
+    EquidistantBlock1D(const SizeType block_dim,
+                       const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D,
+                       const AlgebraicMatrix<floating> &M, const floating space_grid_step_size, const floating alpha,
+                       const floating time_grid_step_size, const AlgebraicMatrix<floating> &A,
+                       const ProcessingUnit<floating> processing_unit);
 
     /**
      * Calculates the coefficient needed in the calculation of matrix A.
      *
      * @param alpha anomalous diffusion coefficient
-     * @param timeGridStepSize distance between the equidistant space points
+     * @param time_grid_step_size distance between the equidistant space points
      * @return coefficient needed for calculation of matrix A
      */
-    static floating getSystemCoeff(const floating alpha, const floating timeGridStepSize);
+    static floating get_system_coeff(const floating alpha, const floating time_grid_step_size);
 
     /**
      * Calculate matrix A which occurs in the system's diagonals.
@@ -234,148 +238,155 @@ private:
      * @param B matrix for off diagonal blocks
      * @param D used for calculation of A, the diagonal blocks
      * @param M matrix containing Dirichlet conditions
-     * @param h distance between the equidistant space points
+     * @param space_grid_step_size distance between the equidistant space points
      * @param alpha anomalous diffusion coefficient
-     * @param timeGridStepSize distance between the equidistant space points
+     * @param time_grid_step_size distance between the equidistant space points
      * @return matrix A which is located in the system's diagonals
      */
-    AlgebraicMatrix<floating> initializeA(const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D,
-                                          const AlgebraicMatrix<floating> &M, const floating h, const floating alpha,
-                                          const floating timeGridStepSize) const;
+    AlgebraicMatrix<floating> initialize_a(const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D,
+                                           const AlgebraicMatrix<floating> &M, const floating space_grid_step_size,
+                                           const floating alpha, const floating time_grid_step_size) const;
 
     /**
      * Returns the current instance's underlying processing unit.
      * @return current processing unit
      */
-    ProcessingUnit<floating> getProcessingUnit() const;
+    ProcessingUnit<floating> get_processing_unit() const;
 
     /**
-     * Solves the current system using cyclic reduction with RHS @param f.
-     * @param scaledB scaled matrix B
+     * Solves the current system using cyclic reduction with RHS @p f.
+     * @param scaled_b scaled matrix B
      * @param f right-hand side BlockVector
      * @return the system's solution calculated with cyclic reduction
      */
-    BlockVector<floating> cyclicReduction(const AlgebraicMatrix<floating> &scaledB, const BlockVector<floating> &f) const;
+    BlockVector<floating> cyclic_reduction(const AlgebraicMatrix<floating> &scaled_b,
+                                           const BlockVector<floating> &f) const;
 
-    /** (For use with Cyclic Reduction only.) Prolongates the coarse solution BlockVector @param uc to the fine vector.
+    /** (For use with Cyclic Reduction only.) Prolongates the coarse solution BlockVector @p coarse_solution to the fine vector.
      *
      * The prolongation uses the 1D formula
-     * @f$ u_f[2*i-1] =  A^{-1}\cdot \left({ f_f[2i-1] + B\cdot (u_c[2i-2]+u_c[2i])  }\right)\enspace,@f$
-     * and the simple copy  @f$ u_f[2*i] = u_c[2*i]@f$ for fine nodes with coarse indices.
+     * @f$ u_f[2*i-1] =  A^{-1}\cdot \left({ fine_rhs[2i-1] + B\cdot (coarse_solution[2i-2]+coarse_solution[2i])  }\right)\enspace,@f$
+     * and the simple copy  @f$ u_f[2*i] = coarse_solution[2*i]@f$ for fine nodes with coarse indices.
      *
-     * @param[in] scaledB scaled matrix B
-     * @param[in] ff rhs BlockVector on fine grid
-     * @param[in] uc solution BlockVector on coarse grid
+     * @param[in] scaled_b scaled matrix B
+     * @param[in] fine_rhs rhs BlockVector on fine grid
+     * @param[in] coarse_solution solution BlockVector on coarse grid
      *
-     * @return fine vector (matrix) uf.
+     * @return fine BlockVector u_f.
      */
-    AlgebraicMatrix<floating> CRProlongation(const AlgebraicMatrix<floating> &scaledB, const AlgebraicMatrix<floating> &ff, const AlgebraicMatrix<floating> &uc) const;
+    AlgebraicMatrix<floating> cr_prolongation(const AlgebraicMatrix<floating> &scaled_b,
+                                              const AlgebraicMatrix<floating> &fine_rhs,
+                                              const AlgebraicMatrix<floating> &coarse_solution) const;
 
-    /** (For use with Cyclic Reduction only.) Restricts fine rhs vector (matrix) @p ff to the coarse vector.
+    /** (For use with Cyclic Reduction only.) Restricts fine rhs vector (matrix) @p fine_rhs to the coarse vector.
      *
      * The restriction uses the 1D formula
-     * @f$ f_c[i] = f_f[2i]+B\cdot A^{-1}\cdot (f_f[2i-1]+f_f[2i+1])@f$ and boundary condition.
+     * @f$ f_c[i] = fine_rhs[2i]+B\cdot A^{-1}\cdot (fine_rhs[2i-1]+fine_rhs[2i+1])@f$ and boundary condition.
      *
-     * @param[in] scaledB scaled matrix B
-     * @param[in] ff vector (matrix) on fine grid
+     * @param[in] scaled_b scaled matrix B
+     * @param[in] fine_rhs rhs BlockVector on fine grid
      *
-     * @return coarse rhs BlockVector fc.
+     * @return coarse rhs BlockVector f_c.
      */
-    AlgebraicMatrix<floating> CRRestriction(const AlgebraicMatrix<floating> &scaledB, const AlgebraicMatrix<floating> &ff) const;
+    AlgebraicMatrix<floating> cr_restriction(const AlgebraicMatrix<floating> &scaled_b,
+                                             const AlgebraicMatrix<floating> &fine_rhs) const;
 
     /**
      * Applies one multigrid iteration to the system.
      *
-     * @param[in] numberOfSmoothingSteps number of pre- and post-smoothing steps
+     * @param[in] num_smoothing_steps number of pre- and post-smoothing steps
      * @param[in] f right-hand side
-     * @param[in] maxNumberOfIterations maximal number of multigrid iterations
+     * @param[in] max_num_iterations maximal number of multigrid iterations
      * @param[in] accuracy absolute accuracy used for termination of the smoothing steps
-     * @param[in/out] solution solution to the system which is being updated
+     * @param[in,out] solution solution to the system which is being updated
      * @return euclidean error of the residual K * beta - rhs_f
      */
-    floating multigrid(const unsigned numberOfSmoothingSteps, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const;
+    floating multigrid(const unsigned num_smoothing_steps, const BlockVector<floating> &f,
+                       const size_t max_num_iterations, const floating accuracy,
+                       BlockVector<floating> &solution) const;
 
     /**
-     * Applies the (linear interpolation) prolongation to the coarse-grid right-hand side @param ff onto the fine grid.
-     * @param ff coarse-grid rhs
-     * @return @param ff prolongated onto the fine grid
+     * Applies the (linear interpolation) prolongation to the coarse-grid right-hand side @p coarse_rhs onto the fine grid.
+     * @param coarse_rhs coarse-grid rhs
+     * @return @p coarse_rhs prolongated onto the fine grid
      */
-    BlockVector<floating> prolongation(const BlockVector<floating> &ff) const;
+    BlockVector<floating> prolongation(const BlockVector<floating> &coarse_rhs) const;
 
     /**
-     * Applies the full restriction to the fine-grid right-hand side @param ff onto the coarse grid.
-     * @param ff fine-grid rhs
-     * @return @param ff restricted onto the coarse grid
+     * Applies the full restriction to the fine-grid right-hand side @p fine_rhs onto the coarse grid.
+     * @param fine_rhs fine-grid rhs
+     * @return @p fine_rhs restricted onto the coarse grid
      */
-    BlockVector<floating> restriction(const BlockVector<floating> &ff) const;
+    BlockVector<floating> restriction(const BlockVector<floating> &fine_rhs) const;
 
     /**
      * Returns the distance between space points in the coarse grid.
      * @return distance between coarse space grid points
      */
-    floating getReducedGrid() const;
+    floating get_reduced_grid_step_size() const;
 
     /**
      * Returns the number of blocks in each row (resp. column) of the reduced, coarse system.
      * @return number of blocks in each row of the coarse system
      */
-    SizeType getCoarseDim() const;
+    SizeType get_coarse_block_dim() const;
 
     /**
      * Initializes the coarse system and returns the pointer.
      * @return pointer to newly constructed coarse system
      */
-    std::unique_ptr<EquidistantBlock_1D<floating>> initializeCoarseSystemPtr() const;
+    std::unique_ptr<EquidistantBlock1D<floating>> initialize_coarse_system() const;
 
     /**
      * Returns the current instance's coarse system.
      * @return coarse system
      */
-    const EquidistantBlock_1D<floating>& getCoarseSystem() const;
+    const EquidistantBlock1D<floating>& get_coarse_system() const;
 
     /**
      * Performs steps of weighted block Jacobi iteration, until either the maximal number of iterations or the desired absolute
      * accuracy is reached.
      *
      * @param[in] omega relaxation parameter
-     * @param[in] f right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations performed
+     * @param[in] rhs right-hand side
+     * @param[in] max_num_iterations maximal number of iterations performed
      * @param[in] accuracy desired absolute accuracy
      * @param[in,out] solution initial solution which is being updated
-     * @return Euclidean norm of residual K*beta - rhs_f, where beta is corresponding to @param solution
+     * @return Euclidean norm of residual K*beta - rhs_f, where beta is corresponding to @p solution
      */
-    floating jacobiIteration(const floating omega, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const;
+    floating jacobi_iteration(const floating omega, const BlockVector<floating> &rhs, const size_t max_num_iterations,
+                              const floating accuracy, BlockVector<floating> &solution) const;
 
     /**
-     * Performs smoothing steps (similar to jacobiIteration, but without calculation of accuracy due to performance)
+     * Performs smoothing steps (similar to jacobi_iteration, but without calculation of accuracy due to performance)
      * to the system K*beta = rhs_f, where beta is corresponding to @param solution.
      *
      * @param[in] omega relaxation parameter
-     * @param[in] f right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations performed
+     * @param[in] rhs right-hand side
+     * @param[in] max_num_iterations maximal number of iterations performed
      * @param[in,out] solution initial solution which is being updated
      */
-    void smooth(const floating omega, const BlockVector<floating> &f, const size_t maxNumberOfIterations, BlockVector<floating> &solution) const;
+    void smooth(const floating omega, const BlockVector<floating> &rhs, const size_t max_num_iterations,
+                BlockVector<floating> &solution) const;
 
-    // TODO: Rename u to beta
     /**
-     * Calculate total residual K*beta - rhs_f.
+     * Calculate total residual K*@p beta-@p rhs.
      *
-     * @param[in] u solution
-     * @param[in] f right-hand side
-     * @return residual K*beta - rhs_f
+     * @param[in] beta approximate solution of auxiliary system
+     * @param[in] rhs right-hand side
+     * @return residual K*@p beta-@p rhs
      */
-    BlockVector<floating> calculateResidual(const BlockVector<floating> &u, const BlockVector<floating> &f) const;
+    BlockVector<floating> calculate_residual(const BlockVector<floating> &beta, const BlockVector<floating> &rhs) const;
 
-    // TODO: Rename u to beta
     /**
      * Calculate block row @param i of residual K*beta - rhs_f
      * @param[in] i block row index
-     * @param[in] u solution
-     * @param[in] f right-hand side
-     * @return @param i-th block row of residual K*beta - rhs_f
+     * @param[in] beta_i @p i-th block of approximate solution of auxiliary system
+     * @param[in] rhs right-hand side
+     * @return @p i-th block row of residual K*beta - @p rhs, must be previously allocated with same size as @p rhs[0]
      */
-    AlgebraicVector<floating> calculateRowResidual(const SizeType i, const BlockVector<floating> &u, const BlockVector<floating> &f) const;
+    AlgebraicVector<floating> calculate_row_residual(const SizeType i, const BlockVector<floating> &beta_i,
+                                                     const BlockVector<floating> &rhs) const;
 
     /**
      * Rescales the right-hand side to fit the symmetrization of the system.
@@ -385,7 +396,7 @@ private:
     BlockVector<floating> rescale_rhs(const BlockVector<floating> &rhs) const;
 };
 
-/**     Class NonEquidistantBlock_1D is used for storing the large system matrix occurring when
+/**     Class NonEquidistantBlock1D is used for storing the large system matrix occurring when
  *      discretizing fractional PDEs with equidistant time grid, but arbitrary space grid using the so-called
  *      S3 formula. Also, it provides methods for efficiently calculating its solution.
  *
@@ -409,87 +420,87 @@ private:
  *      where it is equal to M.
  */
 template<class floating>
-class NonEquidistantBlock_1D
+class NonEquidistantBlock1D
 {
 public:
     using SizeType = typename AlgebraicMatrix<floating>::SizeType;
 
-    /** Constructor. @param B, @param M and @param D have to be square AlgebraicMatrix, and they must have the same dimensions.
+    /** Constructor. @p B, @p M and @p D have to be square AlgebraicMatrix, and they must have the same dimensions.
      *
-     * @param[in] bdim number of row respectively column blocks
+     * @param[in] block_dim number of row respectively column blocks
      * @param[in] B matrix for off diagonal blocks
      * @param[in] D used for calculation of A, the diagonal blocks
      * @param[in] M matrix containing Dirichlet conditions
-     * @param[in] h AlgebraicVector containing distances between subsequent space grid points
+     * @param[in] grid AlgebraicVector containing distances between subsequent space grid points
      * @param[in] alpha anomalous diffusion coefficient
-     * @param[in] timeGridStepSize distance between the equidistant space points
+     * @param[in] time_grid_step_size distance between the equidistant space points
+     * @param[in] processing_unit processing_unit with which the calculations should be performed
+     */
+    NonEquidistantBlock1D(const SizeType block_dim,
+                          const AlgebraicMatrix<floating> &B, const CoefficientMatrix<floating> &D,
+                          const AlgebraicMatrix<floating> &M, const AlgebraicVector<floating> &grid,
+                          const floating alpha, const floating time_grid_step_size,
+                          const ProcessingUnit<floating> processing_unit);
+
+    /** Constructor. @p B and @p M have to be square, and they must all have the same dimension as
+     * CoefficientMatrix @p D.
+     *
+     * @param[in] block_dim number of row respectively column blocks
+     * @param[in] B matrix for off diagonal blocks
+     * @param[in] D used for calculation of A, the diagonal blocks
+     * @param[in] M matrix containing Dirichlet conditions
+     * @param[in] grid AlgebraicVector containing distances between subsequent space grid points
+     * @param[in] alpha anomalous diffusion coefficient
+     * @param[in] time_grid_step_size distance between the equidistant space points
      * @param[in] processingUnit processingUnit with which the calculations should be performed
      */
-    NonEquidistantBlock_1D(const SizeType bdim,
-                           const AlgebraicMatrix<floating> &B, const CoefficientMatrix<floating> &D,
-                           const AlgebraicMatrix<floating> &M,
-                           const AlgebraicVector<floating> &h, const floating alpha, const floating timeGridStepSize,
-                           const ProcessingUnit<floating> processingUnit);
-
-    /** Constructor. @param B and @param M have to be square, and they must all have the same dimension as CoefficientMatrix @param D.
-      *
-      * @param[in] bdim number of row respectively column blocks
-      * @param[in] B matrix for off diagonal blocks
-      * @param[in] D used for calculation of A, the diagonal blocks
-      * @param[in] M matrix containing Dirichlet conditions
-      * @param[in] h AlgebraicVector containing distances between subsequent space grid points
-      * @param[in] alpha anomalous diffusion coefficient
-      * @param[in] timeGridStepSize distance between the equidistant space points
-      * @param[in] processingUnit processingUnit with which the calculations should be performed
-      */
-    NonEquidistantBlock_1D(const SizeType bdim,
-                           const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D, const AlgebraicMatrix<floating> &M,
-                           const AlgebraicVector<floating> &h, const floating alpha, const floating timeGridStepSize,
-                           const ProcessingUnit<floating> processingUnit);
+    NonEquidistantBlock1D(const SizeType block_dim,
+                          const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D,
+                          const AlgebraicMatrix<floating> &M, const AlgebraicVector<floating> &grid,
+                          const floating alpha, const floating time_grid_step_size,
+                          const ProcessingUnit<floating> processingUnit);
 
     /**
      * Destructor.
      */
-    ~NonEquidistantBlock_1D() = default;
+    ~NonEquidistantBlock1D() = default;
 
     /** Returns the order of a single (square) block.
      * @return Order of a single block.
      */
-    SizeType getNdim() const;
+    SizeType get_num_blocks() const;
 
     /** Returns block row dimension. (Equal to block column dimension, since the system is square.)
      * @return Number of blocks in a row.
      */
-    SizeType getBlockDim() const;
+    SizeType get_block_dim() const;
 
     /** Order of the square system when interpreted as a large dense matrix.
      * @return Dense system dimension.
      */
-    SizeType getDenseDim() const;
+    SizeType get_dense_dim() const;
 
-    // TODO: Rename to ContainerFactory
     /**
      * Returns the container factory which can be used to create new containers
      * on the same device with the same processing unit.
      * @return container factory
      */
-    ContainerFactory<floating> getMatrixFactory() const;
+    ContainerFactory<floating> get_container_factory() const;
 
-    // TODO: Find a better name
     /**
      * Returns the system as a dense matrix.
      * @return Dense matrix representation stored columnwise.
      */
-    AlgebraicMatrix<floating> copyToDense() const;
+    AlgebraicMatrix<floating> get_dense_representation() const;
 
-    // TODO: rename u to beta
     /**
-     * Performs the multiplication K*beta and returns it in @param result.
-     * Note that @param result has to have as many elements as @param u.
-     * @param[in] u solution
+     * Performs the multiplication K*@p beta, where K is the auxiliary
+     * system stored in this class, and returns it in @p result.
+     * Note that @p result has to have as many elements as @p beta.
+     * @param[in] beta solution
      * @param[out] result result of multiplication
      */
-    void mult(const BlockVector<floating> &u, BlockVector<floating> &result) const;
+    void mult(const BlockVector<floating> &beta, BlockVector<floating> &result) const;
 
     /**
      * Solves the auxiliary linear system using a SolvingProcedure with the given parameters,
@@ -513,153 +524,161 @@ public:
      * Note that CyclicReduction is not available.
      *
      * @param[in] rhs right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
-     * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
+     * @param[in] max_num_iterations maximal number of iterations (not used for CyclicReduction)
+     * @param[in] steps_per_iteration number of steps in each iteration (not used for CyclicReduction)
      * @param[in] accuracy desired absolute accuracy
-     * @param[in] solvingProcedure the solver used to solve the system
+     * @param[in] solving_procedure the solver used to solve the system
      * @return the numerical solution to the PDE as BlockVector
      */
-    BlockVector<floating> solve_pde(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const;
+    BlockVector<floating> solve_pde(const BlockVector<floating> &rhs, const size_t max_num_iterations,
+                                    const size_t steps_per_iteration, const floating accuracy,
+                                    const SolvingProcedure solving_procedure) const;
 
     /**
      * Solves the auxiliary linear system K * beta = rhs for beta using a SolvingProcedure with the given parameters.
      * Note that CyclicReduction is not available.
      *
      * @param[in] rhs right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
-     * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
+     * @param[in] max_num_iterations maximal number of iterations (not used for CyclicReduction)
+     * @param[in] steps_per_iteration number of steps in each iteration (not used for CyclicReduction)
      * @param[in] accuracy desired absolute accuracy
-     * @param[in] solvingProcedure the solver used to solve the system
+     * @param[in] solving_procedure the solver used to solve the system
      * @return the solution beta
      */
-    BlockVector<floating> solve(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const;
+    BlockVector<floating> solve(const BlockVector<floating> &rhs, const size_t max_num_iterations,
+                                const size_t steps_per_iteration, const floating accuracy,
+                                const SolvingProcedure solving_procedure) const;
 
 private:
-    SizeType _bdim; //!< number of block rows and block columns
+    SizeType _block_dim; //!< number of block rows and block columns
     AlgebraicMatrix<floating> _B; //!< matrix contained in the system's subdiagonal blocks
     AlgebraicMatrix<floating> _D; //!< matrix used for calculation of matrix A contained in the diagonal blocks
     AlgebraicMatrix<floating> _M; //!< Dirichlet boundary condition matrix
     floating _alpha; //!< anomalous diffusion coefficient
-    floating _timeGridStepSize; //!< step size between points of the equidistant time grid
-    AlgebraicVector<floating> _h; //!< vector of differences between points of the equidistant space grid.
+    floating _time_grid_step_size; //!< step size between points of the equidistant time grid
+    AlgebraicVector<floating> _grid; //!< vector of differences between points of the space grid.
     AlgebraicMatrix<floating> _C; //!< matrix used for approximation of the matrices A_i occurring in the system's diagonals
-    ContainerFactory<floating> _colMatrixFactory; //!< factory for creating algebraic containers using suitable processing unit (e.g. CPU or GPU)
-    std::unique_ptr<NonEquidistantBlock_1D<floating>> _coarseSystemPtr; //!< for optimization purposes, the coarse system for Multigrid is allocated at construction
-    mutable AlgebraicMatrix<floating> _vectorBuffer; //!< buffer where the individual columns can be used independently internally
+    ContainerFactory<floating> _container_factory; //!< factory for creating algebraic containers using suitable processing unit (e.g. CPU or GPU)
+    std::unique_ptr<NonEquidistantBlock1D<floating>> _coarse_system; //!< for optimization purposes, the coarse system for Multigrid is allocated at construction
+    mutable AlgebraicMatrix<floating> _vector_buffer; //!< buffer where the individual columns can be used independently internally
     mutable AlgebraicVector<floating> _host_h; //!< the vector of space grid increments is stored on the CPU separately, because it is needed there very often
-    mutable AlgebraicMatrix<floating> _buffer1; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
-    mutable AlgebraicMatrix<floating> _buffer2; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
-    mutable AlgebraicMatrix<floating> _buffer3; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
-    mutable AlgebraicMatrix<floating> _buffer4; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
-    mutable AlgebraicMatrix<floating> _buffer5; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
-    mutable AlgebraicMatrix<floating> _buffer6; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
-    mutable AlgebraicMatrix<floating> _coarseBuffer1; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of coarse residuals etc.
-    mutable AlgebraicMatrix<floating> _coarseBuffer2; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of coarse residuals etc.
+    mutable AlgebraicMatrix<floating> _buffer_1; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
+    mutable AlgebraicMatrix<floating> _buffer_2; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
+    mutable AlgebraicMatrix<floating> _buffer_3; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
+    mutable AlgebraicMatrix<floating> _buffer_4; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
+    mutable AlgebraicMatrix<floating> _buffer_5; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
+    mutable AlgebraicMatrix<floating> _buffer_6; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of residuals etc.
+    mutable AlgebraicMatrix<floating> _coarse_buffer_1; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of coarse residuals etc.
+    mutable AlgebraicMatrix<floating> _coarse_buffer_2; //!< buffer holding an AlgebraicMatrix/BlockVector for storage of coarse residuals etc.
 
     /**
-     * Applies steps of BiCGStab to the system K*beta = rhs_f, where beta is corresponding to @param solution,
+     * Applies steps of BiCGStab to the system K*beta = rhs, where beta is corresponding to @p solution,
      * until either the maximal number of iterations or the desired absolute accuracy is reached.
      *
-     * @param[in] f right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations performed
+     * @param[in] rhs right-hand side
+     * @param[in] max_num_iterations maximal number of iterations performed
      * @param[in] accuracy desired absolute accuracy
      * @param[in,out] solution solution initial solution which is being updated
-     * @return Euclidean norm of residual K*beta - rhs_f, where beta is corresponding to @param solution
+     * @return Euclidean norm of residual K*beta-@p rhs, where beta is corresponding to @p solution
      */
-    floating biCGStab(const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const;
+    floating biCGStab(const BlockVector<floating> &rhs, const size_t max_num_iterations, const floating accuracy,
+                      BlockVector<floating> &solution) const;
 
     /**
-     * Applies steps of multigrid-preconditioned BiCGStab to the system K*beta = rhs_f, where beta is corresponding
+     * Applies steps of multigrid-preconditioned BiCGStab to the system K*beta = rhs, where beta is corresponding
      * to @param solution, until either the maximal number of iterations or the desired absolute accuracy is reached.
      *
-     * @param[in] f right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations performed
+     * @param[in] rhs right-hand side
+     * @param[in] max_num_iterations maximal number of iterations performed
      * @param[in] accuracy desired absolute accuracy
      * @param[in,out] solution solution initial solution which is being updated
-     * @return Euclidean norm of residual K*beta - rhs_f, where beta is corresponding to @param solution
+     * @return Euclidean norm of residual K*beta - rhs, where beta is corresponding to @p solution
      */
-    floating PCbiCGStab(const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const;
+    floating PCbiCGStab(const BlockVector<floating> &rhs, const size_t max_num_iterations, const floating accuracy,
+                        BlockVector<floating> &solution) const;
 
     /**
      * Applies one multigrid iteration to the system.
      *
-     * @param[in] numberOfSmoothingSteps number of pre- and post-smoothing steps
-     * @param[in] f right-hand side
-     * @param[in] maxNumberOfIterations maximal number of multigrid iterations
+     * @param[in] num_smoothing_steps number of pre- and post-smoothing steps
+     * @param[in] rhs right-hand side
+     * @param[in] max_num_iterations maximal number of multigrid iterations
      * @param[in] accuracy absolute accuracy used for termination of the smoothing steps
      * @param[in/out] solution solution to the system which is being updated
      */
-    void multigrid(const unsigned numberOfSmoothingSteps, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const;
+    void multigrid(const unsigned num_smoothing_steps, const BlockVector<floating> &rhs,
+                   const size_t max_num_iterations, const floating accuracy, BlockVector<floating> &solution) const;
 
     /**
-     * Applies the (linear interpolation) prolongation to the coarse-grid right-hand side @param ff onto the fine grid.
-     * @param ff coarse-grid rhs
-     * @return @param ff prolongated onto the fine grid
+     * Applies the (linear interpolation) prolongation to the coarse-grid right-hand side @p coarse_rhs onto the fine grid.
+     * @param[in] coarse_rhs coarse-grid rhs
+     * @param[out] fine_rhs @p coarse_rhs prolongated onto the fine grid, must be previously allocated
      */
-    void prolongation(const BlockVector<floating> &ff, BlockVector<floating> &solution) const;
+    void prolongation(const BlockVector<floating> &coarse_rhs, BlockVector<floating> &fine_rhs) const;
 
     /**
-     * Applies the full restriction to the fine-grid right-hand side @param ff onto the coarse grid.
-     * @param ff fine-grid rhs
-     * @return @param ff restricted onto the coarse grid
+     * Applies the full restriction to the fine-grid right-hand side @p fine_rhs onto the coarse grid.
+     * @param fine_rhs fine-grid rhs
+     * @param coarse_rhs @p fine_rhs restricted onto the coarse grid, must be previously allocated
      */
-    void restriction(const BlockVector<floating> &ff, BlockVector<floating> &ffOnCoarseGrid) const;
+    void restriction(const BlockVector<floating> &fine_rhs, BlockVector<floating> &coarse_rhs) const;
 
     /**
      * Returns the distance between space points in the coarse grid.
      * @return distance between coarse space grid points
      */
-    AlgebraicVector<floating> getReducedGrid() const;
+    AlgebraicVector<floating> get_reduced_grid() const;
 
     /**
      * Returns the number of blocks in each row (resp. column) of the reduced, coarse system.
      * @return number of blocks in each row of the coarse system
      */
-    SizeType getCoarseDim() const;
+    SizeType get_coarse_dim() const;
 
     /**
      * Initializes the coarse system and returns the pointer.
      * @return pointer to newly constructed coarse system
      */
-    std::unique_ptr<NonEquidistantBlock_1D<floating>> initializeCoarseSystemPtr() const;
+    std::unique_ptr<NonEquidistantBlock1D<floating>> initialize_coarse_system() const;
 
     /**
      * Returns the current instance's coarse system.
      * @return coarse system
      */
-    const NonEquidistantBlock_1D<floating>& getCoarseSystem() const;
+    const NonEquidistantBlock1D<floating>& get_coarse_system() const;
 
     /**
      * Performs smoothing steps (weighted block Jacobi iteration)
-     * to the system K*beta = rhs_f, where beta is corresponding to @param solution,
+     * to the system K*beta = @p rhs, where beta is corresponding to @p solution,
      * until the maximal number of iterations is reached
      *
      * @param[in] omega relaxation parameter
-     * @param[in] f right-hand side
-     * @param[in] maxNumberOfIterations maximal number of iterations performed
+     * @param[in] rhs right-hand side
+     * @param[in] max_num_iterations maximal number of iterations performed
      * @param[in,out] solution initial solution which is being updated
      */
-    void smooth(const floating omega, const BlockVector<floating> &f, const size_t maxNumberOfIterations, BlockVector<floating> &solution) const;
+    void smooth(const floating omega, const BlockVector<floating> &rhs, const size_t max_num_iterations,
+                BlockVector<floating> &solution) const;
 
-    // TODO: Rename u to beta
     /**
-     * Calculate total residual K*beta - rhs_f.
+     * Calculate total residual K*@p beta-@p rhs.
      *
-     * @param[in] u solution
-     * @param[in] f right-hand side
-     * @return residual K*beta - rhs_f
+     * @param[in] beta approximate solution of auxiliary system
+     * @param[in] rhs right-hand side
+     * @param[out] residual K*@p beta-@p rhs, must be previously allocated with same size as @p rhs
      */
-    void calculateResidual(const BlockVector<floating> &u, const BlockVector<floating> &f, BlockVector<floating> &residual) const;
+    void calculate_residual(const BlockVector<floating> &beta, const BlockVector<floating> &rhs,
+                            BlockVector<floating> &residual) const;
 
-    // TODO: Rename u to beta
     /**
      * Calculate block row @param i of residual K*beta - rhs_f
      * @param[in] i block row index
-     * @param[in] u solution
-     * @param[in] f right-hand side
-     * @return @param i-th block row of residual K*beta - rhs_f
+     * @param[in] beta_i @p i-th block of approximate solution of auxiliary system
+     * @param[in] rhs right-hand side
+     * @param[out] @p i-th block row of residual K*beta - @p rhs, must be previously allocated with same size as @p rhs[0]
      */
-    void calculateRowResidual(const SizeType i, const BlockVector<floating> &u, const BlockVector<floating> &f, AlgebraicVector<floating> &residual) const;
+    void calculate_row_residual(const SizeType i, const BlockVector<floating> &beta_i, const BlockVector<floating> &rhs,
+                                AlgebraicVector<floating> &residual) const;
 
     /**
     * Calculates the coefficient needed in the calculation of matrix A.
@@ -668,34 +687,31 @@ private:
     * @param timeGridStepSize distance between the equidistant space points
     * @return coefficient needed for calculation of matrix A
     */
-    floating getSystemCoeff() const;
+    floating get_system_coeff() const;
 
     /**
      * Calculate matrix C, approximating the matrices A_i which occur in the system's diagonals.
      * @return matrix C
      */
-    AlgebraicMatrix<floating> initializeC() const;
+    AlgebraicMatrix<floating> initialize_c() const;
 
     /**
      * Returns the current instance's underlying processing unit.
      * @return current processing unit
      */
-    ProcessingUnit<floating> getProcessingUnit() const;
+    ProcessingUnit<floating> get_processing_unit() const;
 
     /**
      * For the approximation of matrices A_i which occur in the system's diagonals,
      * matrix C is computed, needing a preconditioner depending on all space grid increments h_i.
-     * @param h vector of space grid increments
+     * @param grid vector of space grid increments
      * @return maximal entry max_i (h_i)
      */
-    floating get_h_preconditioner(const AlgebraicVector<floating> &h) const;
-
-    NonEquidistantBlock_1D() = default;
+    floating get_grid_preconditioner(const AlgebraicVector<floating> &grid) const;
 
     /**
      * Rescales the right-hand side to fit the symmetrization of the system.
-     * @param rhs right-hand side
-     * @return rescaled right-hand side
+     * @param[in/out] rhs right-hand side being rescaled
      */
     void rescale_rhs(BlockVector<floating> &rhs) const;
 };

@@ -100,24 +100,24 @@ using PDEFunctionTuple = std::tuple<TimeFunction<floating>,
  *        where i is in [[1, N+1]] and j is in [[0, M]].
  *
  * @tparam floating floating point type
- * @param[in] processingUnit processingUnit with which the calculations should be performed
+ * @param[in] processing_unit processing_unit with which the calculations should be performed
  * @param[in] N number of time intervals in the equidistant time grid
  * @param[in] M number of space intervals in the equidistant space grid
  * @param[in] T end of time horizon
  * @param[in] alpha anomalous diffusion coefficient
  * @param[in] pde_function_tuple the input functions (containing boundary conditions, right-hand side function, etc.) bundled as a tuple
- * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
- * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
+ * @param[in] max_num_iterations maximal number of iterations (not used for CyclicReduction)
+ * @param[in] steps_per_iteration number of steps in each iteration (not used for CyclicReduction)
  * @param[in] accuracy desired absolute accuracy
- * @param[in] solvingProcedure the solver used to solve the system
+ * @param[in] solving_procedure the solver used to solve the system
  * @return the numerical solution to the PDE as BlockVector
  */
 template<class floating>
-BlockVector<floating> solve_equidistant(const ProcessingUnit<floating> processingUnit,
-                                            const int N, const int M, const floating T, const floating alpha,
-                                            const PDEFunctionTuple<floating>& pde_function_tuple,
-                                            const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                            const floating accuracy, const SolvingProcedure solvingProcedure);
+BlockVector<floating> solve_equidistant(const ProcessingUnit<floating> processing_unit,
+                                        const int N, const int M, const floating T, const floating alpha,
+                                        const PDEFunctionTuple<floating>& pde_function_tuple,
+                                        const size_t max_num_iterations, const size_t steps_per_iteration,
+                                        const floating accuracy, const SolvingProcedure solving_procedure);
 
 /**
  * Function solve_equidistant returns the solution matrix of the fractional PDE
@@ -141,25 +141,25 @@ BlockVector<floating> solve_equidistant(const ProcessingUnit<floating> processin
  *        where i is in [[1, N+1]] and j is in [[0, M]].
  *
  * @tparam floating floating point type
- * @param[in] processingUnit processingUnit with which the calculations should be performed
+ * @param[in] processing_unit processing_unit with which the calculations should be performed
  * @param[in] N number of time intervals in the time grid
  * @param[in] T end of time horizon
  * @param[in] alpha anomalous diffusion coefficient
  * @param[in] grid the vector of space grid interval lenghts
  * @param[in] pde_function_tuple the input functions (containing boundary conditions, right-hand side function, etc.) bundled as a tuple
- * @param[in] maxNumberOfIterations maximal number of iterations (not used for CyclicReduction)
- * @param[in] stepsPerIteration number of steps in each iteration (not used for CyclicReduction)
+ * @param[in] max_num_iterations maximal number of iterations (not used for CyclicReduction)
+ * @param[in] steps_per_iteration number of steps in each iteration (not used for CyclicReduction)
  * @param[in] accuracy desired absolute accuracy
- * @param[in] solvingProcedure the solver used to solve the system
+ * @param[in] solving_procedure the solver used to solve the system
  * @return the numerical solution to the PDE as BlockVector
  */
 template<class floating>
-BlockVector<floating> solve_nonequidistant(const ProcessingUnit<floating> processingUnit,
-                                               const int N, const floating T, const floating alpha,
-                                               const AlgebraicVector<floating>& grid,
-                                               const PDEFunctionTuple<floating>& pde_function_tuple,
-                                               const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                               const floating accuracy, const SolvingProcedure solvingProcedure);
+BlockVector<floating> solve_nonequidistant(const ProcessingUnit<floating> processing_unit,
+                                           const int N, const floating T, const floating alpha,
+                                           const AlgebraicVector<floating>& grid,
+                                           const PDEFunctionTuple<floating>& pde_function_tuple,
+                                           const size_t max_num_iterations, const size_t steps_per_iteration,
+                                           const floating accuracy, const SolvingProcedure solving_procedure);
 
 /**
  * Calculates the system matrices @p B and @p MM
@@ -200,7 +200,7 @@ void initialize_rhs(const int N, const floating T, const PDEFunctionTuple<floati
  * @return 2^x
  */
 template<class T, enable_if_is_integral<T> = true>
-static constexpr T twoToThe(T const x);
+static constexpr T two_to_the(T const x);
 
 /** Generates an equidistant vector having @p N elements from interval [@p a, @p b].
  *

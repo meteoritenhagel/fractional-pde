@@ -76,7 +76,7 @@ floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<flo
  * CyclicReduction is not a supported solver.
  *
  * @tparam floating floating point type
- * @param[in] processingUnit processingUnit with which the calculations should be performed
+ * @param[in] processing_unit processing_unit with which the calculations should be performed
  * @param[in] N number of time intervals in the equidistant time grid
  * @param[in] M number of space intervals in the non-equidistant space grid
  * @param[in] T end of time horizon
@@ -84,20 +84,20 @@ floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<flo
  * @param[in] exact_solution the function returning the PDE's exact solution u(x, t, alpha)
  * @param[in] exact_solution_dt time derivative of @p exact_solution
  * @param[in] rhs_function the fractional PDE's right-hand side function f(x, t)
- * @param[in] maxNumberOfIterations maximal number of iterations
- * @param[in] stepsPerIteration number of steps in each iteration
+ * @param[in] max_num_iterations maximal number of iterations
+ * @param[in] steps_per_iteration number of steps in each iteration
  * @param[in] accuracy desired absolute accuracy
- * @param[in] solvingProcedure the solver used to solve the system
+ * @param[in] solving_procedure the solver used to solve the system
  * @return the maximum distance between the exact solution vector and the numerical solution vector
  */
 template<class floating>
-floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit<floating> processingUnit, const int N, const int M,
+floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit<floating> processing_unit, const int N, const int M,
                                                             const floating T, const floating alpha,
                                                             const SpaceTimeCoeffFunction<floating>& exact_solution,
                                                             const SpaceTimeCoeffFunction<floating>& exact_solution_dt,
                                                             const SpaceTimeCoeffFunction<floating>& rhs_function,
-                                                            const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                                            const floating accuracy, const SolvingProcedure solvingProcedure);
+                                                            const size_t max_num_iterations, const size_t steps_per_iteration,
+                                                            const floating accuracy, const SolvingProcedure solving_procedure);
 
 /**
  * Gets the exact solution for all space points in the @p grid,
@@ -126,7 +126,7 @@ AlgebraicVector<floating> get_exact_solution_vector(const floating T, const floa
  * @param[in,out] grid grid, must be allocated and nonempty
  */
 template<class floating>
-void getGeneralGrid(AlgebraicVector<floating>& grid);
+void get_general_grid(AlgebraicVector<floating>& grid);
 
 #include "demo.hpp"
 

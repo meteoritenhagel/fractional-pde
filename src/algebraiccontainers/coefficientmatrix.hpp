@@ -25,21 +25,21 @@ typename CoefficientMatrix<floating>::SizeType CoefficientMatrix<floating>::size
 }
 
 template<class floating>
-ProcessingUnit<floating> CoefficientMatrix<floating>::getProcessingUnit() const
+ProcessingUnit<floating> CoefficientMatrix<floating>::get_processing_unit() const
 {
-    return _D.getProcessingUnit();
+    return _D.get_processing_unit();
 }
 
 template<class floating>
-ContainerFactory<floating> CoefficientMatrix<floating>::getColMatrixFactory() const
+ContainerFactory<floating> CoefficientMatrix<floating>::get_container_factory() const
 {
-    return _D.getMatrixFactory();
+    return _D.get_container_factory();
 }
 
 template<class floating>
 AlgebraicMatrix<floating> CoefficientMatrix<floating>::copyToDense() const
 {
-    auto denseMatrix = *getColMatrixFactory().createMatrix(size(), size());
+    auto denseMatrix = *get_container_factory().createMatrix(size(), size());
 
     for (SizeType i = size()-2; i >= 2; --i)
     {
@@ -77,7 +77,7 @@ AlgebraicVector<floating> CoefficientMatrix<floating>::operator*(const Algebraic
 {
     assert(this->size() == rhs.size() && "ERROR: Dimension mismatch. Cannot perform multiplication.");
     const auto N = size()-3;
-    auto result = *getColMatrixFactory().createColumn(size());
+    auto result = *get_container_factory().createColumn(size());
 
     for (SizeType i = N+1; i >= 2; --i)
     {

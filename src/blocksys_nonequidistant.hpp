@@ -3,41 +3,42 @@
 #endif
 
 template<class floating>
-NonEquidistantBlock_1D<floating>::NonEquidistantBlock_1D(const SizeType bdim,
-                                                         const AlgebraicMatrix<floating> &B,
-                                                         const CoefficientMatrix<floating> &D,
-                                                         const AlgebraicMatrix<floating> &M,
-                                                         const AlgebraicVector<floating> &h, const floating alpha,
-                                                         const floating timeGridStepSize,
-                                                         const ProcessingUnit<floating> processingUnit)
-        : NonEquidistantBlock_1D(bdim, B, D.copyToDense(), M, h, alpha, timeGridStepSize, processingUnit) {}
+NonEquidistantBlock1D<floating>::NonEquidistantBlock1D(const SizeType block_dim,
+                                                       const AlgebraicMatrix<floating> &B,
+                                                       const CoefficientMatrix<floating> &D,
+                                                       const AlgebraicMatrix<floating> &M,
+                                                       const AlgebraicVector<floating> &grid, const floating alpha,
+                                                       const floating time_grid_step_size,
+                                                       const ProcessingUnit<floating> processing_unit)
+        : NonEquidistantBlock1D(block_dim, B, D.copyToDense(), M, grid, alpha, time_grid_step_size, processing_unit) {}
 
 template<class floating>
-NonEquidistantBlock_1D<floating>::NonEquidistantBlock_1D(const SizeType bdim,
-                                                         const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D,
-                                                         const AlgebraicMatrix<floating> &M,
-                                                         const AlgebraicVector<floating> &h, const floating alpha,
-                                                         const floating timeGridStepSize,
-                                                         const ProcessingUnit<floating> processingUnit)
-        : _bdim(bdim), _B(B), _D(D), _M(M), _alpha(alpha), _timeGridStepSize(timeGridStepSize), _h(h),
-          _C(initializeC()), _colMatrixFactory(processingUnit), _coarseSystemPtr(std::move(initializeCoarseSystemPtr())),
-          _vectorBuffer(*getMatrixFactory().createMatrix(getNdim(), 10)),
-          _host_h(*ContainerFactory(static_cast<ProcessingUnit<floating>>(std::make_shared<CPU<floating>>())).createColumn(getNdim())),
-          _buffer1(*getMatrixFactory().createMatrix(getNdim(), getBlockDim())),
-          _buffer2(*getMatrixFactory().createMatrix(getNdim(), getBlockDim())),
-          _buffer3(*getMatrixFactory().createMatrix(getNdim(), getBlockDim())),
-          _buffer4(*getMatrixFactory().createMatrix(getNdim(), getBlockDim())),
-          _buffer5(*getMatrixFactory().createMatrix(getNdim(), getBlockDim())),
-          _buffer6(*getMatrixFactory().createMatrix(getNdim(), getBlockDim())),
-          _coarseBuffer1(*getMatrixFactory().createMatrix(getNdim(), getCoarseDim())),
-          _coarseBuffer2(*getMatrixFactory().createMatrix(getNdim(), getCoarseDim()))
+NonEquidistantBlock1D<floating>::NonEquidistantBlock1D(const SizeType block_dim,
+                                                       const AlgebraicMatrix<floating> &B, const AlgebraicMatrix<floating> &D,
+                                                       const AlgebraicMatrix<floating> &M,
+                                                       const AlgebraicVector<floating> &grid, const floating alpha,
+                                                       const floating time_grid_step_size,
+                                                       const ProcessingUnit<floating> processingUnit)
+        : _block_dim(block_dim), _B(B), _D(D), _M(M), _alpha(alpha), _time_grid_step_size(time_grid_step_size), _grid(grid),
+          _C(initialize_c()), _container_factory(processingUnit), _coarse_system(std::move(initialize_coarse_system())),
+          _vector_buffer(*get_container_factory().createMatrix(get_num_blocks(), 10)),
+          _host_h(*ContainerFactory(static_cast<ProcessingUnit<floating>>(std::make_shared<CPU<floating>>())).createColumn(
+                  get_num_blocks())),
+          _buffer_1(*get_container_factory().createMatrix(get_num_blocks(), get_block_dim())),
+          _buffer_2(*get_container_factory().createMatrix(get_num_blocks(), get_block_dim())),
+          _buffer_3(*get_container_factory().createMatrix(get_num_blocks(), get_block_dim())),
+          _buffer_4(*get_container_factory().createMatrix(get_num_blocks(), get_block_dim())),
+          _buffer_5(*get_container_factory().createMatrix(get_num_blocks(), get_block_dim())),
+          _buffer_6(*get_container_factory().createMatrix(get_num_blocks(), get_block_dim())),
+          _coarse_buffer_1(*get_container_factory().createMatrix(get_num_blocks(), get_coarse_dim())),
+          _coarse_buffer_2(*get_container_factory().createMatrix(get_num_blocks(), get_coarse_dim()))
 {
     assert(_B.isSquare() && _M.isSquare());
     assert(_B.getNrows() == _D.getNrows());
     assert(_B.getNrows() == _M.getNrows());
     assert(_B.getNcols() == _M.getNcols());
 
-    assert(_h.size() == _bdim-1);
+    assert(_grid.size() == _block_dim - 1);
 
     // Move everything to device:
     _B.moveTo(processingUnit);
@@ -45,10 +46,10 @@ NonEquidistantBlock_1D<floating>::NonEquidistantBlock_1D(const SizeType bdim,
     _D.moveTo(processingUnit);
     _M.moveTo(processingUnit);
 
-    // _h is used in coefficients only, which must be on the CPU
-    _h.moveTo(std::make_shared<CPU<floating>>());
-    _host_h = _h;
-    _h.moveTo(processingUnit);
+    // _space_grid_step_size is used in coefficients only, which must be on the CPU
+    _grid.moveTo(std::make_shared<CPU<floating>>());
+    _host_h = _grid;
+    _grid.moveTo(processingUnit);
 
 
     // calculate inverses for multigrid
@@ -57,35 +58,35 @@ NonEquidistantBlock_1D<floating>::NonEquidistantBlock_1D(const SizeType bdim,
 }
 
 template<class floating>
-typename NonEquidistantBlock_1D<floating>::SizeType NonEquidistantBlock_1D<floating>::getNdim() const
+typename NonEquidistantBlock1D<floating>::SizeType NonEquidistantBlock1D<floating>::get_num_blocks() const
 {
     return _B.getNrows();
 }
 
 template<class floating>
-typename NonEquidistantBlock_1D<floating>::SizeType NonEquidistantBlock_1D<floating>::getBlockDim() const
+typename NonEquidistantBlock1D<floating>::SizeType NonEquidistantBlock1D<floating>::get_block_dim() const
 {
-    return _bdim;
+    return _block_dim;
 }
 
 template<class floating>
-typename NonEquidistantBlock_1D<floating>::SizeType NonEquidistantBlock_1D<floating>::getDenseDim() const
+typename NonEquidistantBlock1D<floating>::SizeType NonEquidistantBlock1D<floating>::get_dense_dim() const
 {
-    return getBlockDim() * getNdim();
+    return get_block_dim() * get_num_blocks();
 }
 
 template<class floating>
-ContainerFactory<floating> NonEquidistantBlock_1D<floating>::getMatrixFactory() const
+ContainerFactory<floating> NonEquidistantBlock1D<floating>::get_container_factory() const
 {
-    return _colMatrixFactory;
+    return _container_factory;
 }
 
 template<class floating>
-BlockVector<floating> NonEquidistantBlock_1D<floating>::solve_pde(const BlockVector<floating> &rhs,
-                                                                  const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy,
-                                                                  const SolvingProcedure solvingProcedure) const
+BlockVector<floating> NonEquidistantBlock1D<floating>::solve_pde(const BlockVector<floating> &rhs,
+                                                                 const size_t max_num_iterations, const size_t steps_per_iteration, const floating accuracy,
+                                                                 const SolvingProcedure solving_procedure) const
 {
-    auto pde_solution = solve(rhs, maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
+    auto pde_solution = solve(rhs, max_num_iterations, steps_per_iteration, accuracy, solving_procedure);
     const auto M = pde_solution.getNrows();
     const auto N = pde_solution.getNcols();
 
@@ -96,21 +97,21 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve_pde(const BlockVec
 }
 
 template<class floating>
-BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(const BlockVector<floating> &rhs, const size_t maxNumberOfIterations, const size_t stepsPerIteration, const floating accuracy, const SolvingProcedure solvingProcedure) const
+BlockVector<floating> NonEquidistantBlock1D<floating>::solve(const BlockVector<floating> &rhs, const size_t max_num_iterations, const size_t steps_per_iteration, const floating accuracy, const SolvingProcedure solving_procedure) const
 {
-    const SizeType N = getNdim();
-    const SizeType M = getBlockDim();
+    const SizeType N = get_num_blocks();
+    const SizeType M = get_block_dim();
 
     auto rhs_copy(rhs);
-    rhs_copy.moveTo(getProcessingUnit());
+    rhs_copy.moveTo(get_processing_unit());
 
     // Since we work with the symmetrized system, also rhs must be rescaled appropiately
     rescale_rhs(rhs_copy);
 
-    BlockVector<floating> solution = *getMatrixFactory().createMatrix(N, M);
+    BlockVector<floating> solution = *get_container_factory().createMatrix(N, M);
 
     auto residual{solution};
-    calculateResidual(solution, rhs_copy, residual);
+    calculate_residual(solution, rhs_copy, residual);
 
     std::cout << "initial system error: " << residual.getEuclidean() << std::endl;
 
@@ -124,31 +125,31 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(const BlockVector<
     size_t n = 0;
     do
     {
-        switch(solvingProcedure)
+        switch(solving_procedure)
         {
             case SolvingProcedure::CyclicReduction:
-                throw std::runtime_error("EquidistantBlock_1D does not support Cyclic Reduction. Abort.");
+                throw std::runtime_error("EquidistantBlock1D does not support Cyclic Reduction. Abort.");
             case SolvingProcedure::PCBiCGStab:
-                euclideanError = PCbiCGStab(rhs_copy, stepsPerIteration, accuracy, solution);
+                euclideanError = PCbiCGStab(rhs_copy, steps_per_iteration, accuracy, solution);
                 break;
 
             case SolvingProcedure::BiCGStab:
-                euclideanError = biCGStab(rhs_copy, stepsPerIteration, accuracy, solution);
+                euclideanError = biCGStab(rhs_copy, steps_per_iteration, accuracy, solution);
                 break;
 
-            case SolvingProcedure::Richardson:
-                smooth(static_cast<floating>(1.0), rhs_copy, stepsPerIteration, solution);
-                calculateResidual(solution, rhs_copy, residual);
+            case SolvingProcedure::Jacobi:
+                smooth(static_cast<floating>(1.0), rhs_copy, steps_per_iteration, solution);
+                calculate_residual(solution, rhs_copy, residual);
                 euclideanError = residual.getEuclidean();
 
                 ++totalCounter;
                 std::cout << "   " << totalCounter << ": " << euclideanError << std::endl;
                 break;
 
-            case SolvingProcedure::PCRichardson:
-                multigrid(2, rhs_copy, stepsPerIteration, accuracy, solution);
-                
-                calculateResidual(solution, rhs_copy, residual);
+            case SolvingProcedure::PCJacobi:
+                multigrid(2, rhs_copy, steps_per_iteration, accuracy, solution);
+
+                calculate_residual(solution, rhs_copy, residual);
                 euclideanError = residual.getEuclidean();
                 ++totalCounter;
                 std::cout << "   " << totalCounter << ": " << euclideanError << std::endl;
@@ -159,9 +160,9 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(const BlockVector<
         ++n;
     }
     // check for the two breaking conditions:
-    // 1. if maxNumberOfIterations has a feasible value, repeat until maxNumberOfIterations is reached
+    // 1. if max_num_iterations has a feasible value, repeat until max_num_iterations is reached
     // 2. if maxNormResidual has a feasible value, repeat until relative error is smaller than desired accuracy
-    while ((maxNumberOfIterations <= 0 || n < maxNumberOfIterations) && (accuracy <= 0 || euclideanError >= accuracy));
+    while ((max_num_iterations <= 0 || n < max_num_iterations) && (accuracy <= 0 || euclideanError >= accuracy));
 
     return solution;
 }
@@ -169,11 +170,11 @@ BlockVector<floating> NonEquidistantBlock_1D<floating>::solve(const BlockVector<
 // private:
 
 template<class floating>
-AlgebraicMatrix<floating> NonEquidistantBlock_1D<floating>::copyToDense() const
+AlgebraicMatrix<floating> NonEquidistantBlock1D<floating>::get_dense_representation() const
 {
     const SizeType loc_rows = _B.getNrows();      // #rows per block
     // dimensions of dense matrix
-    const SizeType glob_rows = getDenseDim();
+    const SizeType glob_rows = get_dense_dim();
 
     const auto cpu = std::make_shared<CPU<floating>>();
     auto DD = *ContainerFactory(cpu).createMatrix(glob_rows, glob_rows);
@@ -191,7 +192,7 @@ AlgebraicMatrix<floating> NonEquidistantBlock_1D<floating>::copyToDense() const
         for (SizeType i = 0; i < loc_rows; i++)
             DD(i,j) = host_M(i,j);
 
-    for (SizeType k = 1; k < getBlockDim() - 1; ++k)
+    for (SizeType k = 1; k < get_block_dim() - 1; ++k)
     {
         const SizeType startIndex = k * loc_rows;
         const SizeType endIndex = (k+1) * loc_rows;
@@ -218,7 +219,7 @@ AlgebraicMatrix<floating> NonEquidistantBlock_1D<floating>::copyToDense() const
                 }
                 else
                 {
-                    DD(i,j) = coeff_middle * host_M(i - startIndex, j - startIndex) - scale_factor*getSystemCoeff() * host_D(i - startIndex, j - startIndex);
+                    DD(i,j) = coeff_middle * host_M(i - startIndex, j - startIndex) - scale_factor * get_system_coeff() * host_D(i - startIndex, j - startIndex);
                 }
             }
 
@@ -231,23 +232,23 @@ AlgebraicMatrix<floating> NonEquidistantBlock_1D<floating>::copyToDense() const
         for (SizeType i = glob_rows - loc_rows; i < glob_rows; i++)
             DD(i,j) = host_M(i - glob_rows + loc_rows, j - glob_rows + loc_rows);
 
-    DD.moveTo(getProcessingUnit());
+    DD.moveTo(get_processing_unit());
     return DD;
 }
 
 template<class floating>
-void NonEquidistantBlock_1D<floating>::mult(const BlockVector<floating> &u, BlockVector<floating> &result) const
+void NonEquidistantBlock1D<floating>::mult(const BlockVector<floating> &beta, BlockVector<floating> &result) const
 {
-    const SizeType N = getNdim();
-    const SizeType M = u.getNcols();
-    assert(u.getNrows() == N && M == getBlockDim() && "ERROR: Dimension mismatch.");
+    const SizeType N = get_num_blocks();
+    const SizeType M = beta.getNcols();
+    assert(beta.getNrows() == N && M == get_block_dim() && "ERROR: Dimension mismatch.");
 
-    //result[0] <- _M*u[0];
-    getProcessingUnit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(),
-                               static_cast<floating>(1.), _M.data(), _M.getNrows(), u[0].data(), 1,
-                               static_cast<floating>(0.), result[0].data(), 1);
+    //result[0] <- _M*beta[0];
+    get_processing_unit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(),
+                                 static_cast<floating>(1.), _M.data(), _M.getNrows(), beta[0].data(), 1,
+                                 static_cast<floating>(0.), result[0].data(), 1);
 
-    for (SizeType i = 1; i < getBlockDim()-1; ++i)
+    for (SizeType i = 1; i < get_block_dim() - 1; ++i)
     {
         // Symmetrised system
         const floating coeff_left =  2/_host_h[i-1];
@@ -255,50 +256,50 @@ void NonEquidistantBlock_1D<floating>::mult(const BlockVector<floating> &u, Bloc
         const floating coeff_right =  2/_host_h[i];
         const floating scale_factor = (_host_h[i-1] + _host_h[i]);
 
-        // WE WANT: scaled -_B * u[i-1] + _A * u[i] + -_B * u[i+1]
+        // WE WANT: scaled -_B * beta[i-1] + _A * beta[i] + -_B * beta[i+1]
         // Note that _A = (c1 * _M - c2 * _D) except for rows 1, 2, N, where it is _M
 
-        // result[i] <- scaled _M * u[i]
-        getProcessingUnit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(),
-                                   scale_factor, _M.data(), _M.getNrows(), u[i].data(), 1,
-                                   static_cast<floating>(0), result[i].data(), 1);
+        // result[i] <- scaled _M * beta[i]
+        get_processing_unit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(),
+                                     scale_factor, _M.data(), _M.getNrows(), beta[i].data(), 1,
+                                     static_cast<floating>(0), result[i].data(), 1);
 
-        _vectorBuffer[0] = result[i];
+        _vector_buffer[0] = result[i];
 
-        // _vectorBuffer[0] holds scaled _A * u[i] except in the rows 1, 2, N (!!! because of this we cannot work without buffer)
-        getProcessingUnit()->xgemv(OperationType::Identical, _D.getNrows(), _D.getNcols(),
-                                   -scale_factor*getSystemCoeff(), _D.data(), _D.getNrows(), u[i].data(), 1,
-                                   coeff_middle/scale_factor, _vectorBuffer[0].data(), 1);
-
-
-        // result[i] holds scaled _A * u[i]
-        getProcessingUnit()->getMemoryManager()->copy(result[i].data()+2, _vectorBuffer[0].data() + 2, (N - 3) * sizeof(floating));
+        // _vector_buffer[0] holds scaled _A * beta[i] except in the rows 1, 2, N (!!! because of this we cannot work without buffer)
+        get_processing_unit()->xgemv(OperationType::Identical, _D.getNrows(), _D.getNcols(),
+                                   -scale_factor * get_system_coeff(), _D.data(), _D.getNrows(), beta[i].data(), 1,
+                                   coeff_middle/scale_factor, _vector_buffer[0].data(), 1);
 
 
-        // _vectorBuffer[1] holds scaled _B * (u[i-1] + u[i+1])
-        _vectorBuffer[1] = u[i - 1];
-        getProcessingUnit()->xaxpy(_vectorBuffer[1].size(), coeff_right / coeff_left, u[i + 1].data(), 1, _vectorBuffer[1].data(), 1);
+        // result[i] holds scaled _A * beta[i]
+        get_processing_unit()->getMemoryManager()->copy(result[i].data() + 2, _vector_buffer[0].data() + 2, (N - 3) * sizeof(floating));
 
-        // result[i] holds scaled -_B * u[i-1] + _A * u[i] + -_B * u[i+1], which is what we want
-        getProcessingUnit()->xgemv(OperationType::Identical, _B.getNrows(), _B.getNcols(),
-                                   -coeff_left, _B.data(), _B.getNrows(), _vectorBuffer[1].data(), 1,
-                                   static_cast<floating>(1.), result[i].data(), 1);
+
+        // _vector_buffer[1] holds scaled _B * (beta[i-1] + beta[i+1])
+        _vector_buffer[1] = beta[i - 1];
+        get_processing_unit()->xaxpy(_vector_buffer[1].size(), coeff_right / coeff_left, beta[i + 1].data(), 1, _vector_buffer[1].data(), 1);
+
+        // result[i] holds scaled -_B * beta[i-1] + _A * beta[i] + -_B * beta[i+1], which is what we want
+        get_processing_unit()->xgemv(OperationType::Identical, _B.getNrows(), _B.getNcols(),
+                                     -coeff_left, _B.data(), _B.getNrows(), _vector_buffer[1].data(), 1,
+                                     static_cast<floating>(1.), result[i].data(), 1);
     }
 
-    //result[M-1] <- _M*u[M-1];
-    getProcessingUnit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(),
-                               static_cast<floating>(1.), _M.data(), _M.getNrows(), u[M-1].data(), 1,
-                               static_cast<floating>(0.), result[M-1].data(), 1);
+    //result[M-1] <- _M*beta[M-1];
+    get_processing_unit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(),
+                                 static_cast<floating>(1.), _M.data(), _M.getNrows(), beta[M - 1].data(), 1,
+                                 static_cast<floating>(0.), result[M-1].data(), 1);
 }
 
 template<class floating>
-floating NonEquidistantBlock_1D<floating>::biCGStab(const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const
+floating NonEquidistantBlock1D<floating>::biCGStab(const BlockVector<floating> &rhs, const size_t max_num_iterations, const floating accuracy, BlockVector<floating> &solution) const
 {
-    const auto numberOfIterations = std::min(getDenseDim(), static_cast<SizeType>(maxNumberOfIterations));
+    const auto numberOfIterations = std::min(get_dense_dim(), static_cast<SizeType>(max_num_iterations));
 
 
     auto residual{solution};
-    calculateResidual(solution, f, residual);
+    calculate_residual(solution, rhs, residual);
 
     const auto residual_0 = residual;
 
@@ -306,7 +307,7 @@ floating NonEquidistantBlock_1D<floating>::biCGStab(const BlockVector<floating> 
     floating alpha = 1;
     floating omega = 1;
 
-    auto v = *f.getMatrixFactory().createMatrix(f.getNrows(), f.getNcols());
+    auto v = *rhs.get_container_factory().createMatrix(rhs.getNrows(), rhs.getNcols());
     auto p = v;
 
     // reserve space for calculation below
@@ -367,16 +368,16 @@ floating NonEquidistantBlock_1D<floating>::biCGStab(const BlockVector<floating> 
 }
 
 template<class floating>
-floating NonEquidistantBlock_1D<floating>::PCbiCGStab(const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const
+floating NonEquidistantBlock1D<floating>::PCbiCGStab(const BlockVector<floating> &rhs, const size_t max_num_iterations, const floating accuracy, BlockVector<floating> &solution) const
 {
 
     const unsigned numberOfSmoothingSteps = 2;
     const unsigned numberOfMultiGridSteps = 20; //3000; //200;
 
-    const auto numberOfIterations = std::min(getDenseDim(), static_cast<SizeType>(maxNumberOfIterations));
+    const auto numberOfIterations = std::min(get_dense_dim(), static_cast<SizeType>(max_num_iterations));
 
-    auto &residual = _buffer6;
-    calculateResidual(solution, f, residual);
+    auto &residual = _buffer_6;
+    calculate_residual(solution, rhs, residual);
 
     const auto residual_0 = residual;
 
@@ -384,7 +385,7 @@ floating NonEquidistantBlock_1D<floating>::PCbiCGStab(const BlockVector<floating
     floating alpha = 1;
     floating omega = 1;
 
-    auto v = *f.getMatrixFactory().createMatrix(f.getNrows(), f.getNcols());
+    auto v = *rhs.get_container_factory().createMatrix(rhs.getNrows(), rhs.getNcols());
     auto p = v;
 
     auto s = v;
@@ -406,9 +407,9 @@ floating NonEquidistantBlock_1D<floating>::PCbiCGStab(const BlockVector<floating
         rho = rho_new;
 
         //p = residual + beta*(p - omega * v);
-        getProcessingUnit()->xaxpy(p.getNelems(), -omega, v.data(), 1, p.data(), 1);
+        get_processing_unit()->xaxpy(p.getNelems(), -omega, v.data(), 1, p.data(), 1);
         p.scale(beta);
-        getProcessingUnit()->xaxpy(p.getNelems(), static_cast<floating>(1.0), residual.data(), 1, p.data(), 1);
+        get_processing_unit()->xaxpy(p.getNelems(), static_cast<floating>(1.0), residual.data(), 1, p.data(), 1);
         y.add(y, static_cast<floating>(-1.0)); // y <- 0
         multigrid(numberOfSmoothingSteps, p, numberOfMultiGridSteps, accuracy, y);
         this->mult(y, v);
@@ -416,7 +417,7 @@ floating NonEquidistantBlock_1D<floating>::PCbiCGStab(const BlockVector<floating
 
         //s = residual - alpha*v;
         s = residual;
-        getProcessingUnit()->xaxpy(s.getNelems(), -alpha, v.data(), 1, s.data(), 1);
+        get_processing_unit()->xaxpy(s.getNelems(), -alpha, v.data(), 1, s.data(), 1);
         z.add(z, static_cast<floating>(-1.0)); // z <- 0
         multigrid(numberOfSmoothingSteps, s, numberOfMultiGridSteps, accuracy, z);
         this->mult(z, t);
@@ -424,12 +425,12 @@ floating NonEquidistantBlock_1D<floating>::PCbiCGStab(const BlockVector<floating
         omega = scalarProduct(t, s)/scalarProduct(t, t);
 
         //solution = solution + omega*z + alpha*y;
-        getProcessingUnit()->xaxpy(solution.getNelems(), omega, z.data(), 1, solution.data(), 1);
-        getProcessingUnit()->xaxpy(solution.getNelems(), alpha, y.data(), 1, solution.data(), 1);
+        get_processing_unit()->xaxpy(solution.getNelems(), omega, z.data(), 1, solution.data(), 1);
+        get_processing_unit()->xaxpy(solution.getNelems(), alpha, y.data(), 1, solution.data(), 1);
 
         //residual = s - omega*t;
         residual = s;
-        getProcessingUnit()->xaxpy(residual.getNelems(), -omega, t.data(), 1, residual.data(), 1);
+        get_processing_unit()->xaxpy(residual.getNelems(), -omega, t.data(), 1, residual.data(), 1);
 
         auto currentError = residual.getEuclidean();
 
@@ -459,21 +460,21 @@ floating NonEquidistantBlock_1D<floating>::PCbiCGStab(const BlockVector<floating
 
 
 template<class floating>
-void NonEquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothingSteps, const BlockVector<floating> &f, const size_t maxNumberOfIterations, const floating accuracy, BlockVector<floating> &solution) const
+void NonEquidistantBlock1D<floating>::multigrid(const unsigned num_smoothing_steps, const BlockVector<floating> &rhs, const size_t max_num_iterations, const floating accuracy, BlockVector<floating> &solution) const
 {
-    const SizeType N = getNdim();
-    const SizeType M = getBlockDim();
+    const SizeType N = get_num_blocks();
+    const SizeType M = get_block_dim();
 
-    BlockVector<floating> &coarseSolution = _coarseBuffer1;
-    initializeMemory(getProcessingUnit()->getMemoryManager(), coarseSolution.data(), coarseSolution.getNelems(), static_cast<floating>(0.0));
+    BlockVector<floating> &coarseSolution = _coarse_buffer_1;
+    initializeMemory(get_processing_unit()->getMemoryManager(), coarseSolution.data(), coarseSolution.getNelems(), static_cast<floating>(0.0));
 
-    BlockVector<floating> &ffOnCoarseGrid = _coarseBuffer2;
-    initializeMemory(getProcessingUnit()->getMemoryManager(), ffOnCoarseGrid.data(), ffOnCoarseGrid.getNelems(), static_cast<floating>(0.0));
+    BlockVector<floating> &ffOnCoarseGrid = _coarse_buffer_2;
+    initializeMemory(get_processing_unit()->getMemoryManager(), ffOnCoarseGrid.data(), ffOnCoarseGrid.getNelems(), static_cast<floating>(0.0));
 
-    BlockVector<floating> &residual = _buffer1;
-    initializeMemory(getProcessingUnit()->getMemoryManager(), residual.data(), residual.getNelems(), static_cast<floating>(0.0));
+    BlockVector<floating> &residual = _buffer_1;
+    initializeMemory(get_processing_unit()->getMemoryManager(), residual.data(), residual.getNelems(), static_cast<floating>(0.0));
 
-    const auto &coarseSystem = getCoarseSystem();
+    const auto &coarseSystem = get_coarse_system();
 
     assert(solution.getNrows() == N && solution.getNcols() == M && "ERROR: Dimension mismatch.");
 
@@ -484,101 +485,101 @@ void NonEquidistantBlock_1D<floating>::multigrid(const unsigned numberOfSmoothin
     if (M == 3)
     {
         // exact solution on the coarsest grid with 3 points
-        smooth(1.0, f, maxNumberOfIterations, solution);
+        smooth(1.0, rhs, max_num_iterations, solution);
     }
     else
     {
 
-        smooth(omega, f, numberOfSmoothingSteps, solution);
-        calculateResidual(solution, f, residual);
+        smooth(omega, rhs, num_smoothing_steps, solution);
+        calculate_residual(solution, rhs, residual);
         restriction(residual, ffOnCoarseGrid);
-        coarseSystem.multigrid(numberOfSmoothingSteps, ffOnCoarseGrid, maxNumberOfIterations, accuracy, coarseSolution);
+        coarseSystem.multigrid(num_smoothing_steps, ffOnCoarseGrid, max_num_iterations, accuracy, coarseSolution);
         prolongation(coarseSolution, solution);
-        smooth(omega, f, numberOfSmoothingSteps, solution);
+        smooth(omega, rhs, num_smoothing_steps, solution);
     }
 }
 
 template<class floating>
-void NonEquidistantBlock_1D<floating>::prolongation(const BlockVector<floating> &ff, BlockVector<floating> &solution) const
+void NonEquidistantBlock1D<floating>::prolongation(const BlockVector<floating> &coarse_rhs, BlockVector<floating> &fine_rhs) const
 {
-    const SizeType N = getNdim();
-    const SizeType M = getBlockDim();
+    const SizeType N = get_num_blocks();
+    const SizeType M = get_block_dim();
 
-    assert(ff.getNrows() == N && ff.getNcols() == (M+1)/2 && "ERROR: Wrong dimensions.");
+    assert(coarse_rhs.getNrows() == N && coarse_rhs.getNcols() == (M + 1) / 2 && "ERROR: Wrong dimensions.");
 
-    if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
+    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
     {
-        solution[0] += ff[0];
+        fine_rhs[0] += coarse_rhs[0];
 #pragma omp parallel for  if (M>127)               // GH
-        for (SizeType i = 1; i < getBlockDim()-1; i += 2)
+        for (SizeType i = 1; i < get_block_dim() - 1; i += 2)
         {
-            const auto coeff1 = _h[i] / (_h[i - 1] + _h[i]);
-            const auto coeff2 = _h[i] / (_h[i - 1] + _h[i]);
-            solution[i + 1] += ff[(i + 1) / 2];
-            //solution[i] += coeff1 * ff[(i - 1) / 2];
-            getProcessingUnit()->xaxpy(N, coeff1, ff[(i-1)/2].data(), 1, solution[i].data(), 1);
-            //solution[i] += coeff2 * ff[(i + 1) / 2];
-            getProcessingUnit()->xaxpy(N, coeff2, ff[(i+1)/2].data(), 1, solution[i].data(), 1);
+            const auto coeff1 = _grid[i] / (_grid[i - 1] + _grid[i]);
+            const auto coeff2 = _grid[i] / (_grid[i - 1] + _grid[i]);
+            fine_rhs[i + 1] += coarse_rhs[(i + 1) / 2];
+            //fine_rhs[i] += coeff1 * coarse_rhs[(i - 1) / 2];
+            get_processing_unit()->xaxpy(N, coeff1, coarse_rhs[(i - 1) / 2].data(), 1, fine_rhs[i].data(), 1);
+            //fine_rhs[i] += coeff2 * coarse_rhs[(i + 1) / 2];
+            get_processing_unit()->xaxpy(N, coeff2, coarse_rhs[(i + 1) / 2].data(), 1, fine_rhs[i].data(), 1);
         }
     }
     else
     {
 #ifndef CPU_ONLY
-        device_prolongation(N, M, _h.data(), ff.data(), solution.data());
+        device_prolongation(N, M, _grid.data(), coarse_rhs.data(), fine_rhs.data());
 #endif
     }
 }
 
 template<class floating>
-void NonEquidistantBlock_1D<floating>::restriction(const BlockVector<floating> &ff, BlockVector<floating> &ffOnCoarseGrid) const
+void NonEquidistantBlock1D<floating>::restriction(const BlockVector<floating> &fine_rhs, BlockVector<floating> &coarse_rhs) const
 {
-    const SizeType N = getNdim();
-    const SizeType M = getBlockDim();
-    assert(getBlockDim() % 2 == 1 && "ERROR: Need odd number of rows in each step.");
+    const SizeType N = get_num_blocks();
+    const SizeType M = get_block_dim();
+    assert(get_block_dim() % 2 == 1 && "ERROR: Need odd number of rows in each step.");
 
-    if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
+    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
     {
 #pragma omp parallel for  if (M>127)
         for (SizeType j = 2; j < M - 1; j += 2)
         {
-            const auto coeff1 = _h[j - 2] / (_h[j - 2] + _h[j - 1]);
-            const auto coeff2 = _h[j + 1] / (_h[j] + _h[j + 1]);
-            ffOnCoarseGrid[j / 2] = ff[j];
-            getProcessingUnit()->xaxpy(getNdim(), coeff1, ff[j - 1].data(), 1, ffOnCoarseGrid[j / 2].data(), 1);
-            getProcessingUnit()->xaxpy(getNdim(), coeff2, ff[j + 1].data(), 1, ffOnCoarseGrid[j / 2].data(), 1);
+            const auto coeff1 = _grid[j - 2] / (_grid[j - 2] + _grid[j - 1]);
+            const auto coeff2 = _grid[j + 1] / (_grid[j] + _grid[j + 1]);
+            coarse_rhs[j / 2] = fine_rhs[j];
+            get_processing_unit()->xaxpy(get_num_blocks(), coeff1, fine_rhs[j - 1].data(), 1, coarse_rhs[j / 2].data(), 1);
+            get_processing_unit()->xaxpy(get_num_blocks(), coeff2, fine_rhs[j + 1].data(), 1, coarse_rhs[j / 2].data(), 1);
         }
     }
     else
     {
 #ifndef CPU_ONLY
-        device_restriction(N, M, _h.data(), ff.data(), ffOnCoarseGrid.data());
+        device_restriction(N, M, _grid.data(), fine_rhs.data(), coarse_rhs.data());
 #endif
     }
 }
 
 template<class floating>
-AlgebraicVector<floating> NonEquidistantBlock_1D<floating>::getReducedGrid() const
+AlgebraicVector<floating> NonEquidistantBlock1D<floating>::get_reduced_grid() const
 {
-    assert(_h.size() % 2 == 0 && "ERROR: Dimension mismatch. Grid size has to be even number.");
+    assert(_grid.size() % 2 == 0 && "ERROR: Dimension mismatch. Grid size has to be even number.");
 
-    auto coarseGrid = *ContainerFactory<floating>(std::make_shared<CPU<floating>>()).createColumn(_h.size()/2);
+    auto coarseGrid = *ContainerFactory<floating>(std::make_shared<CPU<floating>>()).createColumn(_grid.size() / 2);
 
     SizeType const Mf = coarseGrid.size();                // GH
 
-    if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
+    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
     {
 #pragma omp parallel for  //if (Mf >127)
         for (SizeType i = 0; i < Mf; ++i)
-            coarseGrid[i] = _h[2*i] + _h[2*i+1];
+            coarseGrid[i] = _grid[2 * i] + _grid[2 * i + 1];
     }
     else
     {
 #ifndef CPU_ONLY
         // Since this funcion is called during initialization, it is not yet guaranteed that
-        // _h is already on the right processing unit.
-        auto h_copy(_h);
-        h_copy.moveTo(getProcessingUnit());
-        coarseGrid.moveTo(getProcessingUnit());
+        // _space_grid_step_size is already on the right processing unit.
+        auto h_copy(_grid);
+        h_copy.moveTo(get_processing_unit());
+        coarseGrid.moveTo(get_processing_unit());
         device_get_reduced_grid(Mf, h_copy.data(), coarseGrid.data());
 #endif
     }
@@ -587,31 +588,31 @@ AlgebraicVector<floating> NonEquidistantBlock_1D<floating>::getReducedGrid() con
 }
 
 template<class floating>
-typename NonEquidistantBlock_1D<floating>::SizeType NonEquidistantBlock_1D<floating>::getCoarseDim() const
+typename NonEquidistantBlock1D<floating>::SizeType NonEquidistantBlock1D<floating>::get_coarse_dim() const
 {
-    return (getBlockDim()+1)/2;
+    return (get_block_dim() + 1) / 2;
 }
 
 template<class floating>
-std::unique_ptr<NonEquidistantBlock_1D<floating>> NonEquidistantBlock_1D<floating>::initializeCoarseSystemPtr() const
+std::unique_ptr<NonEquidistantBlock1D<floating>> NonEquidistantBlock1D<floating>::initialize_coarse_system() const
 {
-    if (getBlockDim() <= 3)
+    if (get_block_dim() <= 3)
         return nullptr;
     else
-        return std::make_unique<NonEquidistantBlock_1D<floating>>(getCoarseDim(), _B, _D, _M, getReducedGrid(),
-                _alpha, _timeGridStepSize, getProcessingUnit());
+        return std::make_unique<NonEquidistantBlock1D<floating>>(get_coarse_dim(), _B, _D, _M, get_reduced_grid(),
+                                                                 _alpha, _time_grid_step_size, get_processing_unit());
 }
 
 template<class floating>
-const NonEquidistantBlock_1D<floating>& NonEquidistantBlock_1D<floating>::getCoarseSystem() const
+const NonEquidistantBlock1D<floating>& NonEquidistantBlock1D<floating>::get_coarse_system() const
 {
-    return *_coarseSystemPtr;
+    return *_coarse_system;
 }
 
 template<class floating>
-void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockVector<floating> &f, const size_t maxNumberOfIterations, BlockVector<floating> &solution) const {
-    const SizeType N = getNdim();
-    const SizeType M = f.getNcols();
+void NonEquidistantBlock1D<floating>::smooth(const floating omega, const BlockVector<floating> &rhs, const size_t max_num_iterations, BlockVector<floating> &solution) const {
+    const SizeType N = get_num_blocks();
+    const SizeType M = rhs.getNcols();
 
     assert(solution.getNrows() == N && solution.getNcols() == M && "ERROR: Dimension mismatch.");
 
@@ -623,8 +624,8 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
 
     // #################### GAUSS SEIDEL ##################
 #ifdef GAUSS_SEIDEL
-    auto &residual = _vectorBuffer[4];
-    auto &outputBuffer = _vectorBuffer[5];
+    auto &residual = _vector_buffer[4];
+    auto &outputBuffer = _vector_buffer[5];
 
     do {
 
@@ -636,106 +637,106 @@ void NonEquidistantBlock_1D<floating>::smooth(const floating omega, const BlockV
             if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
             {
                 // Symmetrised system
-                const floating inv_scale_factor = 1/(_h[i-1] + _h[i]);
-                const floating inv_coeff_middle = 1/(2*(_h[i-1] + _h[i])/_h[i-1]/_h[i]);
+                const floating inv_scale_factor = 1/(_space_grid_step_size[i-1] + _space_grid_step_size[i]);
+                const floating inv_coeff_middle = 1/(2*(_space_grid_step_size[i-1] + _space_grid_step_size[i])/_space_grid_step_size[i-1]/_space_grid_step_size[i]);
                 getProcessingUnit()->xscal(N, inv_scale_factor, residual.data(), 1);
                 getProcessingUnit()->xscal(N-3, inv_coeff_middle/inv_scale_factor, residual.data()+2, 1);
             }
             else
             {
 #ifndef CPU_ONLY
-                device_smooth_scale(N, i, _h.data(), residual.data());
+                device_smooth_scale(N, i, _space_grid_step_size.data(), residual.data());
 #endif
             }
 
             //solution[i] += omega*(_C/residual);
             _C.invTimes(residual, outputBuffer);
-            getProcessingUnit()->xaxpy(N, omega, outputBuffer.data(), 1, solution[i].data(), 1);
+            get_processing_unit()->xaxpy(N, omega, outputBuffer.data(), 1, solution[i].data(), 1);
         }
 
         ++n;
     }
         // check for the breaking conditions:
-        // repeat until maxNumberOfIterations is reached
-    while (n < maxNumberOfIterations);
+        // repeat until max_num_iterations is reached
+    while (n < max_num_iterations);
 
 #else // ######################### JACOBI ###########################
-    auto &fullResidual = _buffer2;
+    auto &fullResidual = _buffer_2;
 
     do {
-        calculateResidual(solution, f, fullResidual);
+        calculate_residual(solution, rhs, fullResidual);
         // scale residual: omega * (D * C)^-1 * r_i = omega * C^-1 * (D^-1 * r_i)
 
 
-        if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
+        if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
         {
 #pragma omp parallel for if (M>63) //schedule(dynamic)
             for (unsigned int j = 1; j < M - 1; ++j) {
                 // Symmetrised system
-                const floating inv_scale_factor = 1 / (_h[j - 1] + _h[j]);
-                const floating inv_coeff_middle = 1 / (2 * (_h[j - 1] + _h[j]) / _h[j - 1] / _h[j]);
-                getProcessingUnit()->xscal(N, inv_scale_factor, fullResidual[j].data(), 1);
-                getProcessingUnit()->xscal(N - 3, inv_coeff_middle / inv_scale_factor, fullResidual[j].data() + 2, 1);
+                const floating inv_scale_factor = 1 / (_grid[j - 1] + _grid[j]);
+                const floating inv_coeff_middle = 1 / (2 * (_grid[j - 1] + _grid[j]) / _grid[j - 1] / _grid[j]);
+                get_processing_unit()->xscal(N, inv_scale_factor, fullResidual[j].data(), 1);
+                get_processing_unit()->xscal(N - 3, inv_coeff_middle / inv_scale_factor, fullResidual[j].data() + 2, 1);
             }
         }
         else
         {
 #ifndef CPU_ONLY
-            device_smooth_full_scale(N, M, _h.data(), fullResidual.data());
+            device_smooth_full_scale(N, M, _grid.data(), fullResidual.data());
 #endif
         }
 
 #ifndef PLU
         const auto Cinv = _C.accessInverse().data();
         // solution *= omega * C^-1 * residual
-        getProcessingUnit()->xgemm(OperationType::Identical, OperationType::Identical,
-                                   N, M-2, N,
-                                   omega, Cinv, N,
-                                   fullResidual[1].data(), N,
-                                   static_cast<floating>(1.0), solution[1].data(), N);
+        get_processing_unit()->xgemm(OperationType::Identical, OperationType::Identical,
+                                     N, M-2, N,
+                                     omega, Cinv, N,
+                                     fullResidual[1].data(), N,
+                                     static_cast<floating>(1.0), solution[1].data(), N);
 #else
         int info(0);
         const int NN = N;
         const int NRHS = M-2;
         getProcessingUnit()->xgetrs(OperationType::Identical, &NN, &NRHS, _C.accessInverse().data(), &NN, _C._ipiv.data(), fullResidual[1].data(), &NN, &info);
-        getProcessingUnit()->xaxpy(NN * NRHS, omega, fullResidual[1].data(), 1, solution[1].data(), 1);
+        get_processing_unit()->xaxpy(NN * NRHS, omega, fullResidual[1].data(), 1, solution[1].data(), 1);
 #endif
         ++n;
     }
         // check for the breaking conditions:
-        // repeat until maxNumberOfIterations is reached
-    while (n < maxNumberOfIterations);
+        // repeat until max_num_iterations is reached
+    while (n < max_num_iterations);
 #endif
 }
 
 template<class floating>
-void NonEquidistantBlock_1D<floating>::calculateResidual(const BlockVector<floating> &u, const BlockVector<floating> &f, BlockVector<floating> &residual) const
+void NonEquidistantBlock1D<floating>::calculate_residual(const BlockVector<floating> &beta, const BlockVector<floating> &rhs, BlockVector<floating> &residual) const
 {
-    const SizeType N = getNdim();
-    const SizeType M = f.getNcols();
+    const SizeType N = get_num_blocks();
+    const SizeType M = rhs.getNcols();
 
-    assert(u.getNrows() == N && u.getNcols() == M && "ERROR: Dimension mismatch.");
+    assert(beta.getNrows() == N && beta.getNcols() == M && "ERROR: Dimension mismatch.");
 
 #pragma omp parallel for  //if (M>127)
     for (unsigned int i = 0; i < M; ++i)
     {
-        calculateRowResidual(i, u, f, residual[i]);
+        calculate_row_residual(i, beta, rhs, residual[i]);
     }
 }
 
 template<class floating>
-void NonEquidistantBlock_1D<floating>::calculateRowResidual(const SizeType i, const BlockVector<floating> &u, const BlockVector<floating> &f, AlgebraicVector<floating> &residual) const
+void NonEquidistantBlock1D<floating>::calculate_row_residual(const SizeType i, const BlockVector<floating> &beta_i, const BlockVector<floating> &rhs, AlgebraicVector<floating> &residual) const
 {
-    const SizeType N = getNdim();
-    const SizeType M = f.getNcols();
+    const SizeType N = get_num_blocks();
+    const SizeType M = rhs.getNcols();
 
-    assert(u.getNrows() == N && u.getNcols() == M && "ERROR: Dimension mismatch.");
+    assert(beta_i.getNrows() == N && beta_i.getNcols() == M && "ERROR: Dimension mismatch.");
 
-    getProcessingUnit()->xcopy(residual.size(), f[i].data(), 1, residual.data(), 1);
+    get_processing_unit()->xcopy(residual.size(), rhs[i].data(), 1, residual.data(), 1);
 
     if (i == 0 || i == M-1)
     {
-        getProcessingUnit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(), -1.0, _M.data(), _M.getNrows(), u[i].data(), 1, 1.0, residual.data(), 1);
+        get_processing_unit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(), -1.0, _M.data(), _M.getNrows(), beta_i[i].data(), 1, 1.0, residual.data(), 1);
     }
     else
     {
@@ -744,46 +745,46 @@ void NonEquidistantBlock_1D<floating>::calculateRowResidual(const SizeType i, co
         const floating coeff_middle = 2*(_host_h[i-1] + _host_h[i])/_host_h[i-1]/_host_h[i];
         const floating coeff_right =  2/_host_h[i];
         const floating scale_factor = (_host_h[i-1] + _host_h[i]);
-        // WE WANT: rhs_f[i] - (scaled -_B * u[i-1] + _A * u[i] + -_B * u[i+1])
+        // WE WANT: rhs_f[i] - (scaled -_B * beta_i[i-1] + _A * beta_i[i] + -_B * beta_i[i+1])
         // Note that _A = (c1 * _M - c2 * _D) except for rows 1, 2, N, where it is _M
 
-        // result[i] <- scaled _M * u[i]
+        // result[i] <- scaled _M * beta_i[i]
 
-        auto &buf1 = _buffer4;
-        auto &buf2 = _buffer5;
-        auto &buf3 = _buffer3;
+        auto &buf1 = _buffer_4;
+        auto &buf2 = _buffer_5;
+        auto &buf3 = _buffer_3;
 
         auto &b1 = buf1[i];
         auto &b2 = buf2[i];
         auto &b3 = buf3[i];
 
-        getProcessingUnit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(),
-                                   scale_factor, _M.data(), _M.getNrows(), u[i].data(), 1,
-                                   static_cast<floating>(0), b3.data(), 1);
+        get_processing_unit()->xgemv(OperationType::Identical, _M.getNrows(), _M.getNcols(),
+                                     scale_factor, _M.data(), _M.getNrows(), beta_i[i].data(), 1,
+                                     static_cast<floating>(0), b3.data(), 1);
 
         //b1 = b3;
-        getProcessingUnit()->xcopy(b1.size(), b3.data(), 1, b1.data(), 1);
+        get_processing_unit()->xcopy(b1.size(), b3.data(), 1, b1.data(), 1);
 
-        // _b1 holds scaled _A * u[i] except in the rows 1, 2, N (!!! because of this we cannot work without buffer)
-        getProcessingUnit()->xgemv(OperationType::Identical, _D.getNrows(), _D.getNcols(),
-                                   -scale_factor*getSystemCoeff(), _D.data(), _D.getNrows(), u[i].data(), 1,
+        // _b1 holds scaled _A * beta_i[i] except in the rows 1, 2, N (!!! because of this we cannot work without buffer)
+        get_processing_unit()->xgemv(OperationType::Identical, _D.getNrows(), _D.getNcols(),
+                                   -scale_factor * get_system_coeff(), _D.data(), _D.getNrows(), beta_i[i].data(), 1,
                                    coeff_middle/scale_factor, b1.data(), 1);
 
 
-        // b3 holds scaled _A * u[i]
-        //getProcessingUnit()->getMemoryManager()->copy(b3.data()+2, b1.data()+2, (N-3)*sizeof(floating));
-        getProcessingUnit()->xcopy(N-3, b1.data()+2, 1, b3.data()+2, 1);
+        // b3 holds scaled _A * beta_i[i]
+        //get_processing_unit()->getMemoryManager()->copy(b3.data()+2, b1.data()+2, (N-3)*sizeof(floating));
+        get_processing_unit()->xcopy(N - 3, b1.data() + 2, 1, b3.data() + 2, 1);
 
 
-        // b2 holds scaled _B * (u[i-1] + u[i+1])
-        // b2 = u[i-1];
-        getProcessingUnit()->xcopy(b2.size(), u[i-1].data(), 1, b2.data(), 1);
-        getProcessingUnit()->xaxpy(b2.size(), coeff_right/coeff_left, u[i+1].data(), 1, b2.data(), 1);
+        // b2 holds scaled _B * (beta_i[i-1] + beta_i[i+1])
+        // b2 = beta_i[i-1];
+        get_processing_unit()->xcopy(b2.size(), beta_i[i - 1].data(), 1, b2.data(), 1);
+        get_processing_unit()->xaxpy(b2.size(), coeff_right / coeff_left, beta_i[i + 1].data(), 1, b2.data(), 1);
 
-        // b3 holds scaled -_B * u[i-1] + _A * u[i] + -_B * u[i+1], which is what we want
-        getProcessingUnit()->xgemv(OperationType::Identical, _B.getNrows(), _B.getNcols(),
-                                   -coeff_left, _B.data(), _B.getNrows(), b2.data(), 1,
-                                   static_cast<floating>(1.), b3.data(), 1);
+        // b3 holds scaled -_B * beta_i[i-1] + _A * beta_i[i] + -_B * beta_i[i+1], which is what we want
+        get_processing_unit()->xgemv(OperationType::Identical, _B.getNrows(), _B.getNcols(),
+                                     -coeff_left, _B.data(), _B.getNrows(), b2.data(), 1,
+                                     static_cast<floating>(1.), b3.data(), 1);
 
         // residual holds what we want
         residual.add(b3, -1.0);
@@ -791,20 +792,20 @@ void NonEquidistantBlock_1D<floating>::calculateRowResidual(const SizeType i, co
 }
 
 template<class floating>
-floating NonEquidistantBlock_1D<floating>::getSystemCoeff() const
+floating NonEquidistantBlock1D<floating>::get_system_coeff() const
 {
-    floating coeff = pow(_timeGridStepSize, -_alpha)/tgamma(4-_alpha);
+    floating coeff = pow(_time_grid_step_size, -_alpha) / tgamma(4 - _alpha);
     return coeff;
 }
 
 template<class floating>
-AlgebraicMatrix<floating> NonEquidistantBlock_1D<floating>::initializeC() const
+AlgebraicMatrix<floating> NonEquidistantBlock1D<floating>::initialize_c() const
 {
-    const SizeType N = getNdim();
+    const SizeType N = get_num_blocks();
 
-    floating max_h = get_h_preconditioner(_h);
+    floating max_h = get_grid_preconditioner(_grid);
 
-    auto C = _M - max_h * max_h / 2 * getSystemCoeff() * _D;
+    auto C = _M - max_h * max_h / 2 * get_system_coeff() * _D;
 
     const SizeType rowIndices[3] = {0, 1, N-1};
 
@@ -821,36 +822,36 @@ AlgebraicMatrix<floating> NonEquidistantBlock_1D<floating>::initializeC() const
 }
 
 template<class floating>
-ProcessingUnit<floating> NonEquidistantBlock_1D<floating>::getProcessingUnit() const
+ProcessingUnit<floating> NonEquidistantBlock1D<floating>::get_processing_unit() const
 {
-    return _colMatrixFactory.getProcessingUnit();
+    return _container_factory.getProcessingUnit();
 }
 
 template<class floating>
-floating NonEquidistantBlock_1D<floating>::get_h_preconditioner(const AlgebraicVector<floating> &h) const
+floating NonEquidistantBlock1D<floating>::get_grid_preconditioner(const AlgebraicVector<floating> &grid) const
 {
-    return h.getMaximum();
+    return grid.getMaximum();
 }
 
 template<class floating>
-void NonEquidistantBlock_1D<floating>::rescale_rhs(BlockVector<floating> &rhs) const
+void NonEquidistantBlock1D<floating>::rescale_rhs(BlockVector<floating> &rhs) const
 {
-    const SizeType N = getNdim();
-    const SizeType M = getBlockDim();
+    const SizeType N = get_num_blocks();
+    const SizeType M = get_block_dim();
     //assert(rhs.getNrows() == N && rhs.getNcols() == M && "ERROR: Dimension mismatch.");
 
-    if (typeid(*this->getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()))
+    if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()))
     {
 #pragma omp parallel for  if (M>127)
         for (SizeType j = 1; j < M-1; ++j)
         {
-            rhs[j].scale(_h[j] + _h[j-1]);
+            rhs[j].scale(_grid[j] + _grid[j - 1]);
         }
     }
     else
     {
 #ifndef CPU_ONLY
-        device_rescale_rhs(N, M, _h.data(), rhs.data());
+        device_rescale_rhs(N, M, _grid.data(), rhs.data());
 #endif
     }
 }

@@ -4,11 +4,11 @@
 
 
 template<class floating>
-BlockVector<floating> solve_equidistant(const ProcessingUnit<floating> processingUnit,
-                                            const int N, const int M, const floating T, const floating alpha,
-                                            const PDEFunctionTuple<floating>& pde_function_tuple,
-                                            const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                            const floating accuracy, const SolvingProcedure solvingProcedure)
+BlockVector<floating> solve_equidistant(const ProcessingUnit<floating> processing_unit,
+                                        const int N, const int M, const floating T, const floating alpha,
+                                        const PDEFunctionTuple<floating>& pde_function_tuple,
+                                        const size_t max_num_iterations, const size_t steps_per_iteration,
+                                        const floating accuracy, const SolvingProcedure solving_procedure)
 {
     ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
@@ -29,20 +29,20 @@ BlockVector<floating> solve_equidistant(const ProcessingUnit<floating> processin
     initialize_rhs<floating>(N, T, pde_function_tuple, grid, rhs);
 
     const int block_dim = M + 1;
-    EquidistantBlock_1D<floating> C(block_dim, B, D, MM, dx, alpha, dt, processingUnit);
+    EquidistantBlock1D<floating> C(block_dim, B, D, MM, dx, alpha, dt, processing_unit);
 
-    BlockVector<floating> solution = C.solve_pde(rhs, maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
+    BlockVector<floating> solution = C.solve_pde(rhs, max_num_iterations, steps_per_iteration, accuracy, solving_procedure);
 
     return solution;
 }
 
 template<class floating>
-BlockVector<floating> solve_nonequidistant(const ProcessingUnit<floating> processingUnit,
-                                               const int N, const floating T, const floating alpha,
-                                               const AlgebraicVector<floating>& grid,
-                                               const PDEFunctionTuple<floating>& pde_function_tuple,
-                                               const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                               const floating accuracy, const SolvingProcedure solvingProcedure)
+BlockVector<floating> solve_nonequidistant(const ProcessingUnit<floating> processing_unit,
+                                           const int N, const floating T, const floating alpha,
+                                           const AlgebraicVector<floating>& grid,
+                                           const PDEFunctionTuple<floating>& pde_function_tuple,
+                                           const size_t max_num_iterations, const size_t steps_per_iteration,
+                                           const floating accuracy, const SolvingProcedure solving_procedure)
 {
     ProcessingUnit<floating> cpu = std::make_shared<CPU<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
@@ -62,9 +62,9 @@ BlockVector<floating> solve_nonequidistant(const ProcessingUnit<floating> proces
     initialize_rhs<floating>(N, T, pde_function_tuple, grid, rhs);
 
     const int block_dim = M + 1;
-    NonEquidistantBlock_1D<floating> C(block_dim, B, D, MM, grid, alpha, dt, processingUnit);
+    NonEquidistantBlock1D<floating> C(block_dim, B, D, MM, grid, alpha, dt, processing_unit);
 
-    BlockVector<floating> solution = C.solve_pde(rhs, maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
+    BlockVector<floating> solution = C.solve_pde(rhs, max_num_iterations, steps_per_iteration, accuracy, solving_procedure);
 
     return solution;
 }
@@ -123,7 +123,7 @@ void initialize_rhs(const int N, const floating T, const PDEFunctionTuple<floati
 }
 
 template<class T, enable_if_is_integral<T>>
-static constexpr T twoToThe(T const x)
+static constexpr T two_to_the(T const x)
 {
     return 1<<x;
 }

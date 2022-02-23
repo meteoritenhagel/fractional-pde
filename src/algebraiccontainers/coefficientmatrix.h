@@ -74,7 +74,7 @@ public:
      * Return this instance's processing unit.
      * @return current processing unit
      */
-    ProcessingUnit<floating> getProcessingUnit() const;
+    ProcessingUnit<floating> get_processing_unit() const;
 
     /**
      * Return this instance's container factory.
@@ -82,7 +82,7 @@ public:
      *
      * TODO: rename to getContainerFactory()
      */
-    ContainerFactory<floating> getColMatrixFactory() const;
+    ContainerFactory<floating> get_container_factory() const;
 
     /**
      * Copies the abstract matrix type to a dense AlgebraicMatrix.

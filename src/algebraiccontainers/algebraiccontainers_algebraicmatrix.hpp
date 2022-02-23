@@ -20,25 +20,25 @@ template<class floating>
 floating scalarProduct(const BlockVector<floating> &A, const BlockVector<floating> &B)
 {
     assert(A.getNelems() == B.getNelems() && "ERROR: Dimension mismatch.");
-    assert( typeid(*A.getProcessingUnit()) == typeid(*B.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*A.get_processing_unit()) == typeid(*B.get_processing_unit()) && "Processing Units must be identical.");
 
-    return A.getProcessingUnit()->xdot(A.getNelems(), A.data(), 1, B.data(), 1);
+    return A.get_processing_unit()->xdot(A.getNelems(), A.data(), 1, B.data(), 1);
 }
 
 template<class floating>
 floating scalarProduct(const AlgebraicVector<floating> &A, const AlgebraicVector<floating> &B)
 {
     assert(A.size() == B.size() && "ERROR: Dimension mismatch.");
-    assert( typeid(*A.getProcessingUnit()) == typeid(*B.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*A.get_processing_unit()) == typeid(*B.get_processing_unit()) && "Processing Units must be identical.");
 
-    return A.getProcessingUnit()->xdot(A.size(), A.data(), 1, B.data(), 1);
+    return A.get_processing_unit()->xdot(A.size(), A.data(), 1, B.data(), 1);
 }
 
 // public:
 
 template<class floating>
 AlgebraicMatrix<floating>::AlgebraicMatrix(const ProcessingUnit<floating>& processingUnit, const MatrixDataType& A)
-: _colMatrixFactory(processingUnit), _A(A), _Ainv(nullptr), _ipiv(0, 0, getProcessingUnit()->getMemoryManager()), _arrayOfColumns(initializeArrayOfColumns())
+: _colMatrixFactory(processingUnit), _A(A), _Ainv(nullptr), _ipiv(0, 0, get_processing_unit()->getMemoryManager()), _arrayOfColumns(initializeArrayOfColumns())
 {
 }
 
@@ -46,7 +46,7 @@ template<class floating>
 AlgebraicMatrix<floating>::AlgebraicMatrix(const AlgebraicMatrix &other)
 : _colMatrixFactory(other._colMatrixFactory), _A(other._A), _Ainv(nullptr), _ipiv(other._ipiv), _arrayOfColumns(initializeArrayOfColumns())
 {
-    assert( typeid(*this->getProcessingUnit()) == typeid(*other.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*other.get_processing_unit()) && "Processing Units must be identical.");
     // copy _Ainv
     if (other._Ainv)
     {
@@ -71,12 +71,12 @@ void AlgebraicMatrix<floating>::moveTo(const ProcessingUnit<floating> processing
 template<class floating>
 AlgebraicMatrix<floating>& AlgebraicMatrix<floating>::operator=(const AlgebraicMatrix &other)
 {
-    assert( typeid(*this->getProcessingUnit()) == typeid(*other.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*other.get_processing_unit()) && "Processing Units must be identical.");
     if (this != &other)
     {
         _colMatrixFactory = other._colMatrixFactory;
         _A = other._A;
-        _ipiv = DeviceArray<int>(0, 0, getProcessingUnit()->getMemoryManager());
+        _ipiv = DeviceArray<int>(0, 0, get_processing_unit()->getMemoryManager());
         _arrayOfColumns = initializeArrayOfColumns();
 
         // copy _Ainv
@@ -130,23 +130,23 @@ AlgebraicVector<floating> const & AlgebraicMatrix<floating>::operator[](const Si
 template<class floating>
 floating& AlgebraicMatrix<floating>::operator()(const SizeType i, const SizeType j)
 {
-    assert(typeid(*getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
     return _A(i,j);
 }
 
 template<class floating>
 floating const & AlgebraicMatrix<floating>::operator()(const SizeType i, const SizeType j) const
 {
-    assert(typeid(*getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
     return _A(i,j);
 }
 template<class floating>
 
 AlgebraicVector<floating> AlgebraicMatrix<floating>::getRow(const SizeType i) const
 {
-    assert(typeid(*getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
     const SizeType N = getNcols();
-    auto row = *getMatrixFactory().createColumn(N);
+    auto row = *get_container_factory().createColumn(N);
     for(SizeType j = 0; j < N; ++j)
     {
         row[j] = _A(i, j);
@@ -196,13 +196,13 @@ bool AlgebraicMatrix<floating>::isSquare() const
 }
 
 template<class floating>
-ContainerFactory<floating> AlgebraicMatrix<floating>::getMatrixFactory() const
+ContainerFactory<floating> AlgebraicMatrix<floating>::get_container_factory() const
 {
     return _colMatrixFactory;
 }
 
 template<class floating>
-ProcessingUnit<floating> AlgebraicMatrix<floating>::getProcessingUnit() const
+ProcessingUnit<floating> AlgebraicMatrix<floating>::get_processing_unit() const
 {
     return _colMatrixFactory.getProcessingUnit();
 }
@@ -223,8 +223,8 @@ floating AlgebraicMatrix<floating>::getEuclidean() const
 template<class floating>
 floating AlgebraicMatrix<floating>::getMaximum() const
 {
-    const auto index = getProcessingUnit()->ixamax(getNelems(), data(), 1);
-    DeviceScalar<floating> maximum(data()[index], getProcessingUnit()->getMemoryManager());
+    const auto index = get_processing_unit()->ixamax(getNelems(), data(), 1);
+    DeviceScalar<floating> maximum(data()[index], get_processing_unit()->getMemoryManager());
     maximum.moveTo(std::make_shared<CPU_Manager>());
     return maximum.value();
 }
@@ -240,7 +240,7 @@ AlgebraicMatrix<floating>& AlgebraicMatrix<floating>::add(AlgebraicMatrix<floati
 {
     assert( this->getNcols() == B.getNcols() ); // identical dimensions?
     assert( this->getNrows() == B.getNrows() );
-    assert( typeid(*this->getProcessingUnit()) == typeid(*B.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*B.get_processing_unit()) && "Processing Units must be identical.");
 
     AlgebraicMatrix<floating> C = *this;
 
@@ -249,7 +249,7 @@ AlgebraicMatrix<floating>& AlgebraicMatrix<floating>::add(AlgebraicMatrix<floati
     floating * const c_arraystart = this->data();
     unsigned int const inc = 1;
 
-    getProcessingUnit()->xaxpy(N, alpha, b_arraystart, inc, c_arraystart, inc);
+    get_processing_unit()->xaxpy(N, alpha, b_arraystart, inc, c_arraystart, inc);
 
     resetInverse();
     return *this;
@@ -259,7 +259,7 @@ template<class floating>
 void AlgebraicMatrix<floating>::updateAdd(const SizeType col_begin, const SizeType col_end, const AlgebraicMatrix &B)
 {
     assert(this->getNrows() == B.getNrows());
-    assert( typeid(*this->getProcessingUnit()) == typeid(*B.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*B.get_processing_unit()) && "Processing Units must be identical.");
 
     assert((col_end - col_begin) <= B.getNcols());
     for (SizeType j = 0; j < col_end - col_begin; ++j)
@@ -285,14 +285,14 @@ AlgebraicMatrix<floating> AlgebraicMatrix<floating>::operator+(const AlgebraicMa
 template<class floating>
 AlgebraicMatrix<floating>& AlgebraicMatrix<floating>::operator+=(const AlgebraicMatrix &B)
 {
-    assert( typeid(*this->getProcessingUnit()) == typeid(*B.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*B.get_processing_unit()) && "Processing Units must be identical.");
     return this->add(B);
 }
 
 template<class floating>
 AlgebraicMatrix<floating> AlgebraicMatrix<floating>::operator-(const AlgebraicMatrix &B) const
 {
-    assert( typeid(*this->getProcessingUnit()) == typeid(*B.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*B.get_processing_unit()) && "Processing Units must be identical.");
     auto tmp = *this;
     return tmp.add(B, -1.0);
 }
@@ -304,7 +304,7 @@ void AlgebraicMatrix<floating>::scale(floating const alpha)
     floating* arraystart = this->data();
     unsigned int const incx = 1; // spacing between elements = 1
 
-    getProcessingUnit()->xscal(N, alpha, arraystart, incx);
+    get_processing_unit()->xscal(N, alpha, arraystart, incx);
 
     resetInverse();
     return;
@@ -314,9 +314,9 @@ template<class floating>
 AlgebraicMatrix<floating> AlgebraicMatrix<floating>::mult(const AlgebraicMatrix &B) const
 {
     assert( this->getNcols() == B.getNrows() ); // inner dimensions equal?
-    assert( typeid(*this->getProcessingUnit()) == typeid(*B.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*B.get_processing_unit()) && "Processing Units must be identical.");
 
-    auto C = *getMatrixFactory().createMatrix(this->getNrows(), B.getNcols());
+    auto C = *get_container_factory().createMatrix(this->getNrows(), B.getNcols());
 
     floating const *const pA = this->data();
     floating const *const pB = B.data();
@@ -332,11 +332,11 @@ AlgebraicMatrix<floating> AlgebraicMatrix<floating>::mult(const AlgebraicMatrix 
     unsigned int const LDB = K;
     unsigned int const LDC = M;
 
-    getProcessingUnit()->xgemm(OperationType::Identical, OperationType::Identical,
-            M, N, K,
-            alpha, pA, LDA,
-            pB, LDB,
-            beta, pC, LDC);
+    get_processing_unit()->xgemm(OperationType::Identical, OperationType::Identical,
+                                 M, N, K,
+                                 alpha, pA, LDA,
+                                 pB, LDB,
+                                 beta, pC, LDC);
 
     resetInverse();
     return C;
@@ -346,9 +346,9 @@ template<class floating>
 AlgebraicVector<floating> AlgebraicMatrix<floating>::mult(const AlgebraicVector<floating> &u) const
 {
     assert(this->getNcols() == u.size()); // #columns in matrix =? #elements in vector
-    assert( typeid(*this->getProcessingUnit()) == typeid(*u.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*u.get_processing_unit()) && "Processing Units must be identical.");
 
-    auto res = *getMatrixFactory().createColumn(this->getNrows());
+    auto res = *get_container_factory().createColumn(this->getNrows());
 
     floating const *const pA = this->data();
     floating const *const pu = u.data();           // pointer to memory of input vector
@@ -360,7 +360,7 @@ AlgebraicVector<floating> AlgebraicMatrix<floating>::mult(const AlgebraicVector<
     unsigned int const N = this->getNcols();
     unsigned int const LDA = N;
 
-    getProcessingUnit()->xgemv(OperationType::Identical, M, N, alpha, pA, LDA, pu, 1, beta, pf, 1);
+    get_processing_unit()->xgemv(OperationType::Identical, M, N, alpha, pA, LDA, pu, 1, beta, pf, 1);
 
     return res;
 }
@@ -368,14 +368,14 @@ AlgebraicVector<floating> AlgebraicMatrix<floating>::mult(const AlgebraicVector<
 template<class floating>
 AlgebraicMatrix<floating> AlgebraicMatrix<floating>::operator*(const AlgebraicMatrix &B) const
 {
-    assert( typeid(*this->getProcessingUnit()) == typeid(*B.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*B.get_processing_unit()) && "Processing Units must be identical.");
     return mult(B);
 }
 
 template<class floating>
 AlgebraicVector<floating> AlgebraicMatrix<floating>::operator*(AlgebraicVector<floating> const &u) const
 {
-    assert( typeid(*this->getProcessingUnit()) == typeid(*u.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*u.get_processing_unit()) && "Processing Units must be identical.");
     return mult(u);
 }
 
@@ -383,7 +383,7 @@ template<class floating>
 AlgebraicMatrix<floating> AlgebraicMatrix<floating>::operator/(const AlgebraicMatrix<floating> &B) const
 {
     auto copied(B);
-    //AlgebraicMatrix<floating> output = *getMatrixFactory().createMatrix(getNrows(), getNcols(), 0.0);
+    //AlgebraicMatrix<floating> output = *get_container_factory().createMatrix(getNrows(), getNcols(), 0.0);
     this->invTimes(copied);
 
     return copied;
@@ -393,9 +393,9 @@ template<class floating>
 void AlgebraicMatrix<floating>::invTimes(AlgebraicMatrix<floating> &B) const
 {
     assert( this->getNrows() == B.getNrows() );
-    assert( typeid(*this->getProcessingUnit()) == typeid(*B.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*B.get_processing_unit()) && "Processing Units must be identical.");
 
-    auto buffer = *getMatrixFactory().createMatrix(this->getNrows(), B.getNcols());
+    auto buffer = *get_container_factory().createMatrix(this->getNrows(), B.getNcols());
     
     auto &Ainv = accessInverse();
 
@@ -414,11 +414,11 @@ void AlgebraicMatrix<floating>::invTimes(AlgebraicMatrix<floating> &B) const
     unsigned int const LDC = M;
 
 #ifndef PLU
-    getProcessingUnit()->xgemm(OperationType::Identical, OperationType::Identical,
-            M, N, K,
-            alpha, pA, LDA,
-            pB, LDB,
-            beta, pC, LDC);
+    get_processing_unit()->xgemm(OperationType::Identical, OperationType::Identical,
+                                 M, N, K,
+                                 alpha, pA, LDA,
+                                 pB, LDB,
+                                 beta, pC, LDC);
     B = buffer;
 #else
     int info(0);
@@ -436,7 +436,7 @@ AlgebraicMatrix<floating> AlgebraicMatrix<floating>::operator/(const std::vector
 template<class floating>
 AlgebraicVector<floating> AlgebraicMatrix<floating>::operator/(const AlgebraicVector<floating> &x) const
 {
-    AlgebraicVector<floating> output = *getMatrixFactory().createColumn(x.size(), 0.0);
+    AlgebraicVector<floating> output = *get_container_factory().createColumn(x.size(), 0.0);
     this->invTimes(x, output);
     
     return output;
@@ -446,7 +446,7 @@ template<class floating>
 void AlgebraicMatrix<floating>::invTimes(const AlgebraicVector<floating> &x, AlgebraicVector<floating> &output) const
 {
     assert(this->getNcols() == x.size()); // #columns in matrix =? #elements in vector
-    assert( typeid(*this->getProcessingUnit()) == typeid(*x.getProcessingUnit()) && "Processing Units must be identical.");
+    assert(typeid(*this->get_processing_unit()) == typeid(*x.get_processing_unit()) && "Processing Units must be identical.");
 
 #ifndef PLU
     auto &Ainv = accessInverse();
@@ -461,7 +461,7 @@ void AlgebraicMatrix<floating>::invTimes(const AlgebraicVector<floating> &x, Alg
     unsigned int const N = this->getNcols();
     unsigned int const LDA = N;
 
-    getProcessingUnit()->xgemv(OperationType::Identical, M, N, alpha, pA, LDA, pu, 1, beta, pf, 1);
+    get_processing_unit()->xgemv(OperationType::Identical, M, N, alpha, pA, LDA, pu, 1, beta, pf, 1);
 #else
     const auto &Ainv = accessInverse();
     output = x;
@@ -491,7 +491,7 @@ typename AlgebraicMatrix<floating>::ArrayOfColumns AlgebraicMatrix<floating>::in
     AlgebraicMatrix<floating>::ArrayOfColumns arrayOfColumns(getNcols());
     for (SizeType i = 0; i < getNcols(); ++i)
     {
-        arrayOfColumns[i] = AlgebraicVector<floating>(getProcessingUnit(), _A.getPointerToColumn(i));
+        arrayOfColumns[i] = AlgebraicVector<floating>(get_processing_unit(), _A.getPointerToColumn(i));
     }
     return arrayOfColumns;
 }
@@ -532,7 +532,7 @@ template<class floating>
 void AlgebraicMatrix<floating>::recalculateInverse() const
 {
 #ifndef PLU
-    _Ainv = getMatrixFactory().createMatrix(getNrows(), getNcols(), 0.0);
+    _Ainv = get_container_factory().createMatrix(getNrows(), getNcols(), 0.0);
     auto &eye = *_Ainv;
     assert(eye.isSquare());
     
@@ -540,22 +540,22 @@ void AlgebraicMatrix<floating>::recalculateInverse() const
     
     int N = eye.getNrows();
     
-    initializeIdentityMatrix(getProcessingUnit()->getMemoryManager(), eye.data(), eye.getNrows(), eye.getNcols());
+    initializeIdentityMatrix(get_processing_unit()->getMemoryManager(), eye.data(), eye.getNrows(), eye.getNcols());
 
     int LDA = N;
 
-    _ipiv = DeviceArray<int>(N, 0, getProcessingUnit()->getMemoryManager());
+    _ipiv = DeviceArray<int>(N, 0, get_processing_unit()->getMemoryManager());
     int info(0);
 
-    getProcessingUnit()->xgetrf(&N, &N, Afactorization.data(), &LDA, _ipiv.data(), &info);
+    get_processing_unit()->xgetrf(&N, &N, Afactorization.data(), &LDA, _ipiv.data(), &info);
 
     if (info != 0) {
         std::cout << "No success (" << info << ") in dgetrf! " << __FILE__ << ":" << __LINE__ << std::endl;
         std::cout << "See  http://www.netlib.org/lapack/explore-html/dd/d9a/group__double_g_ecomputational_ga0019443faea08275ca60a734d0593e60.html#ga0019443faea08275ca60a734d0593e60   ";
         std::cout << "for more information on INFO" << std::endl;
     }
-    
-    getProcessingUnit()->xgetrs(OperationType::Identical, &N, &N, Afactorization.data(), &LDA, _ipiv.data(), eye.data(), &LDA, &info);
+
+    get_processing_unit()->xgetrs(OperationType::Identical, &N, &N, Afactorization.data(), &LDA, _ipiv.data(), eye.data(), &LDA, &info);
 #else
     _Ainv = std::make_unique<AlgebraicMatrix<floating>>(*this);
 

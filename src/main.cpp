@@ -71,14 +71,14 @@ int main()
     //ProcessingUnit<floating> pu = std::make_shared<CPU<floating>>();
     ProcessingUnit<floating> pu = std::make_shared<GPU<floating>>();
 
-    const size_t N = twoToThe(5);
-    const size_t M = twoToThe(7);
+    const size_t N = two_to_the(5);
+    const size_t M = two_to_the(7);
 
     const floating T = 1;
     const floating alpha = 0.9;
 
-    const size_t maxNumberOfIterations = 20;
-    const size_t stepsPerIteration = 20;
+    const size_t max_num_iterations = 20;
+    const size_t steps_per_iteration = 20;
     const floating accuracy = 1e-9;
 
     std::cout << "Calculation via " << pu->display() << std::endl
@@ -91,7 +91,7 @@ int main()
                                                                            u_exact_f<floating>,
                                                                            up_exact_f<floating>,
                                                                            rhs_f<floating>,
-                                                                           maxNumberOfIterations, stepsPerIteration,
+                                                                           max_num_iterations, steps_per_iteration,
                                                                            accuracy,
                                                                            SolvingProcedure::CyclicReduction);
 
@@ -106,8 +106,8 @@ int main()
                                                                                   u_exact_f<floating>,
                                                                                   up_exact_f<floating>,
                                                                                   rhs_f<floating>,
-                                                                                  maxNumberOfIterations,
-                                                                                  stepsPerIteration, accuracy,
+                                                                                  max_num_iterations,
+                                                                                  steps_per_iteration, accuracy,
                                                                                   SolvingProcedure::PCBiCGStab);
     std::cout << std::endl << "max norm of absolute error (nonequidistant grid) = " << error_nonequi << std::endl
               << "####################################################################" << std::endl;

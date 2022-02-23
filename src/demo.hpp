@@ -52,13 +52,13 @@ floating equidistant_test_solver_against_exact_solution(const ProcessingUnit<flo
 }
 
 template<class floating>
-floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit<floating> processingUnit, const int N, const int M,
+floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit<floating> processing_unit, const int N, const int M,
                                                             const floating T, const floating alpha,
                                                             const SpaceTimeCoeffFunction<floating>& exact_solution,
                                                             const SpaceTimeCoeffFunction<floating>& exact_solution_dt,
                                                             const SpaceTimeCoeffFunction<floating>& rhs_function,
-                                                            const size_t maxNumberOfIterations, const size_t stepsPerIteration,
-                                                            const floating accuracy, const SolvingProcedure solvingProcedure)
+                                                            const size_t max_num_iterations, const size_t steps_per_iteration,
+                                                            const floating accuracy, const SolvingProcedure solving_procedure)
 {
     const auto pde_function_tuple = exact_solution_to_pde_condition_functions(exact_solution, exact_solution_dt, rhs_function, alpha);
 
@@ -68,11 +68,11 @@ floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit
     floating dt = T / static_cast<floating>(N);
 
     auto grid = *colMatrixFactory.createColumn(M);
-    getGeneralGrid(grid);
+    get_general_grid(grid);
 
-    auto full_solution = solve_nonequidistant(processingUnit, N, T, alpha, grid,
+    auto full_solution = solve_nonequidistant(processing_unit, N, T, alpha, grid,
                                               pde_function_tuple,
-                                              maxNumberOfIterations, stepsPerIteration, accuracy, solvingProcedure);
+                                              max_num_iterations, steps_per_iteration, accuracy, solving_procedure);
 
     // only take latest time point solution, but for every space point
     full_solution.moveTo(cpu);
@@ -89,9 +89,9 @@ AlgebraicVector<floating> get_exact_solution_vector(const floating T, const floa
                                                     const SpaceTimeCoeffFunction<floating>& exact_solution,
                                                     const AlgebraicVector<floating> &grid)
 {
-    assert(typeid(*grid.getProcessingUnit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
+    assert(typeid(*grid.get_processing_unit()) == typeid(*std::make_shared<CPU<floating>>()) && "Must be on CPU");
     const auto M = grid.size();
-    auto solution = *grid.getMatrixFactory().createColumn(M+1);
+    auto solution = *grid.get_container_factory().createColumn(M + 1);
 
     floating spacePoint = 0;
     for (int i = 0; i < M; i++)
@@ -105,7 +105,7 @@ AlgebraicVector<floating> get_exact_solution_vector(const floating T, const floa
 }
 
 template<class floating>
-void getGeneralGrid(AlgebraicVector<floating>& grid)
+void get_general_grid(AlgebraicVector<floating>& grid)
 {
     auto M = grid.size();
 

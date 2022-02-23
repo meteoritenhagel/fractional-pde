@@ -235,13 +235,13 @@ public:
      *
      * TODO: RENAME TO getContainerFactory
      */
-    ContainerFactory<floating> getMatrixFactory() const;
+    ContainerFactory<floating> get_container_factory() const;
 
     /**
     * Returns the current instance's processing unit.
     * @return processing unit
     */
-    ProcessingUnit<floating> getProcessingUnit() const;
+    ProcessingUnit<floating> get_processing_unit() const;
 
     /** Returns const reference to the inverse, which is calculated, if needed.
      * @return const reference to the inverse
@@ -592,13 +592,13 @@ public:
      *
      * TODO: RENAME TO getContainerFactory
      */
-    ContainerFactory<floating> getMatrixFactory() const;
+    ContainerFactory<floating> get_container_factory() const;
 
     /**
     * Returns the current instance's processing unit.
     * @return processing unit
     */
-    ProcessingUnit<floating> getProcessingUnit() const;
+    ProcessingUnit<floating> get_processing_unit() const;
 
     /**
     * Calculates the Euclidean norm of the current vector.
