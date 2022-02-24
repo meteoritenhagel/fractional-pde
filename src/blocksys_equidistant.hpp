@@ -111,7 +111,6 @@ BlockVector<floating> EquidistantBlock1D<floating>::solve_pde(const BlockVector<
                                                               const SolvingProcedure solving_procedure) const
 {
     auto pde_solution = solve(rhs, max_num_iterations, steps_per_iteration, accuracy, solving_procedure);
-    const auto M = pde_solution.get_num_rows();
     const auto N = pde_solution.get_num_cols();
 
     for(size_t j = 0; j < N; ++j)
@@ -276,7 +275,7 @@ BlockVector<floating> EquidistantBlock1D<floating>::cyclic_reduction(const Algeb
                                               get_processing_unit());
         AlgebraicMatrix<floating> const K = K0.get_dense_representation();
 
-        auto returnMatrix = K / f.flat();
+        returnMatrix = K / f.flat();
         returnMatrix.resize(f.get_num_rows(), f.get_num_cols());
 
         return returnMatrix;

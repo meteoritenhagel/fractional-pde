@@ -88,7 +88,6 @@ BlockVector<floating> NonEquidistantBlock1D<floating>::solve_pde(const BlockVect
                                                                  const SolvingProcedure solving_procedure) const
 {
     auto pde_solution = solve(rhs, max_num_iterations, steps_per_iteration, accuracy, solving_procedure);
-    const auto M = pde_solution.get_num_rows();
     const auto N = pde_solution.get_num_cols();
 
     for(size_t j = 0; j < N; ++j)
@@ -484,8 +483,6 @@ void NonEquidistantBlock1D<floating>::multigrid(const unsigned num_smoothing_ste
 
     assert(solution.get_num_rows() == N && solution.get_num_cols() == M && "ERROR: Dimension mismatch.");
 
-    floating euclideanError = 1;
-
     const floating omega = 2/3.0;
 
     if (M == 3)
@@ -539,9 +536,8 @@ void NonEquidistantBlock1D<floating>::prolongation(const BlockVector<floating> &
 template<class floating>
 void NonEquidistantBlock1D<floating>::restriction(const BlockVector<floating> &fine_rhs, BlockVector<floating> &coarse_rhs) const
 {
-    const SizeType N = get_num_blocks();
     const SizeType M = get_block_dim();
-    assert(get_block_dim() % 2 == 1 && "ERROR: Need odd number of rows in each step.");
+    assert(M % 2 == 1 && "ERROR: Need odd number of rows in each step.");
 
     if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()))
     {
@@ -558,7 +554,7 @@ void NonEquidistantBlock1D<floating>::restriction(const BlockVector<floating> &f
     else
     {
 #ifndef CPU_ONLY
-        device_restriction(N, M, _grid.data(), fine_rhs.data(), coarse_rhs.data());
+        device_restriction(get_num_blocks(), M, _grid.data(), fine_rhs.data(), coarse_rhs.data());
 #endif
     }
 }
@@ -845,7 +841,7 @@ void NonEquidistantBlock1D<floating>::rescale_rhs(BlockVector<floating> &rhs) co
 {
     const SizeType N = get_num_blocks();
     const SizeType M = get_block_dim();
-    //assert(rhs.get_num_rows() == N && rhs.get_num_cols() == M && "ERROR: Dimension mismatch.");
+    assert(rhs.get_num_rows() == N && rhs.get_num_cols() == M && "ERROR: Dimension mismatch.");
 
     if (typeid(*this->get_processing_unit()) == typeid(*std::make_shared<Cpu<floating>>()))
     {

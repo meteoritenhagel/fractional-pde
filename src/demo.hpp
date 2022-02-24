@@ -65,8 +65,6 @@ floating non_equidistant_test_solver_against_exact_solution(const ProcessingUnit
     ProcessingUnit<floating> cpu = std::make_shared<Cpu<floating>>();
     ContainerFactory<floating> colMatrixFactory(cpu);
 
-    floating dt = T / static_cast<floating>(N);
-
     auto grid = *colMatrixFactory.create_array(M);
     get_general_grid(grid);
 
@@ -94,7 +92,7 @@ AlgebraicVector<floating> get_exact_solution_vector(const floating T, const floa
     auto solution = *grid.get_container_factory().create_array(M + 1);
 
     floating spacePoint = 0;
-    for (int i = 0; i < M; i++)
+    for (unsigned int i = 0; i < M; i++)
     {
         solution[i] = exact_solution(spacePoint, T, alpha);
         spacePoint += grid[i];

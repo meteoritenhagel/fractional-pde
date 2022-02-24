@@ -100,8 +100,8 @@ void initialize_rhs(const int N, const floating T, const PDEFunctionTuple<floati
     const auto [phi, varphi, up_exact, u_zero, rhs_function] = pde_function_tuple;
 
     // For use with rhs_helper, phi and varphi must be SpaceTimeFunction
-    const auto conv_phi = [phi](SpacePoint<floating> x, TimePoint<floating> t){ return phi(t); };
-    const auto conv_varphi = [varphi](SpacePoint<floating> x, TimePoint<floating> t){ return varphi(t); };
+    const auto conv_phi = [phi](SpacePoint<floating>, TimePoint<floating> t){ return phi(t); };
+    const auto conv_varphi = [varphi](SpacePoint<floating>, TimePoint<floating> t){ return varphi(t); };
 
     const auto M = grid.size();
 
@@ -111,7 +111,7 @@ void initialize_rhs(const int N, const floating T, const PDEFunctionTuple<floati
     spacePoint += grid[0];
 
     std::vector<floating> gg(N+3);
-    for (int i = 1; i < M; i++)
+    for (unsigned int i = 1; i < M; i++)
     {
         rhs_helper<floating>(spacePoint, T, up_exact, u_zero, rhs_function, rhs[i]);
         spacePoint += grid[i];

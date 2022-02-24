@@ -37,3 +37,26 @@ stand-alone, which is a prerequisite for `processingunit`, which in turn is agai
 a prerequisite for `algebraiccontainers`.
 
 An exemplary use of the solver is demonstrated in `main.cpp`.
+
+## Building the executable
+
+For building the executable, follow these steps:
+ * Change to the base folder `fractional_pde`
+ * In bash, call CMAKE using `cmake .`
+ * Use the generated Makefile to build the target you wish. 
+   Three targets are available, which can be build via `make <TARGET_NAME>`
+   in bash:
+   * `make fpde_cpu` for building the application without GPU acceleration.
+     In this case, the acceleration of linear algebra operations
+     relies on BLAS/LAPACK/LAPACKE only.
+     From all child classes of `ProcessingUnitDevice`, only `Cpu` can be used;
+     from all child classes of `MemoryManager`, only `CpuManager` can be used.
+   * `make fpde_cuda` for building the application with CUDA and
+     cuBLAS/cuSOLVER acceleration of linear algebra operations.
+     From all child classes of `ProcessingUnitDevice`, `Cpu` and `Gpu` can be used;
+     all child classes of `MemoryManager` can be used.
+   * `make fpde_magma` for building the application with CUDA and both
+      cuBLAS/cuSOLVER and MAGMA support.
+      All child classes of `ProcessingUnitDevice` and `MemoryManager` can be used.
+ * The executable is found under the name `<TARGET_NAME>` in the base folder
+   `fractional_pde`.

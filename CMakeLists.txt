@@ -85,32 +85,32 @@ set(CUDA_SOURCES
 
 
 ### Cpu only mode ###
-add_executable(fractional_pde_cpu_only
+add_executable(fpde_cpu
         ${COMMON_SOURCES}
 )
-target_compile_definitions(fractional_pde_cpu_only PRIVATE CPU_ONLY)
-target_compile_options(fractional_pde_cpu_only PRIVATE
+target_compile_definitions(fpde_cpu PRIVATE CPU_ONLY)
+target_compile_options(fpde_cpu PRIVATE
         -Wall -pedantic -Wextra -Weffc++ -Woverloaded-virtual -Wfloat-equal -Wshadow -Wredundant-decls
         -fmax-errors=1 -Wno-error=redundant-decls
         -ffast-math -O3
 )
-target_link_options(fractional_pde_cpu_only PRIVATE -O3 -flto)
+target_link_options(fpde_cpu PRIVATE -O3 -flto)
 
 if(CUDAToolkit_FOUND)
     ### CUDA mode ###
-    add_executable(fractional_pde_cuda
+    add_executable(fpde_cuda
             ${COMMON_SOURCES}
             ${GPU_SOURCES}
             ${CUDA_SOURCES}
     )
-    target_link_libraries(fractional_pde_cuda CUDA::cudart CUDA::cublas CUDA::cusolver)
-    target_compile_options(fractional_pde_cuda PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:
+    target_link_libraries(fpde_cuda CUDA::cudart CUDA::cublas CUDA::cusolver)
+    target_compile_options(fpde_cuda PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:
             --resource-usage -src-in-ptx --restrict --Wreorder --ftemplate-backtrace-limit 1
             -use_fast_math -restrict
             >)
 
     ### CUDA + MAGMA mode ###
-    add_executable(fractional_pde_cuda_magma
+    add_executable(fpde_magma
             ${COMMON_SOURCES}
             ${GPU_SOURCES}
             ${CUDA_SOURCES}
@@ -121,11 +121,11 @@ if(CUDAToolkit_FOUND)
     set(MAGMA_DIR /usr/local/magma)
     set(MAGMA_INCDIR ${MAGMA_DIR}/include)
     set(MAGMA_LIBDIR ${MAGMA_DIR}/lib)
-    target_compile_definitions(fractional_pde_cuda_magma PUBLIC MAGMA)
-    target_include_directories(fractional_pde_cuda_magma PUBLIC ${MAGMA_INCDIR})
-    target_link_directories(fractional_pde_cuda_magma PUBLIC ${MAGMA_LIBDIR})
-    target_link_libraries(fractional_pde_cuda_magma CUDA::cudart CUDA::cublas CUDA::cusolver)
-    target_compile_options(fractional_pde_cuda_magma PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:
+    target_compile_definitions(fpde_magma PUBLIC MAGMA)
+    target_include_directories(fpde_magma PUBLIC ${MAGMA_INCDIR})
+    target_link_directories(fpde_magma PUBLIC ${MAGMA_LIBDIR})
+    target_link_libraries(fpde_magma CUDA::cudart CUDA::cublas CUDA::cusolver)
+    target_compile_options(fpde_magma PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:
             --resource-usage -src-in-ptx --restrict --Wreorder --ftemplate-backtrace-limit 1
             -use_fast_math -restrict
             >)
